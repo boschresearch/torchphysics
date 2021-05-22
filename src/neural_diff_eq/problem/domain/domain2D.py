@@ -26,11 +26,11 @@ class Rectangle(Domain):
         self.corner_dr = np.asarray(corner_dr)
         self.corner_tl = np.asarray(corner_tl)
         self._check_rectangle()
-        self.length_td = np.linalg.norm(self.corner_dr-self.corner_dl)
-        self.length_lr = np.linalg.norm(self.corner_tl-self.corner_dl)
-        self.normal_lr = (self.corner_dr-self.corner_dl)/self.length_td
-        self.normal_td = (self.corner_tl-self.corner_dl)/self.length_lr
-        self.inverse_matrix = [self.normal_lr/self.length_td, self.normal_td/self.length_lr]
+        self.length_lr = np.linalg.norm(self.corner_dr-self.corner_dl)
+        self.length_td = np.linalg.norm(self.corner_tl-self.corner_dl)
+        self.normal_lr = (self.corner_dr-self.corner_dl)/self.length_lr
+        self.normal_td = (self.corner_tl-self.corner_dl)/self.length_td
+        self.inverse_matrix = [self.normal_lr/self.length_lr, self.normal_td/self.length_td]
    
     def _check_rectangle(self):
         dot_prod = np.dot(self.corner_dr-self.corner_dl, self.corner_tl-self.corner_dl)
@@ -69,8 +69,8 @@ class Rectangle(Domain):
         return [(t*direction) for t in points]
 
     def _grid_sampling_inside(self, n):
-        nx = int(np.sqrt(n*self.length_td/self.length_lr))
-        ny = int(np.sqrt(n*self.length_lr/self.length_td)) 
+        nx = int(np.sqrt(n*self.length_lr/self.length_td))
+        ny = int(np.sqrt(n*self.length_td/self.length_lr)) 
         x = np.linspace(0,1,nx+2)[1:-1]
         y = np.linspace(0,1,ny+2)[1:-1]
         points = np.array(np.meshgrid(x,y)).T.reshape(-1,2)
@@ -83,25 +83,19 @@ class Rectangle(Domain):
         return points.astype(np.float32)
 
     def _random_sampling_boundary(self, n):
-        axis_1 = np.add(self.corner_dl, self._sampling_axis(n, self.corner_dr-self.corner_dl))
-        axis_2 = np.add(self.corner_dl, self._sampling_axis(n, self.corner_tl-self.corner_dl))
+        nx, ny = self._divide_boundary_points(n)
+        axis_1 = np.add(self.corner_dl, self._sampling_axis(nx, self.corner_dr-self.corner_dl))
+        axis_2 = np.add(self.corner_dl, self._sampling_axis(ny, self.corner_tl-self.corner_dl))
 
-        for i in range(n):
-            rand = np.random.randint(0,2)
-            axis_1[i] = np.add(axis_1[i], rand*(self.corner_tl-self.corner_dl))
-            axis_2[i] = np.add(axis_2[i], rand*(self.corner_dr-self.corner_dl))
+        rand_1 = np.random.randint(0,2,nx).reshape(-1,1)
+        rand_2 = np.random.randint(0,2,ny).reshape(-1,1)
+        axis_1 = np.add(axis_1, (self.corner_tl-self.corner_dl) * rand_1)
+        axis_2 = np.add(axis_2, (self.corner_dr-self.corner_dl) * rand_2)
 
-        index = np.random.choice(2*n, n, replace=False) 
-        points = np.concatenate((axis_1, axis_2))
-        return points[index].astype(np.float32)
+        return np.concatenate((axis_1, axis_2)).astype(np.float32)
 
-    def _grid_sampling_boundary(self, n):
-        if self.length_lr <= self.length_td:
-             a, b = self.length_td, self.length_lr
-        else :
-             a, b = self.length_lr, self.length_td
-        
-        nx, ny = self._divide_boundary_points(n, a, b)
+    def _grid_sampling_boundary(self, n):        
+        nx, ny = self._divide_boundary_points(n)
         corner_tr = self.corner_dr + self.corner_tl - self.corner_dl
         axis_1 = np.linspace(self.corner_dl, self.corner_dr, int(np.ceil(nx/2))+1)[0:-1]
         axis_2 = np.linspace(self.corner_dr, corner_tr, int(np.ceil(ny/2))+1)[0:-1]
@@ -112,7 +106,11 @@ class Rectangle(Domain):
             points = np.append(points, [self.corner_dl], axis=0)
         return  points.astype(np.float32)
 
-    def _divide_boundary_points(self, n, a, b):
+    def _divide_boundary_points(self, n):
+        if self.length_lr <= self.length_td:
+            a, b = self.length_lr, self.length_td
+        else :
+            a, b = self.length_td, self.length_lr
         na = int(np.floor(a*n/(a+b)))
         nb = int(np.ceil(b*n/(a+b)))        
         return na, nb
