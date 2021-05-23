@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from diffeqmodel import DiffEqModel
+from .diffeqmodel import DiffEqModel
 
 
 class SimpleFCN(DiffEqModel):
