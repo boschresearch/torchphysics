@@ -5,12 +5,27 @@ import torch
 from neural_diff_eq.models import SimpleFCN
 
 input_dim = 2
-input_dict = cln.OrderedDict()
-input_dict['x'] = torch.randn([16, 1])
-input_dict['t'] = torch.randn([16, 1])
 
-def test_simplefcn():
+def _input_dict():
+    input_dict = cln.OrderedDict()
+    input_dict['x'] = torch.randn([16, 1])
+    input_dict['t'] = torch.randn([16, 1])
+    return input_dict
+
+def test_grad_tracking():
     model = SimpleFCN(input_dim=input_dim)
-    x = model(input_dict, track_gradients=['x'])
-    assert input_dict['x'].requires_grad
-    assert not input_dict['t'].requires_grad
+    
+    x1 = _input_dict()
+    y = model(x1, track_gradients=['x'])
+    assert x1['x'].requires_grad
+    assert not x1['t'].requires_grad
+
+    x2 = _input_dict()
+    y = model(x2, track_gradients=True)
+    assert x2['x'].requires_grad
+    assert x2['t'].requires_grad
+
+    x3 = _input_dict()
+    y = model(x3, track_gradients=False)
+    assert not x3['x'].requires_grad
+    assert not x3['t'].requires_grad
