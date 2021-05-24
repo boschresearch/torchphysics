@@ -59,7 +59,7 @@ class PINNModule(pl.LightningModule):
         # For multiple validation dataloaders, lightning need a CombinedLoader
         dataloader_dict = self._get_dataloader(self.problem.get_val_conditions())
         return pl.trainer.supporters.CombinedLoader(dataloader_dict, 'max_size_cycle')
-    
+
     def _do_step(self, conditions, batch, batch_idx):
         loss = torch.Tensor(0.)
         for condition in conditions:
