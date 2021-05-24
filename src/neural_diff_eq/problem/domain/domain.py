@@ -24,7 +24,9 @@ class Domain():
             Desired number of sample points
         type : {'random', 'grid'}
             The sampling strategy. All child classes implement at least a random sampling
-            and a grid sampling. For additional strategies check the specific class
+            and a grid sampling. For additional strategies check the specific class.
+            - 'random' : returns uniformly distributed points on the boundary
+            - 'grid' : creates a grid over the boundary
 
         Returns
         -------
@@ -48,7 +50,11 @@ class Domain():
         type : {'random', 'grid'}
             The sampling strategy. All child classes implement at least a random sampling
             and a grid sampling. For additional strategies check the specific class
-    
+            - 'random' : returns uniformly distributed points in the domain
+            - 'grid' : creates a evenly grid over the domain. 
+                       Since it is not always possible to get a grid with excatly n points, 
+                       the center of the domain is added to get n points in total
+
         Returns
         -------
         np.array
