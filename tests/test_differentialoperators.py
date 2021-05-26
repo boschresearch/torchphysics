@@ -71,13 +71,13 @@ def test_laplacian_for_two_inputs_one_linear():
     a = torch.tensor([[1.0,1.0], [2.0,0]], requires_grad=True)
     b = torch.tensor([[1.0], [0.5]], requires_grad=True)
     def function1(a, b):
-        return a[0]**2 + a[1]**2 + b[0]
+        return 2*a[0]**2 + a[1]**2 + b[0]
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]) : output[i] = function1(a[i], b[i])
     l = laplacian(output, a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
-    assert np.all(l.detach().numpy() == [4,4])  
+    assert np.all(l.detach().numpy() == [6,6])  
     l = laplacian(output, b)
     assert l.shape[0] == b.shape[0]
     assert l.shape[1] == 1
@@ -98,3 +98,41 @@ def test_laplacian_for_two_not_linear_inputs():
     assert l.shape[0] == b.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [[6],[3]]) 
+
+def test_laplacian_multiply_varibales():
+    a = torch.tensor([[1.0,1.0], [2.0,0]], requires_grad=True)
+    b = torch.tensor([[1.0], [2]], requires_grad=True)
+    def function1(a, b):
+        return a[0]**2 * a[1]**2 * b[0]**2
+    output = torch.zeros(a.shape[0])
+    for i in range(a.shape[0]) : output[i] = function1(a[i], b[i])
+    l = laplacian(output, a)
+    assert l.shape[0] == a.shape[0]
+    assert l.shape[1] == 1
+    assert np.all(l.detach().numpy() == [[4],[32]])  
+    l = laplacian(output, b)
+    assert l.shape[0] == b.shape[0]
+    assert l.shape[1] == 1
+    assert np.all(l.detach().numpy() == [[2],[0]])    
+
+def test_laplacian_with_chain_rule():
+    a = torch.tensor([[1.0, 1], [2.0, 1]], requires_grad=True)
+    def function1(a):
+        return torch.sin(2.0 * (torch.sin(a[0]))) * a[1]
+    output = torch.zeros(a.shape[0])
+    for i in range(a.shape[0]) : output[i] = function1(a[i])
+    l = laplacian(output, a)
+    assert l.shape[0] == a.shape[0]
+    assert l.shape[1] == 1
+    assert np.allclose(l.detach().numpy(), [[-0.97203],[-0.22555]], atol=1e-04)  
+
+def test_laplacian_with_tanh():
+    a = torch.tensor([[1.0,1.0, 2.0], [2.0,0, 1.0]], requires_grad=True)
+    def function1(a):
+        return torch.tanh(a[0]**2 * a[1]**3 + a[2]**2)
+    output = torch.zeros(a.shape[0])
+    for i in range(a.shape[0]) : output[i] = function1(a[i])
+    l = laplacian(output, a)
+    assert l.shape[0] == a.shape[0]
+    assert l.shape[1] == 1
+    assert np.allclose(l.detach().numpy(), [[-0.0087],[-1.7189]], atol=1e-04)  
