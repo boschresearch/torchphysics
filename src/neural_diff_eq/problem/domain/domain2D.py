@@ -33,8 +33,9 @@ class Rectangle(Domain):
         self.normal_td = (self.corner_tl-self.corner_dl)/self.length_td
         # inverse matrix to transform the rectangle back to the unit square. Used
         # to check if points are inside or on the boundary of the rectangle
-        self.inverse_matrix = [self.normal_lr/self.length_lr, self.normal_td/self.length_td]
-   
+        self.inverse_matrix = [self.normal_lr /
+                               self.length_lr, self.normal_td/self.length_td]
+
     def _check_rectangle(self):
         dot_prod = np.dot(self.corner_dr-self.corner_dl, self.corner_tl-self.corner_dl)
         if not np.isclose(dot_prod, 0, atol=self.tol):
@@ -42,7 +43,7 @@ class Rectangle(Domain):
         return
 
     def _transform_to_unit_square(self, points):
-        return np.array([np.matmul(self.inverse_matrix, 
+        return np.array([np.matmul(self.inverse_matrix,
                                    np.subtract(i, self.corner_dl)) for i in points])
 
     def _is_inside_unit_square(self, points):
@@ -51,36 +52,36 @@ class Rectangle(Domain):
 
     def is_inside(self, points):
         '''Checks if the given points are inside the rectangle
-        
+
         Parameters
-        ----------   
+        ----------
         points : array_like
-            A list containing all points that have to be checked. The list has to be of the form
-            [[x1,y1],[x2,y2],...]
-        
-        Returns 
+            A list containing all points that have to be checked. The list has to be of
+            the form [[x1,y1],[x2,y2],...]
+
+        Returns
         ----------
         np.array
             Every entry of the output contains either true, if the points was inside, or
-            false if not.  
+            false if not.
         '''
         transform = self._transform_to_unit_square(points)
-        return self._is_inside_unit_square(transform).reshape(-1,1)
+        return self._is_inside_unit_square(transform).reshape(-1, 1)
 
     def is_on_boundary(self, points):
         '''Checks if the given points are on the boundary of the rectangle
 
         Parameters
-        ----------   
+        ----------
         points : array_like
-            A list containing all points that have to be checked. The list has to be of the form
-            [[x1,y1],[x2,y2],...]
+            A list containing all points that have to be checked. The list has to be of
+            the form [[x1,y1],[x2,y2],...]
 
-        Returns 
+        Returns
         ----------
         np.array
-            Every entry of the output contains either true, if the points was on the 
-            boundary, or false if not.  
+            Every entry of the output contains either true, if the points was on the
+            boundary, or false if not.
         '''
         transform = self._transform_to_unit_square(points)
         inside = self._is_inside_unit_square(transform)
@@ -116,16 +117,18 @@ class Rectangle(Domain):
 
     def _random_sampling_boundary(self, n):
         nx, ny = self._divide_boundary_points(n)
-        side_td = self._concstruct_random_boundary_sides(nx, self.corner_dr-self.corner_dl,
-                                                       self.corner_tl-self.corner_dl)
-        side_lr = self._concstruct_random_boundary_sides(ny, self.corner_tl-self.corner_dl,
-                                                       self.corner_dr-self.corner_dl)
+        side_td = self._construct_random_boundary_sides(nx,
+                                                        self.corner_dr-self.corner_dl,
+                                                        self.corner_tl-self.corner_dl)
+        side_lr = self._construct_random_boundary_sides(ny,
+                                                        self.corner_tl-self.corner_dl,
+                                                        self.corner_dr-self.corner_dl)
         return np.concatenate((side_td, side_lr)).astype(np.float32)
 
-    def _concstruct_random_boundary_sides(self, n, direction, replacement):
+    def _construct_random_boundary_sides(self, n, direction, replacement):
         if n > 0:
             sides = np.add(self.corner_dl, self._sampling_axis(n, direction))
-            rand_int = np.random.randint(0,2,n).reshape(-1,1)
+            rand_int = np.random.randint(0, 2, n).reshape(-1, 1)
             sides = np.add(sides, (replacement) * rand_int)
             return sides
         return np.empty((0, 2))
@@ -145,33 +148,33 @@ class Rectangle(Domain):
 
     def _divide_boundary_points(self, n):
         n1 = int(np.floor(self.length_lr*n/(self.length_lr+self.length_td)))
-        n2 = int(np.ceil(self.length_td*n/(self.length_lr+self.length_td))) 
-        return n1, n2      
+        n2 = int(np.ceil(self.length_td*n/(self.length_lr+self.length_td)))
+        return n1, n2
 
     def boundary_normal(self, points):
         '''Computes the boundary normal
 
         Parameters
-        ----------   
+        ----------
         points : array_like
-            A list containing all points where the normal vector has to be computed, e.g.
+            A list containing all points where the normal vector has to be computed,e.g.
             [[x1,y1],[x2,y2],...].
 
-        Returns 
+        Returns
         ----------
         np.array
-            Every entry of the output contains the normal vector at the point, specified in the input 
-            array.
+            Every entry of the output contains the normal vector at the point,
+            specified in the input array.
         '''
         if not all(self.is_on_boundary(points)):
             print('Warninig: some points are not at the boundary!')
 
         transform = self._transform_to_unit_square(points)
-        left = np.isclose(transform[:,0], 0, atol=self.tol).reshape(-1,1)
-        right = np.isclose(transform[:,0], 1, atol=self.tol).reshape(-1,1)
-        down = np.isclose(transform[:,1], 0, atol=self.tol).reshape(-1,1)
-        top = np.isclose(transform[:,1], 1, atol=self.tol).reshape(-1,1)
-        normal_vectors = (self.normal_lr*right - self.normal_lr*left 
+        left = np.isclose(transform[:, 0], 0, atol=self.tol).reshape(-1, 1)
+        right = np.isclose(transform[:, 0], 1, atol=self.tol).reshape(-1, 1)
+        down = np.isclose(transform[:, 1], 0, atol=self.tol).reshape(-1, 1)
+        top = np.isclose(transform[:, 1], 1, atol=self.tol).reshape(-1, 1)
+        normal_vectors = (self.normal_lr*right - self.normal_lr*left
                           - self.normal_td*down + self.normal_td*top)
         # check if there is a corner point:
         index_tl = np.where(np.logical_and(top, left))
@@ -206,37 +209,38 @@ class Circle(Domain):
         '''Checks if the given points are inside the circle
 
         Parameters
-        ----------   
+        ----------
         points : array_like
-            A list containing all points that have to be checked. The list has to be of the form
-            [[x1,y1],[x2,y2],...]
+            A list containing all points that have to be checked. The list has to be of
+            the form [[x1,y1],[x2,y2],...]
 
-        Returns 
+        Returns
         ----------
         np.array
             Every entry of the output contains either true, if the points was inside, or
-            false if not.  
+            false if not.
         '''
         points = np.subtract(points, self.center)
-        return (np.linalg.norm(points, axis=1)[:] <= self.radius+self.tol).reshape(-1,1)
+        return (np.linalg.norm(points, axis=1)[:] <= self.radius+self.tol)\
+            .reshape(-1, 1)
 
     def is_on_boundary(self, points):
         '''Checks if the given points are on the boundary of the circle
 
         Parameters
-        ----------   
+        ----------
         points : array_like
-            A list containing all points that have to be checked. The list has to be of the form
-            [[x1,y1],[x2,y2],...]
+            A list containing all points that have to be checked. The list has to be of
+            the form [[x1,y1],[x2,y2],...]
 
-        Returns 
+        Returns
         ----------
         np.array
-            Every entry of the output contains either true, if the points was on the 
-            boundary, or false if not.  
+            Every entry of the output contains either true, if the points was on the
+            boundary, or false if not.
         '''
         norm = np.linalg.norm(np.subtract(points, self.center), axis=1)
-        return (np.isclose(norm[:], self.radius, atol=self.tol)).reshape(-1,1)        
+        return (np.isclose(norm[:], self.radius, atol=self.tol)).reshape(-1, 1)
 
     def _random_sampling_inside(self, n):
         r = self.radius * np.sqrt(np.random.uniform(0, 1, n)).reshape(-1, 1)
@@ -271,16 +275,16 @@ class Circle(Domain):
         '''Computes the boundary normal
 
         Parameters
-        ----------   
+        ----------
         points : array_like
-            A list containing all points where the normal vector has to be computed, e.g.
+            A list containing all points where the normal vector has to be computed,e.g.
             [[x1,y1],[x2,y2],...].
 
-        Returns 
+        Returns
         ----------
         np.array
-            Every entry of the output contains the normal vector at the point, specified in the input 
-            array.
+            Every entry of the output contains the normal vector at the point,
+            specified in the input array.
         '''
         if not all(self.is_on_boundary(x)):
             print('Warninig: some points are not at the boundary!')
