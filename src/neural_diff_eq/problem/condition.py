@@ -28,13 +28,13 @@ class Condition(torch.nn.Module):
 class DiffEqCondition(Condition):
     def __init__(self, pde, name='pde', norm=torch.nn.MSELoss(),
                  sampling_strategy='random', weight=1.0,
-                 batch_size=1000, num_workers=0):
+                 batch_size=1000, num_workers=0, dataset_size=10000):
         super().__init__(name, norm, weight,
-                         sampling_strategy=sampling_strategy,
                          batch_size=batch_size,
                          num_workers=num_workers)
-
+        self.sampling_strategy = sampling_strategy
         self.pde = pde
+        self.dataset_size = dataset_size
 
     def forward(self, model, data):
         u = model(data)
@@ -43,7 +43,9 @@ class DiffEqCondition(Condition):
 
     def get_dataloader(self):
         if self.is_registered():
-            dataset = Dataset(self.variables)
+            dataset = Dataset(self.variables,
+                              sampling_strategy=self.sampling_strategy,
+                              size=self.dataset_size)
             return torch.utils.data.DataLoader(
                 dataset,
                 batch_size=self.batch_size,

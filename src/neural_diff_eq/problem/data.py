@@ -2,7 +2,8 @@ import torch
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, variables, sampling_strategy='random', boundary=None, size=10000):
+    def __init__(self, variables, sampling_strategy='random',
+                 boundary=None, size=10000):
         super().__init__()
         self.variables = variables
         self.boundary = boundary
@@ -18,9 +19,11 @@ class Dataset(torch.utils.data.Dataset):
     def _cache_items(self, n):
         for vname in self.variables:
             if vname == self.boundary:
-                self.cache_dict[vname] = self.variables[vname].domain.sample_boundary(n, type=self.sampling_strategy)
+                self.cache_dict[vname] = self.variables[vname].domain.sample_boundary(
+                    n, type=self.sampling_strategy)
             else:
-                self.cache_dict[vname] = self.variables[vname].domain.sample_inside(n, type=self.sampling_strategy)
+                self.cache_dict[vname] = self.variables[vname].domain.sample_inside(
+                    n, type=self.sampling_strategy)
 
     def __getitem__(self, index):
         dct = {}

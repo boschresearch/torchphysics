@@ -150,7 +150,7 @@ class Circle(Domain):
     radius : number
         The radius of the circle
     tol : number, optional
-        The error toleranz for checking if points are inside or at the boundary 
+        The error toleranz for checking if points are inside or at the boundary
     '''
 
     def __init__(self, center, radius, tol=1e-06):
@@ -160,7 +160,8 @@ class Circle(Domain):
 
     def is_inside(self, x):
         points = np.subtract(x, self.center)
-        return (np.linalg.norm(points, axis=1)[:] <= self.radius+self.tol).reshape(-1, 1)
+        return (np.linalg.norm(points, axis=1)[:] <= self.radius+self.tol)\
+            .reshape(-1, 1)
 
     def is_on_boundary(self, x):
         norm = np.linalg.norm(np.subtract(x, self.center), axis=1)
