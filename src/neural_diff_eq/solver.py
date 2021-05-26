@@ -38,7 +38,7 @@ class PINNModule(pl.LightningModule):
         self.optimizer = optimizer
         self.lr = lr
 
-        self.metrics = metrics  # does not
+        self.metrics = metrics  # does not work yet
 
     def forward(self, inputs):
         return self.model(inputs)
@@ -48,8 +48,8 @@ class PINNModule(pl.LightningModule):
 
     def _get_dataloader(self, conditions):
         dataloader_dict = {}
-        for condition in conditions:
-            dataloader_dict[condition.name] = condition.get_dataloader()
+        for name in conditions:
+            dataloader_dict[name] = conditions[name].get_dataloader()
         return dataloader_dict
 
     def train_dataloader(self):
@@ -62,12 +62,12 @@ class PINNModule(pl.LightningModule):
 
     def _do_step(self, conditions, batch, batch_idx):
         loss = torch.Tensor(0.)
-        for condition in conditions:
-            data = batch[condition.name]
-            c = condition(self.model, data)
-            self.log(condition.name, c)
-            loss += condition.weight * c
-        # should be extended by custom metric logging in future
+        for name in conditions:
+            data = batch[name]
+            c = conditions[name](self.model, data)
+            self.log(name, c)
+            loss += conditions[name].weight * c
+        # TODO: should be extended by custom metric logging in future
         # NOTE: we should clarify whether multiple conditions with derivatives
         #       lead to multiple computations of those derivatives,
         #       if yes, there could be more efficient solutions

@@ -1,18 +1,20 @@
-
+from ..condition import BoundaryCondition
 
 
 class Variable():
 
-    def __init__(self, name, domain, order='0', condition='None', 
-                 sampling_strat_inside='random', sampling_strat_bound='random'):
-
-        if order > 0 and condition is None:
-            raise Exception('For order > 0 a condition is needed')
+    def __init__(self, name, domain, order=0, conditions={}):
 
         self.name = name
         self.domain = domain
         self.order = order
-        self.condition = condition
-        self.sampling_strat_inside = sampling_strat_inside
-        self.sampling_strat_bound = sampling_strat_bound
-        
+        self.context = None  # other variables, are set by problem object
+        self.conditions = conditions
+
+    def add_training_condition(self, condition):
+        assert isinstance(condition, BoundaryCondition), """Variables can only
+            handle boundary conditions."""
+        assert condition.name not in self.conditions
+        condition.variables = self.context
+        condition.boundary_variable = self.name
+        self.conditions[condition.name] = condition
