@@ -10,6 +10,7 @@ from .data import Dataset
 class Condition(torch.nn.Module):
     def __init__(self, name, norm, weight=1.0,
                  batch_size=1000, num_workers=0):
+        super().__init__()
         self.name = name
         self.norm = norm
         self.weight = weight
@@ -24,9 +25,12 @@ class Condition(torch.nn.Module):
         """Creates and returns a dataloader for the given condition."""
         return
 
+    def is_registered(self):
+        return self.variables is not None
+
 
 class DiffEqCondition(Condition):
-    def __init__(self, pde, name='pde', norm=torch.nn.MSELoss(),
+    def __init__(self, pde, norm, name='pde',
                  sampling_strategy='random', weight=1.0,
                  batch_size=1000, num_workers=0, dataset_size=10000):
         super().__init__(name, norm, weight,
@@ -55,12 +59,9 @@ class DiffEqCondition(Condition):
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
 
-    def is_registered(self):
-        return self.variables is not None
-
 
 class DataCondition(Condition):
-    def __init__(self, data_x, data_u, name, norm=torch.nn.MSELoss(),
+    def __init__(self, data_x, data_u, name, norm,
                  weight=1.0, batch_size=1000, num_workers=2):
         super().__init__(name, norm, weight,
                          batch_size=batch_size,
@@ -84,7 +85,7 @@ class BoundaryCondition(Condition):
 
 
 class DirichletCondition(BoundaryCondition):
-    def __init__(self, dirichlet_fun, name, norm=torch.nn.MSELoss(),
+    def __init__(self, dirichlet_fun, name, norm,
                  sampling_strategy='random', weight=1.0, batch_size=1000,
                  num_workers=0):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
@@ -95,3 +96,18 @@ class DirichletCondition(BoundaryCondition):
         u = model(data)
         target = self.dirichlet_fun(data)
         return self.norm(u, target)
+
+    def get_dataloader(self):
+        if self.is_registered():
+            dataset = Dataset(self.variables,
+                              sampling_strategy=self.sampling_strategy,
+                              size=self.dataset_size,
+                              boundary=self.boundary_variable.name)
+            return torch.utils.data.DataLoader(
+                dataset,
+                batch_size=self.batch_size,
+                num_workers=self.num_workers
+            )
+        else:
+            raise RuntimeError("""Conditions need to be registered in a
+                                  Variable or Problem.""")

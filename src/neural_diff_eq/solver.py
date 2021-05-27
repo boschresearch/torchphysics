@@ -49,6 +49,7 @@ class PINNModule(pl.LightningModule):
     def _get_dataloader(self, conditions):
         dataloader_dict = {}
         for name in conditions:
+            #print(name, conditions[name].variables)
             dataloader_dict[name] = conditions[name].get_dataloader()
         return dataloader_dict
 

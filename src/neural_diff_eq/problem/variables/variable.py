@@ -4,7 +4,7 @@ from ..condition import BoundaryCondition
 
 class Variable(Problem):
 
-    def __init__(self, name, domain, order=0, train_conditions={}, val_conditions={}):
+    def __init__(self, name, domain, train_conditions, val_conditions, order=0):
         super().__init__(train_conditions=train_conditions,
                          val_conditions=val_conditions)
         self.name = name
@@ -15,7 +15,7 @@ class Variable(Problem):
     def add_train_condition(self, condition):
         assert isinstance(condition, BoundaryCondition), """Variables can only
             handle boundary conditions."""
-        assert condition.name not in self.conditions
+        assert condition.name not in self.train_conditions
         condition.variables = self.context
         condition.boundary_variable = self.name
         self.train_conditions[condition.name] = condition
@@ -23,7 +23,7 @@ class Variable(Problem):
     def add_val_condition(self, condition):
         assert isinstance(condition, BoundaryCondition), """Variables can only
             handle boundary conditions."""
-        assert condition.name not in self.conditions
+        assert condition.name not in self.val_conditions
         condition.variables = self.context
         condition.boundary_variable = self.name
         self.val_conditions[condition.name] = condition
@@ -44,13 +44,17 @@ class Setting(Problem):
     should be streamlined
     """
     def __init__(self, variables, train_conditions, val_conditions):
-        super().__init__(train_conditions=train_conditions,
-                         val_conditions=val_conditions)
         # the problem, variables and conditions store a dict of all variables
         self.variables = self._create_dict(variables, Variable)
         # register those variables
-        for name in self.variables:
-            self.variables[name].context = self.variables
+        super().__init__(train_conditions=train_conditions,
+                         val_conditions=val_conditions)
+        for vname in self.variables:
+            self.variables[vname].context = self.variables
+            for cname in self.variables[vname].get_train_conditions():
+                self.variables[vname].get_train_conditions()[cname].variables = self.variables
+            for cname in self.variables[vname].get_val_conditions():
+                self.variables[vname].get_val_conditions()[cname].variables = self.variables
 
     def add_train_condition(self, condition, boundary_var=None):
         if boundary_var is None:
@@ -85,8 +89,11 @@ class Setting(Problem):
 
     def get_val_conditions(self):
         dct = self.val_conditions
+        print(dct)
         for vname in self.variables:
             vconditions = self.variables[vname].get_val_conditions()
+            print(vname)
+            print(vconditions)
             for cname in vconditions:
                 name_str = f"{vname}_{cname}"
                 assert name_str not in dct, \
