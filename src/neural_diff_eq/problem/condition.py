@@ -84,6 +84,14 @@ class BoundaryCondition(Condition):
 
 
 class DirichletCondition(BoundaryCondition):
-    def __init__(self, variable, name, norm, weight, batch_size):
-        super().__init__(name, norm, weight=weight, batch_size=batch_size)
-        raise NotImplementedError
+    def __init__(self, dirichlet_fun, name, norm=torch.nn.MSELoss(),
+                 sampling_strategy='random', weight=1.0, batch_size=1000,
+                 num_workers=0):
+        super().__init__(name, norm, weight=weight, batch_size=batch_size,
+                         num_workers=num_workers)
+        self.dirichlet_fun = dirichlet_fun
+
+    def forward(self, model, data):
+        u = model(data)
+        target = self.dirichlet_fun(data)
+        return self.norm(u, target)
