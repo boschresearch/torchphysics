@@ -77,7 +77,9 @@ class Setting(Problem):
     def get_train_conditions(self):
         """Returns all training conditions present in this problem.
         """
-        dct = self.train_conditions
+        dct = {}
+        for cname in self.train_conditions:
+            dct[cname] = self.train_conditions[cname]
         for vname in self.variables:
             vconditions = self.variables[vname].get_train_conditions()
             for cname in vconditions:
@@ -88,7 +90,9 @@ class Setting(Problem):
         return dct
 
     def get_val_conditions(self):
-        dct = self.val_conditions
+        dct = {}
+        for cname in self.val_conditions:
+            dct[cname] = self.val_conditions[cname]
         for vname in self.variables:
             vconditions = self.variables[vname].get_val_conditions()
             for cname in vconditions:
