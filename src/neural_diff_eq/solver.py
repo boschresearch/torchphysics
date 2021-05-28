@@ -76,7 +76,7 @@ class PINNModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss = torch.zeros(1)
-        conditions = self.problem.get_train_conditions()
+        conditions = self.problem.get_val_conditions()
         for name in conditions:
             torch.set_grad_enabled(conditions[name].requires_input_grad)
             data = batch[name]

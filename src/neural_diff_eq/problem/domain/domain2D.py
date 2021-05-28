@@ -167,7 +167,7 @@ class Rectangle(Domain):
             specified in the input array.
         '''
         if not all(self.is_on_boundary(points)):
-            print('Warninig: some points are not at the boundary!')
+            print('Warning: some points are not at the boundary!')
 
         transform = self._transform_to_unit_square(points)
         left = np.isclose(transform[:, 0], 0, atol=self.tol).reshape(-1, 1)

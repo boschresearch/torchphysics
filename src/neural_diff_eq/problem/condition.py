@@ -80,20 +80,23 @@ class DataCondition(Condition):
 
 
 class BoundaryCondition(Condition):
-    def __init__(self, name, norm, weight, batch_size, num_workers, requires_input_grad):
+    def __init__(self, name, norm, weight, batch_size, num_workers,
+                 requires_input_grad, boundary_sampling_strategy):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
                          num_workers=num_workers,
                          requires_input_grad=requires_input_grad)
         # boundary_variable is registered when the condition is added to that variable
         self.boundary_variable = None  # string
+        self.boundary_sampling_strategy = boundary_sampling_strategy
 
 
 class DirichletCondition(BoundaryCondition):
     def __init__(self, dirichlet_fun, name, norm,
-                 sampling_strategy='random', weight=1.0, batch_size=1000,
-                 num_workers=0, dataset_size=10000):
+                 sampling_strategy='random', boundary_sampling_strategy='random',
+                 weight=1.0, batch_size=1000, num_workers=0, dataset_size=10000):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
-                         num_workers=num_workers, requires_input_grad=False)
+                         num_workers=num_workers, requires_input_grad=False,
+                         boundary_sampling_strategy=boundary_sampling_strategy)
         self.dirichlet_fun = dirichlet_fun
         self.sampling_strategy = sampling_strategy
         self.dataset_size = dataset_size
@@ -107,6 +110,7 @@ class DirichletCondition(BoundaryCondition):
         if self.is_registered():
             dataset = Dataset(self.variables,
                               sampling_strategy=self.sampling_strategy,
+                              boundary_sampling_strategy=self.boundary_sampling_strategy,
                               size=self.dataset_size,
                               boundary=self.boundary_variable)
             return torch.utils.data.DataLoader(

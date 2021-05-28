@@ -3,6 +3,7 @@ the solution of a 2D heat equation on the unit square
 for time in [0, 1].
 """
 import torch
+import numpy as np
 import pytorch_lightning as pl
 
 from neural_diff_eq.problem import (Variable,
@@ -39,29 +40,52 @@ norm = torch.nn.MSELoss()
 
 x.add_train_condition(DirichletCondition(dirichlet_fun=x_dirichlet_fun,
                                          name='dirichlet',
-                                         norm=norm))
+                                         norm=norm,
+                                         batch_size=2000,
+                                         dataset_size=2000,
+                                         num_workers=2))
 x.add_val_condition(DirichletCondition(dirichlet_fun=x_dirichlet_fun,
                                        name='dirichlet',
-                                       norm=norm))
+                                       norm=norm,
+                                       batch_size=2000,
+                                       dataset_size=2000,
+                                       num_workers=2))
+
 
 def t_dirichlet_fun(input):
-    return torch.sin(input['x'][0])  # this may not work yet
+    return torch.sin(3.14*input['x'][:, :1])*torch.sin(3.14*input['x'][:, 1:])  # this may not work yet
 
 
 t.add_train_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                          name='dirichlet',
-                                         norm=norm))
+                                         norm=norm,
+                                         batch_size=2000,
+                                         dataset_size=2000,
+                                         num_workers=2,
+                                         boundary_sampling_strategy='lower_bound_only'))
 t.add_val_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                        name='dirichlet',
-                                       norm=norm))
+                                       norm=norm,
+                                       batch_size=2000,
+                                       dataset_size=2000,
+                                       num_workers=2,
+                                       boundary_sampling_strategy='lower_bound_only'))
 
 
 def pde(u, input):
     return gradient(u, input['t']) - laplacian(u, input['x'])
 
 
-train_cond = DiffEqCondition(pde=pde, norm=norm)
-val_cond = DiffEqCondition(pde=pde, norm=norm)
+train_cond = DiffEqCondition(pde=pde,
+                             norm=norm,
+                             batch_size=2000,
+                             dataset_size=2000,
+                             num_workers=2)
+val_cond = DiffEqCondition(pde=pde,
+                           norm=norm,
+                           batch_size=2000,
+                           dataset_size=2000,
+                           num_workers=2)
 
 setup = Setting(variables=(x, t),
                 train_conditions={'pde': train_cond},

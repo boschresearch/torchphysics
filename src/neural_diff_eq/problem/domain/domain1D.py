@@ -5,7 +5,7 @@ from .domain import Domain
 
 class Interval(Domain):
     '''Class for intervals
-    
+
     Parameters
     ----------
     low_bound : number
