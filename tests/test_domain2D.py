@@ -144,7 +144,7 @@ def test_console_output_when_not_on_bound_rect(capfd):
     point = [[3,3]]
     R.boundary_normal(point)
     out, err = capfd.readouterr() 
-    assert out == 'Warninig: some points are not at the boundary!\n'
+    assert out == 'Warning: some points are not at the boundary!\n'
 
 # Test for circle
 def test_create_circle():
@@ -252,4 +252,4 @@ def test_console_output_when_not_on_bound_circle(capfd):
     point = [[0,0]]
     C.boundary_normal(point)
     out, err = capfd.readouterr() 
-    assert out == 'Warninig: some points are not at the boundary!\n'
+    assert out == 'Warning: some points are not at the boundary!\n'

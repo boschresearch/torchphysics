@@ -287,6 +287,6 @@ class Circle(Domain):
             specified in the input array.
         '''
         if not all(self.is_on_boundary(x)):
-            print('Warninig: some points are not at the boundary!')
+            print('Warning: some points are not at the boundary!')
         normal_vectors = np.subtract(x, self.center) / self.radius
         return normal_vectors
