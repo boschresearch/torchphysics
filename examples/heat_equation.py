@@ -41,14 +41,14 @@ norm = torch.nn.MSELoss()
 x.add_train_condition(DirichletCondition(dirichlet_fun=x_dirichlet_fun,
                                          name='dirichlet',
                                          norm=norm,
-                                         batch_size=2000,
-                                         dataset_size=2000,
+                                         batch_size=500,
+                                         dataset_size=500,
                                          num_workers=2))
 x.add_val_condition(DirichletCondition(dirichlet_fun=x_dirichlet_fun,
                                        name='dirichlet',
                                        norm=norm,
-                                       batch_size=2000,
-                                       dataset_size=2000,
+                                       batch_size=500,
+                                       dataset_size=500,
                                        num_workers=2))
 
 
@@ -59,15 +59,15 @@ def t_dirichlet_fun(input):
 t.add_train_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                          name='dirichlet',
                                          norm=norm,
-                                         batch_size=2000,
-                                         dataset_size=2000,
+                                         batch_size=500,
+                                         dataset_size=500,
                                          num_workers=2,
                                          boundary_sampling_strategy='lower_bound_only'))
 t.add_val_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                        name='dirichlet',
                                        norm=norm,
-                                       batch_size=2000,
-                                       dataset_size=2000,
+                                       batch_size=500,
+                                       dataset_size=500,
                                        num_workers=2,
                                        boundary_sampling_strategy='lower_bound_only'))
 
@@ -78,13 +78,13 @@ def pde(u, input):
 
 train_cond = DiffEqCondition(pde=pde,
                              norm=norm,
-                             batch_size=2000,
-                             dataset_size=2000,
+                             batch_size=5000,
+                             dataset_size=5000,
                              num_workers=2)
 val_cond = DiffEqCondition(pde=pde,
                            norm=norm,
-                           batch_size=2000,
-                           dataset_size=2000,
+                           batch_size=5000,
+                           dataset_size=5000,
                            num_workers=2)
 
 setup = Setting(variables=(x, t),
