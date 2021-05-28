@@ -87,10 +87,12 @@ class BoundaryCondition(Condition):
 class DirichletCondition(BoundaryCondition):
     def __init__(self, dirichlet_fun, name, norm,
                  sampling_strategy='random', weight=1.0, batch_size=1000,
-                 num_workers=0):
+                 num_workers=0, dataset_size=10000):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
                          num_workers=num_workers)
         self.dirichlet_fun = dirichlet_fun
+        self.sampling_strategy = sampling_strategy
+        self.dataset_size = dataset_size
 
     def forward(self, model, data):
         u = model(data)
@@ -102,7 +104,7 @@ class DirichletCondition(BoundaryCondition):
             dataset = Dataset(self.variables,
                               sampling_strategy=self.sampling_strategy,
                               size=self.dataset_size,
-                              boundary=self.boundary_variable.name)
+                              boundary=self.boundary_variable)
             return torch.utils.data.DataLoader(
                 dataset,
                 batch_size=self.batch_size,
