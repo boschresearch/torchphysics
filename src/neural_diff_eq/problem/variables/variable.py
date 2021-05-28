@@ -89,11 +89,8 @@ class Setting(Problem):
 
     def get_val_conditions(self):
         dct = self.val_conditions
-        print(dct)
         for vname in self.variables:
             vconditions = self.variables[vname].get_val_conditions()
-            print(vname)
-            print(vconditions)
             for cname in vconditions:
                 name_str = f"{vname}_{cname}"
                 assert name_str not in dct, \

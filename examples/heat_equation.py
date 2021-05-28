@@ -70,6 +70,7 @@ setup = Setting(variables=(x, t),
 solver = PINNModule(model=SimpleFCN(input_dim=3),  # TODO: comput input_dim in setting
                     problem=setup)
 
-trainer = pl.Trainer(gpus=None)
+trainer = pl.Trainer(gpus=None,
+                     logger=False)
 
 trainer.fit(solver)

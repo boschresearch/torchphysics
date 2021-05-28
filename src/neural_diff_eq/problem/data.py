@@ -29,6 +29,7 @@ class Dataset(torch.utils.data.Dataset):
         dct = {}
         for vname in self.cache_dict:
             dct[vname] = self.cache_dict[vname][index]
+        return dct
 
 
 class DataDataset(torch.utils.data.Dataset):
