@@ -4,7 +4,8 @@ They supply the necessary training data to the model.
 import abc
 import torch
 
-from .data import Dataset
+from .data import Dataset, DataDataset
+from neural_diff_eq.problem import data
 
 
 class Condition(torch.nn.Module):
@@ -69,6 +70,8 @@ class DataCondition(Condition):
                          batch_size=batch_size,
                          num_workers=num_workers,
                          requires_input_grad=False)
+        self.data_x = data_x
+        self.data_u = data_u
 
     def forward(self, model, data):
         data, target = data
@@ -76,7 +79,18 @@ class DataCondition(Condition):
         return self.norm(u, target)
 
     def get_dataloader(self):
-        pass
+        if self.is_registered():
+            dataset = DataDataset(self.variables,
+                                  data_x=self.data_x,
+                                  data_u=self.data_u)
+            return torch.utils.data.DataLoader(
+                dataset,
+                batch_size=self.batch_size,
+                num_workers=self.num_workers
+            )
+        else:
+            raise RuntimeError("""Conditions need to be registered in a
+                                  Variable or Problem.""")
 
 
 class BoundaryCondition(Condition):

@@ -36,3 +36,16 @@ class Dataset(torch.utils.data.Dataset):
 class DataDataset(torch.utils.data.Dataset):
     def __init__(self, variables, data_x, data_u):
         super().__init__()
+        self.variables = variables
+        self.data_x = data_x
+        self.data_u = data_u
+        self.size = len(data_u[:,0])
+
+    def __len__(self):
+        return self.size
+
+    def __getitem__(self, index):
+        dct = {}
+        for vname in self.data_x:
+            dct[vname] = self.data_x[vname][index]
+        return dct, self.data_u[index]
