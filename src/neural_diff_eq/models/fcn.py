@@ -21,7 +21,7 @@ class SimpleFCN(DiffEqModel):
 
     def __init__(self, input_dim, depth=5, width=100, output_dim=1):
         super().__init__()
-        
+
         # build model
         self.layers = nn.ModuleList()
         self.layers.append(nn.Linear(input_dim, width))

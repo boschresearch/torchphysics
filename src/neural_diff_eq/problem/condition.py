@@ -9,13 +9,15 @@ from .data import Dataset
 
 class Condition(torch.nn.Module):
     def __init__(self, name, norm, weight=1.0,
-                 batch_size=1000, num_workers=0):
+                 batch_size=1000, num_workers=0,
+                 requires_input_grad=True):
         super().__init__()
         self.name = name
         self.norm = norm
         self.weight = weight
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.requires_input_grad = requires_input_grad
 
         # variables are registered when the condition is added to a problem or variable
         self.variables = None
@@ -65,7 +67,8 @@ class DataCondition(Condition):
                  weight=1.0, batch_size=1000, num_workers=2):
         super().__init__(name, norm, weight,
                          batch_size=batch_size,
-                         num_workers=num_workers)
+                         num_workers=num_workers,
+                         requires_input_grad=False)
 
     def forward(self, model, data):
         data, target = data
@@ -77,9 +80,10 @@ class DataCondition(Condition):
 
 
 class BoundaryCondition(Condition):
-    def __init__(self, name, norm, weight, batch_size, num_workers):
+    def __init__(self, name, norm, weight, batch_size, num_workers, requires_input_grad):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
-                         num_workers=num_workers)
+                         num_workers=num_workers,
+                         requires_input_grad=requires_input_grad)
         # boundary_variable is registered when the condition is added to that variable
         self.boundary_variable = None  # string
 
@@ -89,7 +93,7 @@ class DirichletCondition(BoundaryCondition):
                  sampling_strategy='random', weight=1.0, batch_size=1000,
                  num_workers=0, dataset_size=10000):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
-                         num_workers=num_workers)
+                         num_workers=num_workers, requires_input_grad=False)
         self.dirichlet_fun = dirichlet_fun
         self.sampling_strategy = sampling_strategy
         self.dataset_size = dataset_size

@@ -60,21 +60,26 @@ class PINNModule(pl.LightningModule):
         dataloader_dict = self._get_dataloader(self.problem.get_val_conditions())
         return pl.trainer.supporters.CombinedLoader(dataloader_dict, 'max_size_cycle')
 
-    def _do_step(self, conditions, batch, batch_idx):
-        loss = torch.Tensor(0.)
+    def training_step(self, batch, batch_idx):
+        loss = torch.zeros(1, requires_grad=True)
+        conditions = self.problem.get_train_conditions()
         for name in conditions:
             data = batch[name]
             c = conditions[name](self.model, data)
             self.log(name, c)
-            loss += conditions[name].weight * c
+            loss = loss + conditions[name].weight * c
         # TODO: should be extended by custom metric logging in future
         # NOTE: we should clarify whether multiple conditions with derivatives
         #       lead to multiple computations of those derivatives,
         #       if yes, there could be more efficient solutions
         return loss
 
-    def training_step(self, batch, batch_idx):
-        return self._do_step(self.problem.get_train_conditions(), batch, batch_idx)
-
     def validation_step(self, batch, batch_idx):
-        self._do_step(self.problem.get_val_conditions(), batch, batch_idx)
+        loss = torch.zeros(1)
+        conditions = self.problem.get_train_conditions()
+        for name in conditions:
+            torch.set_grad_enabled(conditions[name].requires_input_grad)
+            data = batch[name]
+            c = conditions[name](self.model, data)
+            self.log(name, c)
+            loss = loss + conditions[name].weight * c

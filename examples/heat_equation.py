@@ -71,6 +71,8 @@ solver = PINNModule(model=SimpleFCN(input_dim=3),  # TODO: comput input_dim in s
                     problem=setup)
 
 trainer = pl.Trainer(gpus=None,
-                     logger=False)
+                     logger=False,
+                     num_sanity_val_steps=5,
+                     checkpoint_callback=False)
 
 trainer.fit(solver)
