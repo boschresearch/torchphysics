@@ -5,6 +5,7 @@ classes inherit from LightningModules"""
 
 import torch
 import pytorch_lightning as pl
+from torch._C import device
 
 
 class PINNModule(pl.LightningModule):
@@ -61,7 +62,7 @@ class PINNModule(pl.LightningModule):
         return pl.trainer.supporters.CombinedLoader(dataloader_dict, 'max_size_cycle')
 
     def training_step(self, batch, batch_idx):
-        loss = torch.zeros(1, requires_grad=True)
+        loss = torch.zeros(1, device=self.device, requires_grad=True)
         conditions = self.problem.get_train_conditions()
         for name in conditions:
             data = batch[name]
@@ -75,7 +76,7 @@ class PINNModule(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss = torch.zeros(1)
+        loss = torch.zeros(1, device=self.device)
         conditions = self.problem.get_val_conditions()
         for name in conditions:
             torch.set_grad_enabled(conditions[name].requires_input_grad)

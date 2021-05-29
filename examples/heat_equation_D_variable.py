@@ -1,11 +1,12 @@
 """Example script to check how good the model
 can approximate solutions with different thermal conductivity D
 """
+import os
+
 import torch
 import numpy as np
 import pytorch_lightning as pl
 from timeit import default_timer as timer
-import neural_diff_eq
 
 from neural_diff_eq.problem import (Variable,
                                     Setting)
@@ -19,10 +20,12 @@ from neural_diff_eq import PINNModule
 from neural_diff_eq.utils import laplacian, gradient
 from neural_diff_eq.utils.fdm import FDM, create_validation_data
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+
 w, h = 50, 50
 t0, tend = 0, 1
 temp_hot = 10
-D_low, D_up = 5, 25 #set here the interval boundary for D
+D_low, D_up = 5, 25  # set here the interval boundary for D
 
 x = Variable(name='x',
              order=2,
@@ -44,6 +47,7 @@ D = Variable(name='D',
              train_conditions={},
              val_conditions={})
 
+
 def x_dirichlet_fun(input):
     return torch.zeros_like(input['t'])
 
@@ -58,8 +62,9 @@ x.add_train_condition(DirichletCondition(dirichlet_fun=x_dirichlet_fun,
                                          dataset_size=500,
                                          num_workers=2))
 
+
 def t_dirichlet_fun(input):
-    return temp_hot*torch.sin(np.pi/w*input['x'][:, :1])*torch.sin(np.pi/h*input['x'][:, 1:]) 
+    return temp_hot*torch.sin(np.pi/w*input['x'][:, :1])*torch.sin(np.pi/h*input['x'][:, 1:])
 
 
 t.add_train_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
@@ -69,6 +74,7 @@ t.add_train_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                          dataset_size=500,
                                          num_workers=2,
                                          boundary_sampling_strategy='lower_bound_only'))
+
 
 def pde(u, input):
     return gradient(u, input['t']) - input['D']*laplacian(u, input['x'])
@@ -81,31 +87,35 @@ train_cond = DiffEqCondition(pde=pde,
                              num_workers=2)
 
 # FDM:
-domain_dic = {'x': [[0,w], [0,h]]}
+domain_dic = {'x': [[0, w], [0, h]]}
 dx, dy = 0.5, 0.5
 step_width_dict = {'x': [dx, dy]}
 time_interval = [t0, tend]
+
+
 def inital_condition(input):
-    return temp_hot * np.sin(np.pi/w*input['x'][:,:1]) * np.sin(np.pi/h*input['x'][:,1:])
-D_list = [18.8, 20] 
-             # ^Here you can add many different values for D, e.g [18.8,2.5,20,....]
-             # The FDM-Methode will compute solutions for all D.
-             # For too many D this will become really memory expensive, since
-             # the FDM uses a forward euler!
+    return temp_hot * np.sin(np.pi/w*input['x'][:, :1]) * np.sin(np.pi/h*input['x'][:, 1:])
+
+
+D_list = [5, 10, 15, 20, 25]
+# ^Here you can add many different values for D, e.g [18.8,2.5,20,....]
+# The FDM-Methode will compute solutions for all D.
+# For too many D this will become really memory expensive, since
+# the FDM uses a forward euler!
 fdm_start = timer()
-domain, time, u = FDM(domain_dic, step_width_dict, time_interval, 
+domain, time, u = FDM(domain_dic, step_width_dict, time_interval,
                       D_list, inital_condition)
 fdm_end = timer()
 print('Time for FDM-Solution:', fdm_end-fdm_start)
 
-data_x, data_u = create_validation_data(domain, time, u, D_list, D_is_input = True)
-                                                                # True: if D is input of the model
+data_x, data_u = create_validation_data(domain, time, u, D_list, D_is_input=True)
+# True: if D is input of the model
 
 val_cond = DataCondition(data_x=data_x,
                          data_u=data_u,
                          name='validation',
                          norm=norm,
-                         batch_size=100000,
+                         batch_size=len(data_u[:, 0])//100,
                          num_workers=8)
 
 setup = Setting(variables=(x, t, D),
@@ -115,13 +125,13 @@ setup = Setting(variables=(x, t, D),
 solver = PINNModule(model=SimpleFCN(input_dim=4),  # TODO: comput input_dim in setting
                     problem=setup)
 
-trainer = pl.Trainer(gpus=None,
+trainer = pl.Trainer(gpus='-1',
                      logger=False,
                      num_sanity_val_steps=1,
                      check_val_every_n_epoch=5,
-                     limit_val_batches=10, # The validation dataset is probably pretty big,  
-                                           # so you need to see how much you want to 
-                                           # check every validation
+                     limit_val_batches=10,  # The validation dataset is probably pretty big,
+                     # so you need to see how much you want to
+                     # check every validation
                      checkpoint_callback=False)
 
 trainer.fit(solver)

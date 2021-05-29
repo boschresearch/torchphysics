@@ -39,7 +39,7 @@ class DataDataset(torch.utils.data.Dataset):
         self.variables = variables
         self.data_x = data_x
         self.data_u = data_u
-        self.size = len(data_u[:,0])
+        self.size = len(data_u[:, 0])
 
     def __len__(self):
         return self.size

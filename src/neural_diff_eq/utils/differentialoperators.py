@@ -1,6 +1,7 @@
 '''File contains differentialoperators
 '''
 import torch
+from torch._C import device
 
 
 def laplacian(model_out, deriv_variable_input):
@@ -20,7 +21,7 @@ def laplacian(model_out, deriv_variable_input):
         A Tensor, where every row contains the value of the sum of the second
         derivatives (laplace) w.r.t the row of the input variable.
     '''
-    laplacian = torch.zeros((deriv_variable_input.shape[0], 1))
+    laplacian = torch.zeros((deriv_variable_input.shape[0], 1), device=deriv_variable_input.device)
     Du = torch.autograd.grad(
         model_out.sum(), deriv_variable_input, create_graph=True)[0]
     # We have to check if the model is linear w.r.t. the variable, or else we get an err

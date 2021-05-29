@@ -5,7 +5,6 @@ import abc
 import torch
 
 from .data import Dataset, DataDataset
-from neural_diff_eq.problem import data
 
 
 class Condition(torch.nn.Module):
