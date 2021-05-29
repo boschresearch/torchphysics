@@ -70,14 +70,14 @@ def create_validation_data(domain, time, u, D_list, D_is_input):
     This should become a more general version, where we put in a known function
     and all variables to get a dictionary for data conditions
     '''
-    points = np.empty((1,4))
-    data_u = np.empty((1,1))
+    points = np.empty((0,4))
+    data_u = np.empty((0,1))
     for k in range(len(D_list)):
         new_points = np.array(np.meshgrid(domain[0], domain[1], time[k], D_list[k])).T.reshape(-1,4)
         new_data_u = u[k].reshape(-1,1)
         points = np.concatenate((points, new_points)).astype(np.float32)
         data_u = np.concatenate((data_u, new_data_u)).astype(np.float32)  
     data_x = {'x': points[:,[0,1]], 't': points[:,[2]]}
-    if D_is_input:  
+    if D_is_input:
         data_x['D'] = points[:,[3]]
     return data_x, data_u

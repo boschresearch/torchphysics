@@ -60,7 +60,7 @@ x.add_train_condition(DirichletCondition(dirichlet_fun=x_dirichlet_fun,
                                          norm=norm,
                                          batch_size=500,
                                          dataset_size=500,
-                                         num_workers=2))
+                                         num_workers=4))
 
 
 def t_dirichlet_fun(input):
@@ -72,7 +72,7 @@ t.add_train_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                          norm=norm,
                                          batch_size=500,
                                          dataset_size=500,
-                                         num_workers=2,
+                                         num_workers=4,
                                          boundary_sampling_strategy='lower_bound_only'))
 
 
@@ -84,7 +84,7 @@ train_cond = DiffEqCondition(pde=pde,
                              norm=norm,
                              batch_size=5000,
                              dataset_size=5000,
-                             num_workers=2)
+                             num_workers=8)
 
 # FDM:
 domain_dic = {'x': [[0, w], [0, h]]}
@@ -107,7 +107,6 @@ domain, time, u = FDM(domain_dic, step_width_dict, time_interval,
                       D_list, inital_condition)
 fdm_end = timer()
 print('Time for FDM-Solution:', fdm_end-fdm_start)
-
 data_x, data_u = create_validation_data(domain, time, u, D_list, D_is_input=True)
 # True: if D is input of the model
 
@@ -116,7 +115,7 @@ val_cond = DataCondition(data_x=data_x,
                          name='validation',
                          norm=norm,
                          batch_size=len(data_u[:, 0])//100,
-                         num_workers=8)
+                         num_workers=16)
 
 setup = Setting(variables=(x, t, D),
                 train_conditions={'pde': train_cond},
@@ -126,10 +125,11 @@ solver = PINNModule(model=SimpleFCN(input_dim=4),  # TODO: comput input_dim in s
                     problem=setup)
 
 trainer = pl.Trainer(gpus='-1',
-                     logger=False,
-                     num_sanity_val_steps=1,
-                     check_val_every_n_epoch=5,
-                     limit_val_batches=10,  # The validation dataset is probably pretty big,
+                     #logger=False,
+                     num_sanity_val_steps=2,
+                     check_val_every_n_epoch=100,
+                     log_every_n_steps=1,
+                     # limit_val_batches=10,  # The validation dataset is probably pretty big,
                      # so you need to see how much you want to
                      # check every validation
                      checkpoint_callback=False)

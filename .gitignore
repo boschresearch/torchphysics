@@ -14,6 +14,9 @@ __pycache__/*
 */.ipynb_checkpoints/*
 .DS_Store
 
+# Log folders
+*/lightning_logs/*
+
 # Project files
 .ropeproject
 .project
