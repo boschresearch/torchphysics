@@ -2,12 +2,13 @@
 neural networks
 '''
 import matplotlib.pyplot as plt
-from matplotlib import cm 
+from matplotlib import cm
 import numpy as np
 import torch
 import numbers
 
-def plot(model, plot_variables, points, 
+
+def plot(model, plot_variables, points,
          dic_for_other_variables=None, all_variables=None):
     '''Main function for plotting
 
@@ -39,73 +40,76 @@ def plot(model, plot_variables, points,
     if not isinstance(plot_variables, list):
         plot_variables = [plot_variables]
     if len(plot_variables) == 1 and plot_variables[0].domain.dim == 2:
-        return _plot2D(model, plot_variables[0], points, 
+        return _plot2D(model, plot_variables[0], points,
                        dic_for_other_variables, all_variables)
     elif len(plot_variables) == 1 and plot_variables[0].domain.dim == 1:
-        return _plot1D(model, plot_variables[0], points, 
+        return _plot1D(model, plot_variables[0], points,
                        dic_for_other_variables, all_variables)
     elif (len(plot_variables) == 2 and
           plot_variables[0].domain.dim + plot_variables[0].domain.dim == 2):
-        return _plot2D_2_variables(model, plot_variables[0], plot_variables[1], 
+        return _plot2D_2_variables(model, plot_variables[0], plot_variables[1],
                                    points, dic_for_other_variables,
                                    all_variables)
     else:
         raise NotImplementedError
 
+
 def _plot2D(model, plot_variable, points, dic_for_other_variables, all_variables):
     domain_points, input_dic = _create_domain(plot_variable, points)
     points = len(domain_points)
-    input_dic = _create_input_dic(input_dic, points, 
+    input_dic = _create_input_dic(input_dic, points,
                                   dic_for_other_variables, all_variables)
     output = model.forward(input_dic, track_gradients=False).data.cpu().numpy()
-    axis_1 = domain_points[:,0]
-    axis_2 = domain_points[:,1]
+    axis_1 = domain_points[:, 0]
+    axis_2 = domain_points[:, 1]
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     # Not perfect for concave domains, see:
-    # https://stackoverflow.com/questions/9170838/surface-plots-in-matplotlib 
+    # https://stackoverflow.com/questions/9170838/surface-plots-in-matplotlib
     # Should be added if we get problems of this type
     surf = ax.plot_trisurf(axis_1, axis_2, output.flatten(),
                            cmap=cm.coolwarm, linewidth=0, antialiased=False)
     fig.colorbar(surf, shrink=0.4, aspect=5, pad=0.1)
-    if dic_for_other_variables is not None:    
+    if dic_for_other_variables is not None:
         info_string = _create_info_text(dic_for_other_variables)
-        ax.text2D(1.2,0.1, info_string, bbox={'facecolor':'w', 'pad':5}, 
-                  transform=ax.transAxes, ha="center")  
-     
+        ax.text2D(1.2, 0.1, info_string, bbox={'facecolor': 'w', 'pad': 5},
+                  transform=ax.transAxes, ha="center")
+
     ax.set_xlabel(plot_variable.name + '_1')
     ax.set_ylabel(plot_variable.name + '_2')
     plt.show()
     return fig
 
-def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables):   
+
+def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables):
     domain_points, input_dic = _create_domain(plot_variable, points)
-    input_dic = _create_input_dic(input_dic, points, 
+    input_dic = _create_input_dic(input_dic, points,
                                   dic_for_other_variables, all_variables)
     output = model.forward(input_dic, track_gradients=False).data.cpu().numpy()
     fig = plt.figure()
     ax = fig.add_subplot()
     ax.grid()
     ax.plot(domain_points.flatten(), output.flatten())
-    if dic_for_other_variables is not None:    
+    if dic_for_other_variables is not None:
         info_string = _create_info_text(dic_for_other_variables)
-        ax.text(1.05,0.5, info_string, bbox={'facecolor':'w', 'pad':5}, 
-                transform=ax.transAxes,)  
+        ax.text(1.05, 0.5, info_string, bbox={'facecolor': 'w', 'pad': 5},
+                transform=ax.transAxes,)
     ax.set_xlabel(plot_variable.name)
     plt.show()
     plt.ion()
     return fig
 
-def _plot2D_2_variables(model, variable_1, variable_2, points, 
+
+def _plot2D_2_variables(model, variable_1, variable_2, points,
                         dic_for_other_variables, all_variables):
 
     points = int(np.ceil(np.sqrt(points)))
     domain_1 = variable_1.domain.grid_for_plots(points)
     domain_2 = variable_2.domain.grid_for_plots(points)
     axis_1, axis_2 = np.meshgrid(domain_1, domain_2)
-    input_dic = {variable_1.name : torch.FloatTensor(np.ravel(axis_1).reshape(-1,1)), 
-                 variable_2.name : torch.FloatTensor(np.ravel(axis_2).reshape(-1,1))}
-    input_dic = _create_input_dic(input_dic, points**2, 
+    input_dic = {variable_1.name: torch.FloatTensor(np.ravel(axis_1).reshape(-1, 1)),
+                 variable_2.name: torch.FloatTensor(np.ravel(axis_2).reshape(-1, 1))}
+    input_dic = _create_input_dic(input_dic, points**2,
                                   dic_for_other_variables, all_variables)
     output = model.forward(input_dic, track_gradients=False).data.cpu().numpy()
 
@@ -114,21 +118,23 @@ def _plot2D_2_variables(model, variable_1, variable_2, points,
     surf = ax.plot_surface(axis_1, axis_2, output.reshape(axis_1.shape),
                            cmap=cm.coolwarm, linewidth=0, antialiased=False)
     fig.colorbar(surf, shrink=0.4, aspect=5, pad=0.1)
-    if dic_for_other_variables is not None:    
+    if dic_for_other_variables is not None:
         info_string = _create_info_text(dic_for_other_variables)
-        ax.text2D(1.2,0.1, info_string, bbox={'facecolor':'w', 'pad':5}, 
-                  transform=ax.transAxes, ha="center")  
-     
+        ax.text2D(1.2, 0.1, info_string, bbox={'facecolor': 'w', 'pad': 5},
+                  transform=ax.transAxes, ha="center")
+
     ax.set_xlabel(variable_1.name)
     ax.set_ylabel(variable_2.name)
     plt.show()
     plt.ion()
     return fig
 
+
 def _create_domain(plot_variable, points):
     domain_points = plot_variable.domain.grid_for_plots(points)
     input_dic = {plot_variable.name: torch.tensor(domain_points)}
     return domain_points, input_dic
+
 
 def _create_input_dic(input_dic, points, dic_for_other_variables, all_variables):
     if dic_for_other_variables is not None:
@@ -137,6 +143,7 @@ def _create_input_dic(input_dic, points, dic_for_other_variables, all_variables)
     if all_variables is not None:
         input_dic = _order_input_dic(input_dic, all_variables)
     return input_dic
+
 
 def _create_dic_for_other_variables(points, dic_for_other_variables):
     dic = {}
@@ -151,11 +158,13 @@ def _create_dic_for_other_variables(points, dic_for_other_variables):
             raise ValueError('Values for variables have to be numbers or lists/arrays.')
     return dic
 
+
 def _order_input_dic(input_dic, all_variables):
     order_dic = {}
     for vname in all_variables:
         order_dic[vname] = input_dic[vname]
     return order_dic
+
 
 def _create_info_text(dic_for_other_variables):
     info_text = ''
