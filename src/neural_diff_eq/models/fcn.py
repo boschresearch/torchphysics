@@ -25,11 +25,14 @@ class SimpleFCN(DiffEqModel):
         # build model
         self.layers = nn.ModuleList()
         self.layers.append(nn.Linear(input_dim, width))
+        torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=1.4142)
         self.layers.append(nn.ReLU())
         for _ in range(depth):
             self.layers.append(nn.Linear(width, width))
+            torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=5/3)
             self.layers.append(nn.Tanh())
         self.layers.append(nn.Linear(width, output_dim))
+        torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=1)
 
     def forward(self, input_dict, track_gradients=True):
         """Stacks all input variables into a single tensor.

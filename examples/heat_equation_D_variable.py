@@ -20,7 +20,7 @@ from neural_diff_eq import PINNModule
 from neural_diff_eq.utils import laplacian, gradient
 from neural_diff_eq.utils.fdm import FDM, create_validation_data
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
 w, h = 50, 50
 t0, tend = 0, 1
@@ -129,6 +129,7 @@ trainer = pl.Trainer(gpus='-1',
                      num_sanity_val_steps=2,
                      check_val_every_n_epoch=100,
                      log_every_n_steps=1,
+                     max_epochs=10000,
                      # limit_val_batches=10,  # The validation dataset is probably pretty big,
                      # so you need to see how much you want to
                      # check every validation
