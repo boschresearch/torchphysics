@@ -110,10 +110,21 @@ print('Time for FDM-Solution:', fdm_end-fdm_start)
 data_x, data_u = create_validation_data(domain, time, u, D_list, D_is_input=True)
 # True: if D is input of the model
 
+
+class InfNorm(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, input_a, input_b):
+        return torch.max(torch.abs(input_a-input_b))
+
+
+max_norm = InfNorm()
+
 val_cond = DataCondition(data_x=data_x,
                          data_u=data_u,
                          name='validation',
-                         norm=norm,
+                         norm=max_norm,
                          batch_size=len(data_u[:, 0])//100,
                          num_workers=16)
 
@@ -125,14 +136,15 @@ solver = PINNModule(model=SimpleFCN(input_dim=4),  # TODO: comput input_dim in s
                     problem=setup)
 
 trainer = pl.Trainer(gpus='-1',
-                     #logger=False,
+                     # logger=False,
                      num_sanity_val_steps=2,
                      check_val_every_n_epoch=100,
                      log_every_n_steps=1,
-                     max_epochs=10000,
+                     max_epochs=200,
                      # limit_val_batches=10,  # The validation dataset is probably pretty big,
                      # so you need to see how much you want to
                      # check every validation
-                     checkpoint_callback=False)
+                     # checkpoint_callback=False)
+                     )
 
 trainer.fit(solver)
