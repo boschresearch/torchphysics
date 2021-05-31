@@ -100,3 +100,7 @@ class Interval(Domain):
         array_1 = np.repeat(self.low_bound, int(np.ceil(n/2)))
         array_2 = np.repeat(self.up_bound, int(np.floor(n/2)))
         return np.concatenate((array_1, array_2)).astype(np.float32).reshape(-1,1)
+    
+    def grid_for_plots(self, n):
+        return np.linspace(self.low_bound, 
+                           self.up_bound, n).astype(np.float32).reshape(-1,1)

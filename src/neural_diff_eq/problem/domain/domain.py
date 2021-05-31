@@ -100,3 +100,7 @@ class Domain():
     @abc.abstractmethod
     def boundary_normal(self, x):
         return
+
+    @abc.abstractmethod
+    def grid_for_plots(self, n):
+        return

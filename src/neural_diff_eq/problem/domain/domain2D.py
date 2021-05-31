@@ -115,6 +115,12 @@ class Rectangle(Domain):
             points = np.append(points, [1/2.0*(self.corner_dr+self.corner_tl)], axis=0)
         return points.astype(np.float32)
 
+    def _transform_to_rectangle(self, points):
+        trans_matrix = np.column_stack(
+            (self.corner_dr-self.corner_dl, self.corner_tl-self.corner_dl))
+        points = [np.matmul(trans_matrix, p) for p in points]
+        return np.add(points, self.corner_dl)
+
     def _random_sampling_boundary(self, n):
         nx, ny = self._divide_boundary_points(n)
         side_td = self._construct_random_boundary_sides(nx,
@@ -186,6 +192,13 @@ class Rectangle(Domain):
         normal_vectors[index] *= 1/np.sqrt(2)
         return normal_vectors
 
+    def grid_for_plots(self, n):
+        nx = int(np.sqrt(n*self.length_lr/self.length_td))
+        ny = int(np.sqrt(n*self.length_td/self.length_lr))
+        x = np.linspace(0, 1, nx)
+        y = np.linspace(0, 1, ny)
+        points = np.array(np.meshgrid(x, y)).T.reshape(-1, 2)
+        return self._transform_to_rectangle(points).astype(np.float32)
 
 class Circle(Domain):
     '''Class for arbitrary circles
@@ -290,3 +303,11 @@ class Circle(Domain):
             print('Warning: some points are not at the boundary!')
         normal_vectors = np.subtract(x, self.center) / self.radius
         return normal_vectors
+    
+    def grid_for_plots(self, n):
+        scaled_n = 2*int(np.ceil(np.sqrt(n/np.pi)))
+        axis = np.linspace(-self.radius-self.tol, self.radius+self.tol, scaled_n+1)
+        points = np.array(np.meshgrid(axis, axis)).T.reshape(-1, 2)
+        points = np.add(points, self.center)
+        inside = np.nonzero(self.is_inside(points))[0]
+        return points[inside].astype(np.float32)
