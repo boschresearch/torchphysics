@@ -2,6 +2,7 @@
 can approximate solutions with different thermal conductivity D
 """
 import os
+from pytorch_lightning.accelerators import accelerator
 
 import torch
 import numpy as np
@@ -20,7 +21,7 @@ from neural_diff_eq import PINNModule
 from neural_diff_eq.utils import laplacian, gradient
 from neural_diff_eq.utils.fdm import FDM, create_validation_data
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
 
 w, h = 50, 50
 t0, tend = 0, 1
@@ -136,7 +137,8 @@ solver = PINNModule(model=SimpleFCN(input_dim=4),  # TODO: comput input_dim in s
                     problem=setup)
 
 trainer = pl.Trainer(gpus='-1',
-                     # logger=False,
+                     accelerator='ddp',
+                     #plugins=pl.plugins.DDPPlugin(find_unused_parameters=False),
                      num_sanity_val_steps=2,
                      check_val_every_n_epoch=100,
                      log_every_n_steps=1,

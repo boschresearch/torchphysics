@@ -2,6 +2,26 @@ import torch
 
 
 class Dataset(torch.utils.data.Dataset):
+    """
+    The standard dataset that samples data points in the inner or on the boundary
+    of the domain.
+
+    Parameters
+    ----------
+    variables : dict
+        Dictionary of variable names and the Variable objects
+    sampling_strategy : str
+        The sampling strategy used to sample data points for this condition. See domains
+        for more details.
+    boundary_sampling_strategy : str
+        The sampling strategy used to sample the boundary variable's points for this
+        condition. See domains for more details.
+    boundary : str
+        Name of the boundary variable, None if dataset should be sampled from inner of
+        domain.
+    size : int
+        Amount of samples in the dataset.
+    """
     def __init__(self, variables, sampling_strategy='random',
                  boundary_sampling_strategy=None, boundary=None, size=10000):
         super().__init__()
@@ -34,6 +54,20 @@ class Dataset(torch.utils.data.Dataset):
 
 
 class DataDataset(torch.utils.data.Dataset):
+    """
+    The standard dataset that samples data points in the inner or on the boundary
+    of the domain.
+
+    Parameters
+    ----------
+    variables : dict
+        Dictionary of variable names and the Variable objects
+    data_x : dict
+        A dictionary containing pairs of variables and data for that variables,
+        organized in numpy arrays or torch tensors of equal length.
+    data_u : array-like
+        The targeted solution values for the data points in data_x.
+    """
     def __init__(self, variables, data_x, data_u):
         super().__init__()
         self.variables = variables
