@@ -93,8 +93,9 @@ class DataCondition(Condition):
 
 
 class BoundaryCondition(Condition):
-    def __init__(self, name, norm, weight, batch_size, num_workers,
-                 requires_input_grad, boundary_sampling_strategy):
+    def __init__(self, name, norm, requires_input_grad, weight=1.0,
+                 batch_size=10000, num_workers=0,
+                 boundary_sampling_strategy='random'):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
                          num_workers=num_workers,
                          requires_input_grad=requires_input_grad)

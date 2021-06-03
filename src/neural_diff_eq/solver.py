@@ -25,13 +25,10 @@ class PINNModule(pl.LightningModule):
     lr : float
         The (initial) learning rate of the used optimizer. Should be set
         to 1e-3 for Adam
-    metrics : WIP
-        feature is not ready yet, should contain some metrics that can
-        be logged in training or validation
     """
 
     def __init__(self, model, problem, optimizer=torch.optim.LBFGS,
-                 lr=1, metrics=()):
+                 lr=1):
         super().__init__()
         self.model = model
         self.problem = problem
@@ -39,10 +36,10 @@ class PINNModule(pl.LightningModule):
         self.optimizer = optimizer
         self.lr = lr
 
-        self.metrics = metrics  # does not work yet
-
     def forward(self, inputs):
-        return self.model(inputs)
+        """Run the model on a given input batch, without tracking gradients
+        """
+        return self.model.forward(inputs)
 
     def configure_optimizers(self):
         return self.optimizer(self.model.parameters(), lr=self.lr)
@@ -57,7 +54,7 @@ class PINNModule(pl.LightningModule):
         return self._get_dataloader(self.problem.get_train_conditions())
 
     def val_dataloader(self):
-        # For multiple validation dataloaders, lightning need a CombinedLoader
+        # For multiple validation dataloaders, lightning needs a CombinedLoader
         dataloader_dict = self._get_dataloader(self.problem.get_val_conditions())
         return pl.trainer.supporters.CombinedLoader(dataloader_dict, 'max_size_cycle')
 
@@ -69,16 +66,14 @@ class PINNModule(pl.LightningModule):
             c = conditions[name](self.model, data)
             self.log(name, c)
             loss = loss + conditions[name].weight * c
-        # TODO: should be extended by custom metric logging in future
-        # NOTE: we should clarify whether multiple conditions with derivatives
-        #       lead to multiple computations of those derivatives,
-        #       if yes, there could be more efficient solutions
         return loss
 
     def validation_step(self, batch, batch_idx):
         loss = torch.zeros(1, device=self.device)
         conditions = self.problem.get_val_conditions()
         for name in conditions:
+            # if a condition does not require input gradients, we do not
+            # compute them during validation
             torch.set_grad_enabled(conditions[name].requires_input_grad)
             data = batch[name]
             c = conditions[name](self.model, data)
