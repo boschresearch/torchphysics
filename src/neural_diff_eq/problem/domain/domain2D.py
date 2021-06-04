@@ -22,23 +22,25 @@ class Rectangle(Domain):
     '''
 
     def __init__(self, corner_dl, corner_dr, corner_tl, tol=1e-06):
-        super().__init__(dim=2, tol=tol)
+        self._check_rectangle(corner_dl, corner_dr, corner_tl, tol)
         self.corner_dl = np.asarray(corner_dl)
         self.corner_dr = np.asarray(corner_dr)
         self.corner_tl = np.asarray(corner_tl)
-        self._check_rectangle()
         self.length_lr = np.linalg.norm(self.corner_dr-self.corner_dl)
         self.length_td = np.linalg.norm(self.corner_tl-self.corner_dl)
         self.normal_lr = (self.corner_dr-self.corner_dl)/self.length_lr
         self.normal_td = (self.corner_tl-self.corner_dl)/self.length_td
+        super().__init__(dim=2, volume=self.length_lr*self.length_td,
+                         surface=2*(self.length_lr+self.length_td), tol=tol)
         # inverse matrix to transform the rectangle back to the unit square. Used
         # to check if points are inside or on the boundary of the rectangle
         self.inverse_matrix = [self.normal_lr /
                                self.length_lr, self.normal_td/self.length_td]
 
-    def _check_rectangle(self):
-        dot_prod = np.dot(self.corner_dr-self.corner_dl, self.corner_tl-self.corner_dl)
-        if not np.isclose(dot_prod, 0, atol=self.tol):
+    def _check_rectangle(self, corner_1, corner_2, corner_3, tol):
+        dot_prod = np.dot(np.array(corner_2)-np.array(corner_1), 
+                          np.array(corner_3)-np.array(corner_1))
+        if not np.isclose(dot_prod, 0, atol=tol):
             raise ValueError('Input is not a rectangle')
         return
 
@@ -47,11 +49,11 @@ class Rectangle(Domain):
                                    np.subtract(i, self.corner_dl)) for i in points])
 
     def _is_inside_unit_square(self, points):
-        return ((points[:, 0] >= -self.tol) & (points[:, 0] <= 1+self.tol)
-                & (points[:, 1] >= -self.tol) & (points[:, 1] <= 1+self.tol))
+        return ((points[:, 0] > -self.tol) & (points[:, 0] < 1+self.tol)
+                & (points[:, 1] > -self.tol) & (points[:, 1] < 1+self.tol))
 
     def is_inside(self, points):
-        '''Checks if the given points are inside the rectangle
+        '''Checks if the given points are inside the open rectangle
 
         Parameters
         ----------
@@ -62,8 +64,8 @@ class Rectangle(Domain):
         Returns
         ----------
         np.array
-            Every entry of the output contains either true, if the points was inside, or
-            false if not.
+            Every entry of the output contains either true, if the points was inside,
+            or false if not.
         '''
         transform = self._transform_to_unit_square(points)
         return self._is_inside_unit_square(transform).reshape(-1, 1)
@@ -112,7 +114,8 @@ class Rectangle(Domain):
         points = np.add(points, self.corner_dl)
         # append the center if there are not enough points in the grid
         while len(points) < n:
-            points = np.append(points, [1/2.0*(self.corner_dr+self.corner_tl)], axis=0)
+            points = np.append(points, [1/2.0*(self.corner_dr+self.corner_tl)], 
+                               axis=0)
         return points.astype(np.float32)
 
     def _transform_to_rectangle(self, points):
@@ -142,7 +145,8 @@ class Rectangle(Domain):
     def _grid_sampling_boundary(self, n):
         nx, ny = self._divide_boundary_points(n)
         corner_tr = self.corner_dr + self.corner_tl - self.corner_dl
-        axis_1 = np.linspace(self.corner_dl, self.corner_dr, int(np.ceil(nx/2))+1)[0:-1]
+        axis_1 = np.linspace(self.corner_dl, 
+                             self.corner_dr, int(np.ceil(nx/2))+1)[0:-1]
         axis_2 = np.linspace(self.corner_dr, corner_tr, int(np.ceil(ny/2))+1)[0:-1]
         axis_3 = np.linspace(corner_tr, self.corner_tl, int(np.floor(nx/2))+1)[0:-1]
         axis_4 = np.linspace(self.corner_tl, self.corner_dl,
@@ -163,8 +167,8 @@ class Rectangle(Domain):
         Parameters
         ----------
         points : array_like
-            A list containing all points where the normal vector has to be computed,e.g.
-            [[x1,y1],[x2,y2],...].
+            A list containing all points where the normal vector has to be computed,
+            e.g. [[x1,y1],[x2,y2],...].
 
         Returns
         ----------
@@ -214,12 +218,13 @@ class Circle(Domain):
     '''
 
     def __init__(self, center, radius, tol=1e-06):
-        super().__init__(dim=2, tol=tol)
+        super().__init__(dim=2, volume=np.pi*radius**2, 
+                         surface=2*np.pi*radius, tol=tol)
         self.center = np.asarray(center)
         self.radius = radius
 
     def is_inside(self, points):
-        '''Checks if the given points are inside the circle
+        '''Checks if the given points are inside the open circle
 
         Parameters
         ----------
@@ -234,7 +239,7 @@ class Circle(Domain):
             false if not.
         '''
         points = np.subtract(points, self.center)
-        return (np.linalg.norm(points, axis=1)[:] <= self.radius+self.tol)\
+        return (np.linalg.norm(points, axis=1)[:] < self.radius+self.tol)\
             .reshape(-1, 1)
 
     def is_on_boundary(self, points):
@@ -284,7 +289,7 @@ class Circle(Domain):
         points = np.column_stack((self.radius*np.cos(phi), self.radius*np.sin(phi)))
         return np.add(self.center, points).astype(np.float32)
 
-    def boundary_normal(self, x):
+    def boundary_normal(self, points):
         '''Computes the boundary normal
 
         Parameters
@@ -299,9 +304,9 @@ class Circle(Domain):
             Every entry of the output contains the normal vector at the point,
             specified in the input array.
         '''
-        if not all(self.is_on_boundary(x)):
+        if not all(self.is_on_boundary(points)):
             print('Warning: some points are not at the boundary!')
-        normal_vectors = np.subtract(x, self.center) / self.radius
+        normal_vectors = np.subtract(points, self.center) / self.radius
         return normal_vectors
     
     def grid_for_plots(self, n):

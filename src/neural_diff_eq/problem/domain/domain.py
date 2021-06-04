@@ -1,7 +1,6 @@
 import abc
 import numpy as np
 
-
 class Domain():
     '''Parent class for all domains
 
@@ -13,10 +12,12 @@ class Domain():
         The error toleranz for checking if points are inside or at the boundary
     '''
 
-    def __init__(self, dim, tol):
+    def __init__(self, dim, volume, surface, tol):
         self.dim = dim
+        self.volume = volume
+        self.surface = surface
         self.tol = tol
-
+   
     def sample_boundary(self, n, type='random'):
         '''Samples points at the boundary of the domain
 

@@ -16,29 +16,30 @@ class Interval(Domain):
         The error toleranz for checking if points are inside or at the boundary 
     '''
     def __init__(self, low_bound, up_bound, tol=1e-06):
-        super().__init__(dim=1, tol=tol)
         if low_bound > up_bound:
-             raise ValueError('The lower bound has to be smaller then the upper bound!')
+            raise ValueError('The lower bound has to be smaller then the upper bound!')
+        super().__init__(dim=1, volume=up_bound-low_bound,
+                         surface=2, tol=tol)
         self.low_bound = low_bound
         self.up_bound = up_bound
 
     def is_inside(self, x):
-        '''Checks if the given points are inside the intervall
+        '''Checks if the given points are inside the open intervall
         
         Parameters
         ----------   
         points : number or array_like
-            Either single point that has to be checked, or a list containing different points. 
-            The list has to be of the form [[x1],[x2],...]
+            Either single point that has to be checked, or a list containing different
+            points. The list has to be of the form [[x1],[x2],...]
         
         Returns 
         ----------
         np.array
-            Every entry of the output contains either true, if the points was inside, or
-            false if not.  
+            Every entry of the output contains either true, if the points was inside, 
+            or false if not.  
         '''
         if isinstance(x, numbers.Number): x = np.array([x])
-        return ((self.low_bound-self.tol <= x[:]) & (x[:] <= self.up_bound+self.tol)).reshape(-1,1)
+        return ((self.low_bound-self.tol < x[:]) & (x[:] < self.up_bound+self.tol)).reshape(-1,1)
 
     def is_on_boundary(self, x):
         '''Checks if the given points are on the boundary of the intervall
