@@ -5,7 +5,6 @@ classes inherit from LightningModules"""
 
 import torch
 import pytorch_lightning as pl
-from torch._C import device
 
 
 class PINNModule(pl.LightningModule):
@@ -28,13 +27,14 @@ class PINNModule(pl.LightningModule):
     """
 
     def __init__(self, model, problem, optimizer=torch.optim.LBFGS,
-                 lr=1):
+                 lr=1, log_plotter=None):
         super().__init__()
         self.model = model
         self.problem = problem
 
         self.optimizer = optimizer
         self.lr = lr
+        self.log_plotter = log_plotter
 
     def forward(self, inputs):
         """Run the model on a given input batch, without tracking gradients
@@ -66,6 +66,8 @@ class PINNModule(pl.LightningModule):
             c = conditions[name](self.model, data)
             self.log(name, c)
             loss = loss + conditions[name].weight * c
+        if self.log_plotter is not None:
+            self.log_plot()
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -79,3 +81,10 @@ class PINNModule(pl.LightningModule):
             c = conditions[name](self.model, data)
             self.log(name, c)
             loss = loss + conditions[name].weight * c
+    
+    def log_plot(self):
+        fig = self.log_plotter.plot(model=self.model,
+                                    device=self.device)
+        self.logger.experiment.add_figure(tag='plot',
+                               figure=fig,
+                               global_step=self.global_step)

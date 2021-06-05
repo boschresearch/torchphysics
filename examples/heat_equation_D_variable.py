@@ -9,6 +9,9 @@ import numpy as np
 import pytorch_lightning as pl
 from timeit import default_timer as timer
 
+from torch import optim
+from torch.optim import optimizer
+
 from neural_diff_eq.problem import (Variable,
                                     Setting)
 from neural_diff_eq.problem.domain import (Rectangle,
@@ -20,8 +23,11 @@ from neural_diff_eq.models import SimpleFCN
 from neural_diff_eq import PINNModule
 from neural_diff_eq.utils import laplacian, gradient
 from neural_diff_eq.utils.fdm import FDM, create_validation_data
+from neural_diff_eq.utils.plot import Plotter
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+
+pl.seed_everything(43)
 
 w, h = 50, 50
 t0, tend = 0, 1
@@ -133,17 +139,25 @@ setup = Setting(variables=(x, t, D),
                 train_conditions={'pde': train_cond},
                 val_conditions={'validation': val_cond})
 
+plotter = Plotter(plot_variables=setup.variables['x'],
+                  points=100,
+                  dic_for_other_variables={'t': 1.0, 'D': 15.0},
+                  all_variables=setup.variables)
+
 solver = PINNModule(model=SimpleFCN(input_dim=4),  # TODO: comput input_dim in setting
-                    problem=setup)
+                    problem=setup,
+                    #optimizer=torch.optim.Adam,
+                    #lr=1e-3,
+                    log_plotter=plotter
+                    )
 
 trainer = pl.Trainer(gpus='-1',
-                     accelerator='ddp',
+                     #accelerator='ddp',
                      #plugins=pl.plugins.DDPPlugin(find_unused_parameters=False),
                      num_sanity_val_steps=2,
                      check_val_every_n_epoch=100,
                      log_every_n_steps=1,
                      max_epochs=10000,
-                     gradient_clip_val=10000.0
                      # limit_val_batches=10,  # The validation dataset is probably pretty big,
                      # so you need to see how much you want to
                      # check every validation
