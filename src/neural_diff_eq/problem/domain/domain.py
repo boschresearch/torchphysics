@@ -9,7 +9,7 @@ class Domain():
     dim : int
         The dimension of the domain
     tol : number
-        The error toleranz for checking if points are inside or at the boundary
+        The error tolerance for checking if points are inside or at the boundary
     '''
 
     def __init__(self, dim, volume, surface, tol):
@@ -70,10 +70,14 @@ class Domain():
         else:
             raise NotImplementedError
 
-    def vector_normalize(self, vector, order=2):
-        norm = np.linalg.norm(vector, order)
-        return vector/norm
+    def _cut_points(self, points, n):
+        index = np.random.choice(len(points), int(n), replace=False)
+        return points[index]
 
+    @abc.abstractmethod
+    def _compute_bounds(self):
+        return 
+        
     @abc.abstractmethod
     def is_inside(self, x):
         return

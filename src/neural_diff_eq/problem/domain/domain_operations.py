@@ -29,10 +29,6 @@ class Domain_operation(Domain):
         number = len(points[np.where(domain_2.is_inside(points))])
         return number/n
 
-    def _cut_points(self, points, n):
-        index = np.random.choice(len(points), int(n), replace=False)
-        return points[index]
-
     def _sample_new_points_inside(self, domain_1, domain_2, n, type):
         new_points = domain_1.sample_inside(n, type)
         inside_2 = domain_2.is_inside(new_points)

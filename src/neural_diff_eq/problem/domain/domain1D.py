@@ -13,7 +13,7 @@ class Interval(Domain):
     up_bound : number
         The upper bound of the interval
     tol : number, optional 
-        The error toleranz for checking if points are inside or at the boundary 
+        The error tolerance for checking if points are inside or at the boundary 
     '''
     def __init__(self, low_bound, up_bound, tol=1e-06):
         if low_bound > up_bound:
