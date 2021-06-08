@@ -96,3 +96,11 @@ def test_upper_bound_sampling():
     assert len(p) == 150
     assert all(I.is_on_boundary(p))
     assert all(np.isclose(p,2))
+
+def test_grid_for_plot():
+    I = Interval(-1,2)
+    p = I.grid_for_plots(150)
+    assert len(p) == 150
+    assert p[0] == I.low_bound
+    assert p[-1] == I.up_bound
+    assert all(I.is_inside(p[1:-1]))
