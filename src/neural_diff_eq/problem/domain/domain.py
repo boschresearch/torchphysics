@@ -104,3 +104,9 @@ class Domain():
     @abc.abstractmethod
     def grid_for_plots(self, n):
         return
+
+    def serialize(self):
+        dct = {}
+        dct['dim'] = self.dim
+        dct['tol'] = self.tol
+        return dct

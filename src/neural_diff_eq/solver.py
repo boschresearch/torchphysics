@@ -3,6 +3,8 @@ the NN model to solve this problem
 
 classes inherit from LightningModules"""
 
+import json
+
 import torch
 import pytorch_lightning as pl
 
@@ -19,7 +21,7 @@ class PINNModule(pl.LightningModule):
     problem : problem object
         A problem object that includes the DE and its whole Setting,
         i.e. variables with their domains and boundary conditions
-    optimizer : torch optimizer
+    optimizer : torch optimizer class
         The PyTorch Optimizer that should be used in training
     lr : float
         The (initial) learning rate of the used optimizer. Should be set
@@ -34,12 +36,31 @@ class PINNModule(pl.LightningModule):
 
         self.optimizer = optimizer
         self.lr = lr
+
         self.log_plotter = log_plotter
+
+    def serialize(self):
+        dct = {}
+        dct['name'] = 'PINNModule'
+        dct['model'] = self.model.serialize()
+        dct['problem'] = self.problem.serialize()
+        dct['optimizer'] = {'name': self.optimizer.__class__.__name__,
+                            'lr': self.lr
+                            }
+        return dct
 
     def forward(self, inputs):
         """Run the model on a given input batch, without tracking gradients
         """
         return self.model.forward(inputs)
+
+    def on_train_start(self):
+        self.logger.experiment.add_text(
+            tag='summary',
+            text_string=json.dumps(
+                self.serialize(),
+                indent='&emsp; &emsp;').replace('\n', '  \n')
+        )
 
     def configure_optimizers(self):
         return self.optimizer(self.model.parameters(), lr=self.lr)
@@ -81,10 +102,11 @@ class PINNModule(pl.LightningModule):
             c = conditions[name](self.model, data)
             self.log(name, c)
             loss = loss + conditions[name].weight * c
-    
+
     def log_plot(self):
-        fig = self.log_plotter.plot(model=self.model,
-                                    device=self.device)
-        self.logger.experiment.add_figure(tag='plot',
-                               figure=fig,
-                               global_step=self.global_step)
+        if self.global_step % self.log_plotter.log_interval == 0:
+            fig = self.log_plotter.plot(model=self.model,
+                                        device=self.device)
+            self.logger.experiment.add_figure(tag='plot',
+                                              figure=fig,
+                                              global_step=0)

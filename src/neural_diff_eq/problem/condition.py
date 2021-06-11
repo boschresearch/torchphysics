@@ -59,6 +59,15 @@ class Condition(torch.nn.Module):
     def is_registered(self):
         return self.variables is not None
 
+    def serialize(self):
+        dct = {}
+        dct['name'] = self.name
+        dct['norm'] = self.norm.__class__.__name__
+        dct['weight'] = self.weight
+        dct['batch_size'] = self.batch_size
+        dct['num_workers'] = self.num_workers
+        return dct
+
 
 class DiffEqCondition(Condition):
     """
@@ -122,6 +131,13 @@ class DiffEqCondition(Condition):
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
 
+    def serialize(self):
+        dct = super().serialize()
+        dct['sampling_strategy'] = self.sampling_strategy
+        dct['pde'] = self.pde.__name__
+        dct['dataset_size'] = self.dataset_size
+        return dct
+
 
 class DataCondition(Condition):
     """
@@ -179,6 +195,9 @@ class DataCondition(Condition):
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
 
+    def serialize(self):
+        return super().serialize()
+
 
 class BoundaryCondition(Condition):
     """
@@ -213,6 +232,11 @@ class BoundaryCondition(Condition):
                          requires_input_grad=requires_input_grad)
         # boundary_variable is registered when the condition is added to that variable
         self.boundary_variable = None  # string
+
+    def serialize(self):
+        dct = super().serialize()
+        dct['boundary_variable'] = self.boundary_variable
+        return dct
 
 
 class DirichletCondition(BoundaryCondition):
@@ -280,3 +304,12 @@ class DirichletCondition(BoundaryCondition):
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
+
+    def serialize(self):
+        dct = super().serialize()
+        dct['dirichlet_fun'] = self.dirichlet_fun.__name__
+        dct['dataset_size'] = self.dataset_size
+        dct['sampling_strategy'] = self.sampling_strategy
+        dct['boundary_sampling_strategy'] = self.boundary_sampling_strategy
+        dct['dataset_size'] = self.dataset_size
+        return dct

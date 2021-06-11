@@ -51,6 +51,23 @@ class Variable(Problem):
     def is_well_posed(self):
         raise NotImplementedError
 
+    def get_dim(self):
+        pass
+
+    def serialize(self):
+        dct = {}
+        dct['name'] = self.name
+        dct['domain'] = self.domain.serialize()
+        t_c_dict = {}
+        for c_name in self.train_conditions:
+            t_c_dict[c_name] = self.train_conditions[c_name].serialize()
+        dct['train_conditions'] = t_c_dict
+        v_c_dict = {}
+        for c_name in self.val_conditions:
+            v_c_dict[c_name] = self.val_conditions[c_name].serialize()
+        dct['val_conditions'] = v_c_dict
+        return dct
+
 
 class Setting(Problem):
     """
@@ -151,3 +168,20 @@ class Setting(Problem):
 
     def is_well_posed(self):
         raise NotImplementedError
+
+    def serialize(self):
+        dct = {}
+        dct['name'] = 'Setting'
+        v_dict = {}
+        for v_name in self.variables:
+            v_dict[v_name] = self.variables[v_name].serialize()
+        dct['variables'] = v_dict
+        t_c_dict = {}
+        for c_name in self.train_conditions:
+            t_c_dict[c_name] = self.train_conditions[c_name].serialize()
+        dct['train_conditions'] = t_c_dict
+        v_c_dict = {}
+        for c_name in self.val_conditions:
+            v_c_dict[c_name] = self.val_conditions[c_name].serialize()
+        dct['val_conditions'] = v_c_dict
+        return dct

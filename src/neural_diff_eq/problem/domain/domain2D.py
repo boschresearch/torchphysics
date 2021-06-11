@@ -200,6 +200,15 @@ class Rectangle(Domain):
         points = np.array(np.meshgrid(x, y)).T.reshape(-1, 2)
         return self._transform_to_rectangle(points).astype(np.float32)
 
+    def serialize(self):
+        dct = super().serialize()
+        dct['name'] = 'Rectangle'
+        dct['corner_dl'] = [int(a) for a in list(self.corner_dl)]
+        dct['corner_dr'] = [int(a) for a in list(self.corner_dr)]
+        dct['corner_tl'] = [int(a) for a in list(self.corner_tl)]
+        return dct
+
+
 class Circle(Domain):
     '''Class for arbitrary circles
 
@@ -303,7 +312,7 @@ class Circle(Domain):
             print('Warning: some points are not at the boundary!')
         normal_vectors = np.subtract(x, self.center) / self.radius
         return normal_vectors
-    
+
     def grid_for_plots(self, n):
         scaled_n = 2*int(np.ceil(np.sqrt(n/np.pi)))
         axis = np.linspace(-self.radius-self.tol, self.radius+self.tol, scaled_n+1)
@@ -311,3 +320,10 @@ class Circle(Domain):
         points = np.add(points, self.center)
         inside = np.nonzero(self.is_inside(points))[0]
         return points[inside].astype(np.float32)
+
+    def serialize(self):
+        dct = super().serialize()
+        dct['name'] = 'Circle'
+        dct['center'] = [int(a) for a in list(self.center)]
+        dct['radius'] = self.radius
+        return dct

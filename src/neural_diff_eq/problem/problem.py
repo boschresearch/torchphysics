@@ -56,5 +56,13 @@ class Problem():
         pass
 
     @abc.abstractmethod
+    def get_dim(self):
+        pass
+
+    @abc.abstractmethod
     def is_well_posed(self):
+        pass
+
+    @abc.abstractmethod
+    def serialize(self):
         pass

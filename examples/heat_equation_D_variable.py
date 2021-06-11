@@ -2,15 +2,12 @@
 can approximate solutions with different thermal conductivity D
 """
 import os
-from pytorch_lightning.accelerators import accelerator
+import json
 
 import torch
 import numpy as np
 import pytorch_lightning as pl
 from timeit import default_timer as timer
-
-from torch import optim
-from torch.optim import optimizer
 
 from neural_diff_eq.problem import (Variable,
                                     Setting)
@@ -25,9 +22,9 @@ from neural_diff_eq.utils import laplacian, gradient
 from neural_diff_eq.utils.fdm import FDM, create_validation_data
 from neural_diff_eq.utils.plot import Plotter
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-pl.seed_everything(43)
+#pl.seed_everything(43)
 
 w, h = 50, 50
 t0, tend = 0, 1
@@ -131,7 +128,7 @@ max_norm = InfNorm()
 val_cond = DataCondition(data_x=data_x,
                          data_u=data_u,
                          name='validation',
-                         norm=max_norm,
+                         norm=norm,
                          batch_size=len(data_u[:, 0])//100,
                          num_workers=16)
 
@@ -140,18 +137,21 @@ setup = Setting(variables=(x, t, D),
                 val_conditions={'validation': val_cond})
 
 plotter = Plotter(plot_variables=setup.variables['x'],
-                  points=100,
+                  points=400,
                   dic_for_other_variables={'t': 1.0, 'D': 15.0},
-                  all_variables=setup.variables)
+                  all_variables=setup.variables,
+                  log_interval=10)
 
 solver = PINNModule(model=SimpleFCN(input_dim=4),  # TODO: comput input_dim in setting
                     problem=setup,
                     #optimizer=torch.optim.Adam,
                     #lr=1e-3,
-                    log_plotter=plotter
+                    #log_plotter=plotter
                     )
 
-trainer = pl.Trainer(gpus='-1',
+#print(json.dumps(solver.serialize(), indent=2))
+
+trainer = pl.Trainer(gpus=None,#'-1',
                      #accelerator='ddp',
                      #plugins=pl.plugins.DDPPlugin(find_unused_parameters=False),
                      num_sanity_val_steps=2,

@@ -1,4 +1,4 @@
-'''This file contains different functions for plotting outputs of 
+'''This file contains different functions for plotting outputs of
 neural networks
 '''
 import matplotlib.pyplot as plt
@@ -14,35 +14,42 @@ class Plotter():
     Parameters
     ----------
     plot_variables : Variabale or list of Variables.
-        The main variable(s) over which the solution should be plotted. 
-    points : int 
+        #TODO: what happens if dim(var) >= 3?
+        The main variable(s) over which the solution should be plotted.
+    points : int
         The number of points that should be used for the plot.
     dic_for_other_variables : dict, optional
-        A dictionary containing values for all the other variables of the 
+        A dictionary containing values for all the other variables of the
         model. E.g. {'t' : 1, 'D' : [1,2], ...}
     all_variables : order dict or list, optional
         This dictionary should contain all variables w.r.t. the input order
-        of the model. This gets automatically created when initializing the 
+        of the model. This gets automatically created when initializing the
         setting. E.g. all_variables = Setting.variables.
-        The input can also be a list of the varible names in the right order. 
+        The input can also be a list of the varible names in the right order.
         If the input is None, it is assumed that the order of the input is:
-        (plot_variables, dic_for_other_variables(item_1), 
-         dic_for_other_variables(item_2), ...)  
+        (plot_variables, dic_for_other_variables(item_1),
+         dic_for_other_variables(item_2), ...)
+    log_interval : int
+        Plots will be saved every log_interval steps if the plotter is used in
+        training of a model.
     '''
+
     def __init__(self, plot_variables, points,
-         dic_for_other_variables=None, all_variables=None):
+                 dic_for_other_variables=None, all_variables=None,
+                 log_interval=None):
         self.plot_variables = plot_variables
         self.points = points
         self.dic_for_other_variables = dic_for_other_variables
         self.all_variables = all_variables
+        self.log_interval = log_interval
 
     def plot(self, model, device='cpu'):
         return _plot(model, self.plot_variables, self.points, self.dic_for_other_variables,
-                    self.all_variables, device=device)
-        
+                     self.all_variables, device=device)
+
 
 def _plot(model, plot_variables, points,
-         dic_for_other_variables=None, all_variables=None, device='cpu'):
+          dic_for_other_variables=None, all_variables=None, device='cpu'):
     '''Main function for plotting
 
     Parameters
@@ -50,19 +57,19 @@ def _plot(model, plot_variables, points,
     model : DiffEqModel
         A neural network of which the output should be plotted
     plot_variables : Variabale or list of Variables.
-        The main variable(s) over which the solution should be plotted. 
-    points : int 
+        The main variable(s) over which the solution should be plotted.
+    points : int
         The number of points that should be used for the plot.
     dic_for_other_variables : dict, optional
-        A dictionary containing values for all the other variables of the 
+        A dictionary containing values for all the other variables of the
         model. E.g. {'t' : 1, 'D' : [1,2], ...}
     all_variables : order dict or list, optional
         This dictionary should contain all variables w.r.t. the input order
-        of the model. This gets automatically created when initializing the 
+        of the model. This gets automatically created when initializing the
         setting. E.g. all_variables = Setting.variables.
-        The input can also be a list of the varible names in the right order. 
+        The input can also be a list of the varible names in the right order.
         If the input is None, it is assumed that the order of the input is:
-        (plot_variables, dic_for_other_variables(item_1), 
+        (plot_variables, dic_for_other_variables(item_1),
          dic_for_other_variables(item_2), ...)
     device : str or torch device
         The device of the model.
@@ -70,7 +77,7 @@ def _plot(model, plot_variables, points,
     Returns
     -------
     plt.figure
-        The figure handle of the created plot     
+        The figure handle of the created plot
     '''
     if not isinstance(plot_variables, list):
         plot_variables = [plot_variables]
@@ -173,7 +180,8 @@ def _create_domain(plot_variable, points, device):
 
 def _create_input_dic(input_dic, points, dic_for_other_variables, all_variables, device):
     if dic_for_other_variables is not None:
-        other_inputs = _create_dic_for_other_variables(points, dic_for_other_variables, device)
+        other_inputs = _create_dic_for_other_variables(
+            points, dic_for_other_variables, device)
         input_dic = input_dic | other_inputs
     if all_variables is not None:
         input_dic = _order_input_dic(input_dic, all_variables)
@@ -184,7 +192,8 @@ def _create_dic_for_other_variables(points, dic_for_other_variables, device):
     dic = {}
     for name in dic_for_other_variables:
         if isinstance(dic_for_other_variables[name], numbers.Number):
-            dic[name] = dic_for_other_variables[name]*torch.ones((points, 1), device=device)
+            dic[name] = dic_for_other_variables[name] * \
+                torch.ones((points, 1), device=device)
         elif isinstance(dic_for_other_variables[name], list):
             length = len(dic_for_other_variables[name])
             array = dic_for_other_variables[name]*np.ones((points, length))

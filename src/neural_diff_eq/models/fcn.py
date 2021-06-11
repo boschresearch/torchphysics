@@ -19,20 +19,41 @@ class SimpleFCN(DiffEqModel):
         amount of output neurons
     """
 
-    def __init__(self, input_dim, depth=5, width=100, output_dim=1):
+    def __init__(self, input_dim, blocks=3, width=100, output_dim=1):
         super().__init__()
+
+        self.input_dim = input_dim
+        self.blocks = blocks
+        self.width = width
+        self.output_dim = output_dim
 
         # build model
         self.layers = nn.ModuleList()
-        self.layers.append(nn.Linear(input_dim, width))
+
+        self.layers.append(nn.Linear(self.input_dim, self.width))
         torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=1.4142)
-        self.layers.append(nn.ReLU())
-        for _ in range(depth):
-            self.layers.append(nn.Linear(width, width))
+
+        self.layers.append(nn.LeakyReLU())
+        for _ in range(blocks):
+            self.layers.append(nn.Linear(self.width, self.width))
+            torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=1.4142)
+            self.layers.append(nn.LeakyReLU())
+
+            self.layers.append(nn.Linear(self.width, self.width))
             torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=5/3)
             self.layers.append(nn.Tanh())
-        self.layers.append(nn.Linear(width, output_dim))
+
+        self.layers.append(nn.Linear(self.width, self.output_dim))
         torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=1)
+
+    def serialize(self):
+        dct = {}
+        dct['name'] = 'SimpleFCN'
+        dct['input_dim'] = self.input_dim
+        dct['blocks'] = self.blocks
+        dct['width'] = self.width
+        dct['output_dim'] = self.output_dim
+        return dct
 
     def forward(self, input_dict, track_gradients=True):
         """Stacks all input variables into a single tensor.
