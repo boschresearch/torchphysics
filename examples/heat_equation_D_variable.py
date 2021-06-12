@@ -64,7 +64,8 @@ x.add_train_condition(DirichletCondition(dirichlet_fun=x_dirichlet_fun,
                                          norm=norm,
                                          batch_size=500,
                                          dataset_size=500,
-                                         num_workers=4))
+                                         num_workers=4,
+                                         data_plot_variables=('x','t')))
 
 
 def t_dirichlet_fun(input):
@@ -77,7 +78,8 @@ t.add_train_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                          batch_size=500,
                                          dataset_size=500,
                                          num_workers=4,
-                                         boundary_sampling_strategy='lower_bound_only'))
+                                         boundary_sampling_strategy='lower_bound_only',
+                                         data_plot_variables=('x','t')))
 
 
 def pde(u, input):
@@ -88,7 +90,8 @@ train_cond = DiffEqCondition(pde=pde,
                              norm=norm,
                              batch_size=5000,
                              dataset_size=5000,
-                             num_workers=8)
+                             num_workers=8,
+                             data_plot_variables=('x','t'))
 
 # FDM:
 domain_dic = {'x': [[0, w], [0, h]]}

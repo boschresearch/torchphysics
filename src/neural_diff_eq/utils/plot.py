@@ -216,3 +216,44 @@ def _create_info_text(dic_for_other_variables):
         info_text += vname + ' = ' + str(dic_for_other_variables[vname])
         info_text += '\n'
     return info_text[:-1]
+
+
+def _scatter(plot_variables, data):
+    """
+    Create a scatter plot of given data points.
+
+    Parameters
+    ----------
+    plot_variables : Variabale or list of Variables.
+        The main variable(s) over which the points should be visualized.
+    data : dict
+        A dictionary that contains the points for every Variables.
+    """
+    axes = []
+    for v in plot_variables:
+        axes.extend(torch.chunk(data[v].detach(), data[v].shape[1], dim=1))
+    labels = []
+    for v in plot_variables:
+        for _ in range(data[v].shape[1]):
+            labels.append(v)
+
+    fig = plt.figure()
+    if len(axes) == 1:
+        ax = fig.add_subplot()
+        axes.append(torch.zeros_like(axes[0]))
+        ax.set_xlabel(labels[0])
+    elif len(axes) == 2:
+        ax = fig.add_subplot()
+        ax.grid()
+        ax.set_xlabel(labels[0])
+        ax.set_ylabel(labels[1])
+    elif len(axes) == 3:
+        ax = fig.add_subplot(projection='3d')
+        ax.set_xlabel(labels[0])
+        ax.set_ylabel(labels[1])
+        ax.set_zlabel(labels[2])
+    else:
+        raise NotImplementedError("Plot variables should be 1d, 2d or 3d.")
+    ax.scatter(*axes)
+    plt.show()
+    return fig

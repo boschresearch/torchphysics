@@ -7,7 +7,7 @@ import json
 
 import torch
 import pytorch_lightning as pl
-
+from .utils.plot import _scatter
 
 class PINNModule(pl.LightningModule):
     """A LightningModule to solve PDEs using the PINN approach
@@ -84,8 +84,12 @@ class PINNModule(pl.LightningModule):
         conditions = self.problem.get_train_conditions()
         for name in conditions:
             data = batch[name]
+            # log scatter plots of the used training data
+            self.log_condition_data_plot(name, conditions[name], data)
+            # get error for this conditions
             c = conditions[name](self.model, data)
             self.log(name, c)
+            # accumulate weighted error
             loss = loss + conditions[name].weight * c
         if self.log_plotter is not None:
             self.log_plot()
@@ -103,10 +107,18 @@ class PINNModule(pl.LightningModule):
             self.log(name, c)
             loss = loss + conditions[name].weight * c
 
+    def log_condition_data_plot(self, name, condition, data):
+        if condition.get_data_plot_variables() is not None:
+            fig = _scatter(plot_variables=condition.get_data_plot_variables(),
+                           data=data)
+            self.logger.experiment.add_figure(tag=name+'_data',
+                                              figure=fig,
+                                              global_step=self.global_step)
+
     def log_plot(self):
         if self.global_step % self.log_plotter.log_interval == 0:
             fig = self.log_plotter.plot(model=self.model,
                                         device=self.device)
             self.logger.experiment.add_figure(tag='plot',
                                               figure=fig,
-                                              global_step=0)
+                                              global_step=self.global_step)

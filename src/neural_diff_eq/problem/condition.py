@@ -35,11 +35,15 @@ class Condition(torch.nn.Module):
     requires_input_grad : bool
         If True, the gradients are still tracked during validation to enable the
         computation of derivatives w.r.t. the inputs
+    data_plot_variables : bool or tuple
+        The variables which are used to log the used training data in a scatter plot.
+        If False, no plots are created. If True, behaviour is defined in each condition.
     """
 
     def __init__(self, name, norm, weight=1.0,
                  batch_size=1000, num_workers=0,
-                 requires_input_grad=True):
+                 requires_input_grad=True,
+                 data_plot_variables=True):
         super().__init__()
         self.name = name
         self.norm = norm
@@ -47,6 +51,7 @@ class Condition(torch.nn.Module):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.requires_input_grad = requires_input_grad
+        self.data_plot_variables = data_plot_variables
 
         # variables are registered when the condition is added to a problem or variable
         self.variables = None
@@ -54,6 +59,10 @@ class Condition(torch.nn.Module):
     @abc.abstractmethod
     def get_dataloader(self):
         """Creates and returns a dataloader for the given condition."""
+        return
+
+    @abc.abstractmethod
+    def get_data_plot_variables(self):
         return
 
     def is_registered(self):
@@ -104,10 +113,12 @@ class DiffEqCondition(Condition):
     """
     def __init__(self, pde, norm, name='pde',
                  sampling_strategy='random', weight=1.0,
-                 batch_size=1000, num_workers=0, dataset_size=10000):
+                 batch_size=1000, num_workers=0, dataset_size=10000,
+                 data_plot_variables=False):
         super().__init__(name, norm, weight,
                          batch_size=batch_size,
-                         num_workers=num_workers)
+                         num_workers=num_workers,
+                         data_plot_variables=data_plot_variables)
         self.sampling_strategy = sampling_strategy
         self.pde = pde
         self.dataset_size = dataset_size
@@ -137,6 +148,14 @@ class DiffEqCondition(Condition):
         dct['pde'] = self.pde.__name__
         dct['dataset_size'] = self.dataset_size
         return dct
+
+    def get_data_plot_variables(self):
+        if self.data_plot_variables is True:
+            return self.variables
+        elif self.data_plot_variables is False:
+            return None
+        else:
+            return self.data_plot_variables
 
 
 class DataCondition(Condition):
@@ -172,7 +191,8 @@ class DataCondition(Condition):
         super().__init__(name, norm, weight,
                          batch_size=batch_size,
                          num_workers=num_workers,
-                         requires_input_grad=False)
+                         requires_input_grad=False,
+                         data_plot_variables=False)
         self.data_x = data_x
         self.data_u = data_u
 
@@ -197,6 +217,9 @@ class DataCondition(Condition):
 
     def serialize(self):
         return super().serialize()
+
+    def get_data_plot_variables(self):
+        return None
 
 
 class BoundaryCondition(Condition):
@@ -226,10 +249,11 @@ class BoundaryCondition(Condition):
         multiprocessing.
     """
     def __init__(self, name, norm, requires_input_grad, weight=1.0,
-                 batch_size=10000, num_workers=0):
+                 batch_size=10000, num_workers=0, data_plot_variables=True):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
                          num_workers=num_workers,
-                         requires_input_grad=requires_input_grad)
+                         requires_input_grad=requires_input_grad,
+                         data_plot_variables=data_plot_variables)
         # boundary_variable is registered when the condition is added to that variable
         self.boundary_variable = None  # string
 
@@ -237,6 +261,14 @@ class BoundaryCondition(Condition):
         dct = super().serialize()
         dct['boundary_variable'] = self.boundary_variable
         return dct
+
+    def get_data_plot_variables(self):
+        if self.data_plot_variables == True:
+            return self.boundary_variable
+        elif self.data_plot_variables == False:
+            return None
+        else:
+            return self.data_plot_variables
 
 
 class DirichletCondition(BoundaryCondition):
@@ -276,9 +308,11 @@ class DirichletCondition(BoundaryCondition):
     """
     def __init__(self, dirichlet_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
-                 weight=1.0, batch_size=1000, num_workers=0, dataset_size=10000):
+                 weight=1.0, batch_size=1000, num_workers=0, dataset_size=10000,
+                 data_plot_variables=True):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
-                         num_workers=num_workers, requires_input_grad=False)
+                         num_workers=num_workers, requires_input_grad=False,
+                         data_plot_variables=data_plot_variables)
         self.dirichlet_fun = dirichlet_fun
         self.boundary_sampling_strategy = boundary_sampling_strategy
         self.sampling_strategy = sampling_strategy
