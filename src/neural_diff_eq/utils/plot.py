@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import numbers
 
-def plot(model, plot_variables, points, 
+def plot(model, plot_variables, points, angle=30,
          dic_for_other_variables=None, all_variables=None):
     '''Main function for plotting
 
@@ -19,6 +19,8 @@ def plot(model, plot_variables, points,
         The main variable(s) over which the solution should be plotted. 
     points : int 
         The number of points that should be used for the plot.
+    angle : float
+        The view angle for surface plots.
     dic_for_other_variables : dict, optional
         A dictionary containing values for all the other variables of the 
         model. E.g. {'t' : 1, 'D' : [1,2], ...}
@@ -39,7 +41,7 @@ def plot(model, plot_variables, points,
     if not isinstance(plot_variables, list):
         plot_variables = [plot_variables]
     if len(plot_variables) == 1 and plot_variables[0].domain.dim == 2:
-        return _plot2D(model, plot_variables[0], points, 
+        return _plot2D(model, plot_variables[0], points, angle,
                        dic_for_other_variables, all_variables)
     elif len(plot_variables) == 1 and plot_variables[0].domain.dim == 1:
         return _plot1D(model, plot_variables[0], points, 
@@ -47,12 +49,13 @@ def plot(model, plot_variables, points,
     elif (len(plot_variables) == 2 and
           plot_variables[0].domain.dim + plot_variables[0].domain.dim == 2):
         return _plot2D_2_variables(model, plot_variables[0], plot_variables[1], 
-                                   points, dic_for_other_variables,
+                                   points, angle, dic_for_other_variables,
                                    all_variables)
     else:
         raise NotImplementedError
 
-def _plot2D(model, plot_variable, points, dic_for_other_variables, all_variables):
+def _plot2D(model, plot_variable, points, angle, 
+            dic_for_other_variables, all_variables):
     domain_points, input_dic = _create_domain(plot_variable, points)
     points = len(domain_points)
     input_dic = _create_input_dic(input_dic, points, 
@@ -62,6 +65,7 @@ def _plot2D(model, plot_variable, points, dic_for_other_variables, all_variables
     axis_2 = domain_points[:,1]
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
+    ax.view_init(30, angle)
     # Not perfect for concave domains, see:
     # https://stackoverflow.com/questions/9170838/surface-plots-in-matplotlib 
     # Should be added if we get problems of this type
@@ -90,13 +94,12 @@ def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables
     if dic_for_other_variables is not None:    
         info_string = _create_info_text(dic_for_other_variables)
         ax.text(1.05,0.5, info_string, bbox={'facecolor':'w', 'pad':5}, 
-                transform=ax.transAxes,)  
+                transform=ax.transAxes)  
     ax.set_xlabel(plot_variable.name)
     plt.show()
-    plt.ion()
     return fig
 
-def _plot2D_2_variables(model, variable_1, variable_2, points, 
+def _plot2D_2_variables(model, variable_1, variable_2, points, angle, 
                         dic_for_other_variables, all_variables):
 
     points = int(np.ceil(np.sqrt(points)))
@@ -111,6 +114,7 @@ def _plot2D_2_variables(model, variable_1, variable_2, points,
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
+    ax.view_init(30, angle)
     surf = ax.plot_surface(axis_1, axis_2, output.reshape(axis_1.shape),
                            cmap=cm.coolwarm, linewidth=0, antialiased=False)
     fig.colorbar(surf, shrink=0.4, aspect=5, pad=0.1)
@@ -122,7 +126,6 @@ def _plot2D_2_variables(model, variable_1, variable_2, points,
     ax.set_xlabel(variable_1.name)
     ax.set_ylabel(variable_2.name)
     plt.show()
-    plt.ion()
     return fig
 
 def _create_domain(plot_variable, points):
