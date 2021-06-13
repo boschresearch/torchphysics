@@ -3,27 +3,39 @@ import numpy as np
 
 
 class Domain():
-    '''Parent class for all domains
+    '''Parent class for all domains.
 
     Parameters
     ----------
     dim : int
-        The dimension of the domain
+        The dimension of the domain.
+    volume : float
+        The "volume" of the domain. Stands for: 
+            - 1D = length
+            - 2D = area
+            - 3D = volume 
+    surface : float
+        The "surface" area of the domain. Stands for:
+            - 1D = boundary points (always 2)
+            - 2D = perimeter
+            - 3D = surface area              
     tol : number
-        The error toleranz for checking if points are inside or at the boundary
+        The error tolerance for checking if points are inside or at the boundary.
     '''
 
-    def __init__(self, dim, tol):
+    def __init__(self, dim, volume, surface, tol):
         self.dim = dim
+        self.volume = volume
+        self.surface = surface
         self.tol = tol
-
+   
     def sample_boundary(self, n, type='random'):
-        '''Samples points at the boundary of the domain
+        '''Samples points at the boundary of the domain.
 
         Parameters
         ----------
         n : int
-            Desired number of sample points
+            Desired number of sample points.
         type : {'random', 'grid'}
             The sampling strategy. All child classes implement at least a random
             and a grid sampling. For additional strategies check the specific class.
@@ -33,7 +45,7 @@ class Domain():
         Returns
         -------
         np.array
-            A array containing the points
+            A array containing the points.
         '''
         if type == 'random':
             return self._random_sampling_boundary(n)
@@ -69,16 +81,20 @@ class Domain():
         else:
             raise NotImplementedError
 
-    def vector_normalize(self, vector, order=2):
-        norm = np.linalg.norm(vector, order)
-        return vector/norm
+    def _cut_points(self, points, n):
+        index = np.random.choice(len(points), int(n), replace=False)
+        return points[index]
 
     @abc.abstractmethod
-    def is_inside(self, x):
+    def _compute_bounds(self):
+        return 
+        
+    @abc.abstractmethod
+    def is_inside(self, points):
         return
 
     @abc.abstractmethod
-    def is_on_boundary(self, x):
+    def is_on_boundary(self, points):
         return
 
     @abc.abstractmethod
@@ -98,7 +114,7 @@ class Domain():
         return
 
     @abc.abstractmethod
-    def boundary_normal(self, x):
+    def boundary_normal(self, points):
         return
 
     @abc.abstractmethod
