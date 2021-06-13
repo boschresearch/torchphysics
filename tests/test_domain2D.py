@@ -6,44 +6,51 @@ from neural_diff_eq.problem.domain.domain2D import (Rectangle, Circle,
 # Tests for rectangle
 
 def test_create_rectangle():
-    R = Rectangle([0,0],[1,0],[0,1])
+    _ = Rectangle([0, 0], [1, 0], [0, 1])
+
 
 def test_throw_error_if_not_rectangle():
     with pytest.raises(ValueError):
-        R = Rectangle([0,0],[2,0],[2,0])
+        _ = Rectangle([0, 0], [2, 0], [2, 0])
+
 
 def test_check_dim_rect():
-    R = Rectangle([0,0],[1,0],[0,1])
+    R = Rectangle([0, 0], [1, 0], [0, 1])
     assert R.dim == 2
 
+
 def test_volume_rect():
-    R = Rectangle([0,0],[1,0],[0,1])
+    R = Rectangle([0, 0], [1, 0], [0, 1])
     assert np.isclose(R.volume, 1)
 
+
 def test_surface_rect():
-    R = Rectangle([0,0],[1,0],[0,1])
+    R = Rectangle([0, 0], [1, 0], [0, 1])
     assert np.isclose(R.surface, 4)
 
 def test_check_corners_rect():
-    R = Rectangle([0,0],[1,0],[0,1])
-    assert all((R.corner_dl == [0,0]))
-    assert all((R.corner_dr == [1,0]))
-    assert all((R.corner_tl == [0,1]))
+    R = Rectangle([0, 0], [1, 0], [0, 1])
+    assert all((R.corner_dl == [0, 0]))
+    assert all((R.corner_dr == [1, 0]))
+    assert all((R.corner_tl == [0, 1]))
+
 
 def test_check_side_length_rect():
-    R = Rectangle([0,0],[1,0],[0,2])
+    R = Rectangle([0, 0], [1, 0], [0, 2])
     assert R.length_lr == 1
     assert R.length_td == 2
 
+
 def test_check_inverse_matrix_rect():
-    R = Rectangle([0,0],[1,0],[0,2])
+    R = Rectangle([0, 0], [1, 0], [0, 2])
     assert R.inverse_matrix[0][0] == 1
     assert R.inverse_matrix[0][1] == 0
     assert R.inverse_matrix[1][0] == 0
     assert R.inverse_matrix[1][1] == 1/2
 
+
 def test_output_type_rect():
-    R = Rectangle([0,0],[1,0],[0,1])
+    R = Rectangle([0, 0], [1, 0], [0, 1])
     i_rand = R.sample_inside(1)
     b_rand = R.sample_boundary(1)
     i_grid = R.sample_inside(1, type='grid')
@@ -53,23 +60,26 @@ def test_output_type_rect():
     assert isinstance(i_grid[0][0], np.float32)
     assert isinstance(b_grid[0][0], np.float32)
 
+
 def test_check_points_inside_and_outside_rect():
-    R = Rectangle([1,0],[2,1],[2,-1])
-    points = [[2,0],[0,0]]
+    R = Rectangle([1, 0], [2, 1], [2, -1])
+    points = [[2, 0], [0, 0]]
     inside = R.is_inside(points)
     assert inside[0]
     assert not inside[1]
 
+
 def test_check_points_boundary_rect():
-    R = Rectangle([0,0],[1,0],[0,3])
-    points = [[0,0.2],[1,0],[0.5,0.5],[-2,10],[0,-0.1]]
+    R = Rectangle([0, 0], [1, 0], [0, 3])
+    points = [[0, 0.2], [1, 0], [0.5, 0.5], [-2, 10], [0, -0.1]]
     bound = R.is_on_boundary(points)
     assert all(bound[0:1])
     assert not all(bound[2:])
 
+
 def test_random_sampling_inside_rect():
     np.random.seed(0)
-    R = Rectangle([0,0],[1,1],[-2,2])
+    R = Rectangle([0, 0], [1, 1], [-2, 2])
     points = R.sample_inside(10, type='random')
     compare = [[-1.0346366 , 2.1322637 ], [-0.34260046, 1.7729793 ], 
                [-0.53332573, 1.7388525 ], [-1.30631   , 2.3960764 ],
@@ -81,16 +91,18 @@ def test_random_sampling_inside_rect():
     assert all(R.is_inside(points))
     assert all((compare == points).all(axis=1))
 
+
 def test_grid_sampling_inside_rect():
-    R = Rectangle([0,0],[2,1],[-1,2])
+    R = Rectangle([0, 0], [2, 1], [-1, 2])
     points = R.sample_inside(250, type='grid')
     assert np.shape(points) == (250,2)
     assert all(R.is_inside(points))
     assert np.linalg.norm(points[0]-points[1]) == np.linalg.norm(points[2]-points[1])
 
+
 def test_random_sampling_boundary_rect():
     np.random.seed(0)
-    R = Rectangle([0,0],[2,1],[-1,2]) 
+    R = Rectangle([0, 0], [2, 1], [-1, 2])
     points = R.sample_boundary(10, type='random')
     compare = [[ 0.09762701, 2.5488136 ], [ 1.4303787 , 0.71518934], 
                [ 1.2055267 , 0.60276335], [ 0.08976637, 2.5448833 ], 
@@ -102,16 +114,18 @@ def test_random_sampling_boundary_rect():
     assert all(R.is_on_boundary(points))
     assert all((compare == points).all(axis=1))
 
+
 def test_grid_sampling_boundary_rect():
-   R = Rectangle([0,0],[2,1],[-1,2]) 
-   points = R.sample_boundary(150, type='grid')
-   assert  np.shape(points) == (150,2)
+   R = Rectangle([0, 0], [2, 1], [-1, 2]) 
+   points = R.sample_boundary(10, type='grid')
+   assert  np.shape(points) == (10,2)
    assert all(R.is_on_boundary(points))
    assert np.linalg.norm(points[0]-points[1]) == np.linalg.norm(points[2]-points[1])
 
+
 def test_boundary_normal_rect():
-    R = Rectangle([0,0],[2,0],[0,2])
-    point = [[0,0.5],[0.7,2]]
+    R = Rectangle([0, 0], [2, 0], [0, 2])
+    point = [[0, 0.5], [0.7, 2]]
     normal = R.boundary_normal(point)
     assert normal[0][0] == -1
     assert normal[0][1] == 0
@@ -119,12 +133,12 @@ def test_boundary_normal_rect():
     assert normal[1][1] == 1
 
 def test_normal_vector_at_corner_():
-    R = Rectangle([0,0],[2,0],[0,2])
-    point = [[0,0],[2,0],[0,2],[2,2]]
+    R = Rectangle([0, 0], [2, 0], [0, 2])
+    point = [[0, 0], [2, 0], [0, 2], [2, 2]]
     normal = R.boundary_normal(point)
     for i in range(4):
-        assert np.isclose(np.linalg.norm(normal[i]),1)
-        
+        assert np.isclose(np.linalg.norm(normal[i]), 1)
+
     sqrt_2 = np.sqrt(2)
     assert normal[0][0] == -1/sqrt_2
     assert normal[0][1] == -1/sqrt_2
@@ -135,60 +149,72 @@ def test_normal_vector_at_corner_():
     assert normal[3][0] == 1/sqrt_2
     assert normal[3][1] == 1/sqrt_2
 
+
 def test_normal_vector_for_rotated_rect():
-    R = Rectangle([1,0],[2,-1],[2,1])
-    point = [[1.5,-0.5], [1.5,0.5],[1.5,1.5]]
+    R = Rectangle([1, 0], [2, -1], [2, 1])
+    point = [[1.5, -0.5], [1.5, 0.5], [1.5, 1.5]]
     normal = R.boundary_normal(point)
-    assert np.isclose(np.dot([1,-1], normal[0]), 0)
-    assert np.isclose(np.dot([1,1], normal[1]), 0)
-    assert np.isclose(np.dot([1,-1], normal[2]), 0)
+    assert np.isclose(np.dot([1, -1], normal[0]), 0)
+    assert np.isclose(np.dot([1, 1], normal[1]), 0)
+    assert np.isclose(np.dot([1, -1], normal[2]), 0)
+
 
 def test_console_output_when_not_on_bound_rect(capfd):
-    R = Rectangle([0,0],[9,0],[0,5])
-    point = [[3,3]]
+    R = Rectangle([0, 0], [9, 0], [0, 5])
+    point = [[3, 3]]
     R.boundary_normal(point)
-    out, err = capfd.readouterr() 
+    out, err = capfd.readouterr()
     assert out == 'Warning: some points are not at the boundary!\n'
 
+
 def test_grid_for_plot_rect():
-    R = Rectangle([0,0],[1,0],[0,1])
+    R = Rectangle([0, 0], [1, 0], [0, 1])
     points = R.grid_for_plots(150)
     inside = R.is_inside(points)
     bound = R.is_on_boundary(points)
     assert all(np.logical_or(inside, bound))
 
+
 def test_bounds_for_rect():
-    R = Rectangle([0,0],[1,0],[0,1])
+    R = Rectangle([0, 0], [1, 0], [0, 1])
     bounds = R._compute_bounds()
-    assert bounds == [0,1,0,1]
-    R = Rectangle([0,0],[1,-1],[1,1])
+    assert bounds == [0, 1, 0, 1]
+    R = Rectangle([0, 0], [1, -1], [1, 1])
     bounds = R._compute_bounds()
-    assert bounds == [0,2,-1,1]
+    assert bounds == [0, 2, -1, 1]
+
 
 # Test for circle
+
+
 def test_create_circle():
-    C = Circle([0,0],2)
+    C = Circle([0, 0], 2)
+
 
 def test_check_dim_circle():
-    C = Circle([0,0],2)
+    C = Circle([0, 0], 2)
     assert C.dim == 2
 
+
 def test_check_center_and_radius():
-    C = Circle([0.5,0.6], 2)
+    C = Circle([0.5, 0.6], 2)
     assert C.center[0] == 0.5
     assert C.center[1] == 0.6
     assert C.radius == 2
 
+
 def test_volume_circle():
-    C = Circle([0,0], 2)
+    C = Circle([0, 0], 2)
     assert np.isclose(C.volume, np.pi*4)
 
+
 def test_surface_circle():
-    C = Circle([0.5,0.6], 2)
+    C = Circle([0.5, 0.6], 2)
     assert np.isclose(C.surface, 2*np.pi*2)
 
+
 def test_output_type_circle():
-    C = Circle([1,0],3)
+    C = Circle([1, 0], 3)
     i_rand = C.sample_inside(1)
     b_rand = C.sample_boundary(1)
     i_grid = C.sample_inside(1, type='grid')
@@ -198,23 +224,26 @@ def test_output_type_circle():
     assert isinstance(i_grid[0][0], np.float32)
     assert isinstance(b_grid[0][0], np.float32)
 
+
 def test_check_points_inside_and_outside_circle():
-    C = Circle([1,0],2)
-    points = [[2,0],[1,1],[10,0]]
+    C = Circle([1, 0], 2)
+    points = [[2, 0], [1, 1], [10, 0]]
     inside = C.is_inside(points)
     assert all(inside[0:2])
     assert not inside[2]
 
+
 def test_check_points_boundary_circle():
-    C = Circle([1,0],2)
-    points = [[2,0],[1,1],[3,0],[1,2]]
+    C = Circle([1, 0], 2)
+    points = [[2, 0], [1, 1], [3, 0], [1, 2]]
     inside = C.is_on_boundary(points)
     assert not all(inside[0:2])
     assert all(inside[2:])
 
+
 def test_random_sampling_inside_circle():
     np.random.seed(0)
-    C = Circle([1,1],3)
+    C = Circle([1, 1], 3)
     points = C.sample_inside(5, type='random')
     compare = [[-0.35227352, -0.7637114 ], [-1.344475  ,  1.9696087 ], 
                [ 2.8110569 , -0.46456257], [ 3.157019  ,  0.4987838 ],
@@ -224,15 +253,17 @@ def test_random_sampling_inside_circle():
     assert all(C.is_inside(points))
     assert all((compare == points).all(axis=1))
 
+
 def test_grid_sampling_inside_circle():
-    C = Circle([0,0], 4)
+    C = Circle([0, 0], 4)
     points = C.sample_inside(258, type='grid')
     assert np.shape(points) == (258,2)
     assert all(C.is_inside(points))
 
+
 def test_random_sampling_boundary_circle():
     np.random.seed(0)
-    C = Circle([0,0],4.5) 
+    C = Circle([0, 0], 4.5)
     points = C.sample_boundary(10, type='random')
     compare = [[-4.290002 , -1.3586327], [-0.9764186, -4.3927903], 
                [-3.5941048, -2.7078424], [-4.322242 , -1.2522879],
@@ -244,8 +275,9 @@ def test_random_sampling_boundary_circle():
     assert all(C.is_on_boundary(points))
     assert all((compare == points).all(axis=1))
 
+
 def test_grid_sampling_boundary_circle():
-    C = Circle([0,0],2) 
+    C = Circle([0, 0], 2)
     points = C.sample_boundary(150, type='grid')
     assert np.shape(points) == (150,2)
     assert all(C.is_on_boundary(points))
@@ -253,97 +285,114 @@ def test_grid_sampling_boundary_circle():
         assert np.isclose(np.linalg.norm(points[i]-points[i+1]),
                           np.linalg.norm(points[i+2]-points[i+1]))
 
+
 def test_boundary_normal_circle():
-    C = Circle([1,0],2)
-    point = [[3,0],[1,2]]
+    C = Circle([1, 0], 2)
+    point = [[3, 0], [1, 2]]
     normal = C.boundary_normal(point)
     assert normal[0][0] == 1
     assert normal[0][1] == 0
     assert normal[1][0] == 0
     assert normal[1][1] == 1
 
+
 def test_normal_vector_length_circle():
-    C = Circle([0,0],5)
+    C = Circle([0, 0], 5)
     points = C.sample_boundary(50)
     normal = C.boundary_normal(points)
     for i in range(len(points)):
-        assert np.isclose(np.linalg.norm(normal[i]),1)
+        assert np.isclose(np.linalg.norm(normal[i]), 1)
+
 
 def test_console_output_when_not_on_bound_circle(capfd):
-    C = Circle([0,0],5)
-    point = [[0,0]]
+    C = Circle([0, 0], 5)
+    point = [[0, 0]]
     C.boundary_normal(point)
     out, err = capfd.readouterr() 
     assert out == 'Warning: some points are not at the boundary!\n'
 
+
 def test_grid_for_plot_circle():
-    C = Circle([0,0],5)
+    C = Circle([0, 0],5)
     points = C.grid_for_plots(150)
     inside = C.is_inside(points)
     bound = C.is_on_boundary(points)
     assert all(np.logical_or(inside, bound))
 
+
 def test_bounds_for_circle():
-    C = Circle([1,0],5)
+    C = Circle([1, 0],5)
     bounds = C._compute_bounds()
     assert bounds == [-4,6,-5,5]
 
+
 # Test for triangle class
+
+
 def test_create_triangle():
-    Triangle([0,0], [1,0], [0,1])
+    Triangle([0, 0], [1, 0], [0, 1])
+
 
 def test_check_dim_triangle():
-    T = Triangle([0,0], [1,0], [0,1])
+    T = Triangle([0, 0], [1, 0], [0, 1])
     assert T.dim == 2
 
+
 def test_tol_tirangle():
-    T = Triangle([0,0], [1,0], [0,1], tol=0.5)
+    T = Triangle([0, 0], [1, 0], [0, 1], tol=0.5)
     assert T.tol == 0.5
 
+
 def test_area_triangle():
-    T = Triangle([0,0], [1,0], [0,1])
+    T = Triangle([0, 0], [1, 0], [0, 1])
     assert T.volume == 1/2
+
 
 def test_reorder_corners_triangle():
-    T = Triangle([0,0], [0,1], [1,0])
+    T = Triangle([0, 0], [0, 1], [1, 0])
     assert T.volume == 1/2
-    assert all(np.equal(T.corners[1], [1,0]))
-    assert all(np.equal(T.corners[2], [0,1]))
+    assert all(np.equal(T.corners[1], [1, 0]))
+    assert all(np.equal(T.corners[2], [0, 1]))
     assert all(np.equal(T.corners[0], T.corners[3]))
 
+
 def test_surface_triangle():
-    T = Triangle([0,0], [0,4], [4,0])
+    T = Triangle([0, 0], [0, 4], [4, 0])
     assert np.isclose(T.surface, 8+np.sqrt(32))
 
+
 def test_side_lengths_triangle():
-    T = Triangle([0,0], [2,0], [0,1])
+    T = Triangle([0, 0], [2, 0], [0, 1])
     assert np.isclose(T.side_lengths[0], 2)
     assert np.isclose(T.side_lengths[1], np.sqrt(5))
     assert np.isclose(T.side_lengths[2], 1)
 
+
 def test_normals_triangle():
-    T = Triangle([0,0], [1,0], [0,1])
+    T = Triangle([0, 0], [1, 0], [0, 1])
     assert len(T.normals) == 3
-    assert all(np.equal(T.normals[0], [0,-1]))
+    assert all(np.equal(T.normals[0], [0, -1]))
     assert np.isclose(T.normals[1][0], 1/np.sqrt(2))
     assert np.isclose(T.normals[1][1], 1/np.sqrt(2))
-    assert all(np.equal(T.normals[2], [-1,0]))
+    assert all(np.equal(T.normals[2], [-1, 0]))
     for i in range(3):
         assert np.isclose(np.dot(T.normals[i], T.corners[i+1]-T.corners[i]), 0)
     for i in range(3):
         assert np.isclose(np.linalg.norm(T.normals[i]), 1)
 
+
 def test_points_inside_triangle():
-    T = Triangle([0,0], [2,0], [0,1])
-    points = [[-0.1,0.1], [0.25,0.25], [1,1.5], [1.5,-0.1]]
+    T = Triangle([0, 0], [2, 0], [0, 1])
+    points = [[-0.1, 0.1], [0.25, 0.25], [1, 1.5], [1.5, -0.1]]
     inside = T.is_inside(points).flatten()
     assert not inside[0]
     assert inside[1]
     assert not inside[2]
     assert not inside[3]
 
+
 def test_output_type_triangle():
-    T = Triangle([0,0], [2,0], [0,1])
+    T = Triangle([0, 0], [2, 0], [0, 1])
     i_rand = T.sample_inside(1)
     b_rand = T.sample_boundary(1)
     i_grid = T.sample_inside(1, type='grid')
@@ -353,35 +402,40 @@ def test_output_type_triangle():
     assert isinstance(i_grid[0][0], np.float32)
     assert isinstance(b_grid[0][0], np.float32)
 
+
 def test_random_sampling_inside_triangle():
-    T = Triangle([0,0], [2,0], [0,1])
+    T = Triangle([0, 0], [2, 0], [0, 1])
     points = T.sample_inside(500)
     assert np.shape(points) == (500,2)
     assert all(T.is_inside(points))
 
+
 def test_bounds_for_triangle():
-    T = Triangle([0,0], [1,0], [0,1])
+    T = Triangle([0, 0], [1, 0], [0, 1])
     bounds = T._compute_bounds()
-    assert bounds == [0,1,0,1]
-    T = Triangle([-5,0], [1,1], [0,2])
+    assert bounds == [0, 1, 0, 1]
+    T = Triangle([-5, 0], [1, 1], [0, 2])
     bounds = T._compute_bounds()
-    assert bounds == [-5,1,0,2]
+    assert bounds == [-5, 1, 0, 2]
+
 
 def test_grid_sampling_inside_triangle():
-    T = Triangle([0,0], [1,5], [-2,2])
+    T = Triangle([0, 0], [1, 5], [-2, 2])
     points = T.sample_inside(521, type='grid')
     assert np.shape(points) == (521,2)
     assert all(T.is_inside(points))
+
 
 def test_grid_sampling_inside_pointed_triangle():
-    T = Triangle([0,0], [10,5], [10,6])
+    T = Triangle([0, 0], [10, 5], [10, 6])
     points = T.sample_inside(521, type='grid')
     assert np.shape(points) == (521,2)
     assert all(T.is_inside(points))
 
+
 def test_points_on_boundary_triangle():
-    T = Triangle([0,0], [2,0], [0,1])
-    points = [[-0.1,0.1], [0.25,0.25], [2,0], [0,0], [0,0.5], [0,-0.5]]
+    T = Triangle([0, 0], [2, 0], [0, 1])
+    points = [[-0.1, 0.1], [0.25, 0.25], [2, 0], [0, 0], [0, 0.5], [0, -0.5]]
     on_bound = T.is_on_boundary(points).flatten()
     assert not on_bound[0]
     assert not on_bound[1]
@@ -390,71 +444,85 @@ def test_points_on_boundary_triangle():
     assert on_bound[4]
     assert not on_bound[5]
 
+
 def test_bondary_normal_triangle():
-    T = Triangle([0,0], [2,0], [0,1])
-    points = [[0.25,0], [0,0.5], [1.5,0.25]]
+    T = Triangle([0, 0], [2, 0], [0, 1])
+    points = [[0.25, 0], [0, 0.5], [1.5, 0.25]]
     normals = T.boundary_normal(points)
     assert len(normals) == 3
-    assert all(np.equal(normals[0], [0,-1]))
-    assert all(np.equal(normals[1], [-1,0]))
+    assert all(np.equal(normals[0], [0, -1]))
+    assert all(np.equal(normals[1], [-1, 0]))
     assert np.isclose(normals[2][0], 1/np.sqrt(5))
     assert np.isclose(normals[2][1], 2/np.sqrt(5))
 
+
 def test_console_output_when_not_on_bound_triangle(capfd):
-    T = Triangle([0,0], [2,0], [0,1])
-    point = [[0.1,0.1]]
+    T = Triangle([0, 0], [2, 0], [0, 1])
+    point = [[0.1, 0.1]]
     T.boundary_normal(point)
-    out, err = capfd.readouterr() 
+    out, _ = capfd.readouterr() 
     assert out == 'Warning: some points are not at the boundary!\n'
 
+
 def test_random_sampling_triangle():
-    T = Triangle([0,10], [13,5], [-12,2])
+    T = Triangle([0, 10], [13, 5], [-12, 2])
     points = T.sample_boundary(500)
     assert np.shape(points) == (500,2)
     assert all(T.is_on_boundary(points))
 
+
 def test_grid_sampling_triangle():
-    T = Triangle([0,10], [13,5], [-12,2])
+    T = Triangle([0, 10], [13, 5], [-12, 2])
     points = T.sample_boundary(500, type='grid')
     assert np.shape(points) == (500,2)
     assert all(T.is_on_boundary(points))
 
+
 def test_grid_for_plot_triangle():
-    T = Triangle([0,10], [13,5], [-12,2])
+    T = Triangle([0, 10], [13, 5], [-12, 2])
     points = T.grid_for_plots(150)
     inside = T.is_inside(points)
     bound = T.is_on_boundary(points)
     assert all(np.logical_or(inside, bound))
 
+
 # Test Polygon2D
+
+
 def test_create_poly2D():
-    P = Polygon2D([[0,10], [10,5], [10,2], [0,0]])
+    P = Polygon2D([[0, 10], [10, 5], [10, 2], [0, 0]])
+
 
 def test_dim_poly2D():
-    P = Polygon2D([[0,10], [10,5], [10,2], [0,0]])
+    P = Polygon2D([[0, 10], [10, 5], [10, 2], [0, 0]])
     assert P.dim == 2
 
+
 def test_tol_poly2D():
-    P = Polygon2D([[0,10], [10,5], [10,2], [0,0]], tol=2)
+    P = Polygon2D([[0, 10], [10, 5], [10, 2], [0, 0]], tol=2)
     assert P.tol == 2
+
 
 def test_check_triangle_poly2D():
     with pytest.raises(ValueError):
-        P = Polygon2D([[0,10], [10,5], [10,2]])
+        P = Polygon2D([[0, 10], [10, 5], [10, 2]])
+
 
 def test_check_no_input_poly2D():
     with pytest.raises(ValueError):
         P = Polygon2D()
 
+
 def test_ordering_of_corners_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,5]])
-    order = [[0,10], [0,0], [10,2], [10,5], [0,10]]
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 5]])
+    order = [[0, 10], [0, 0], [10, 2], [10, 5], [0, 10]]
     assert np.equal(P.corners, order).all()
-    P = Polygon2D([[0,10], [10,5], [10,2], [0,0]])
+    P = Polygon2D([[0, 10], [10, 5], [10, 2], [0, 0]])
     assert np.equal(P.corners, order).all()
 
+
 def test_surface_of_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     assert np.isclose(P.surface, 16+2*np.sqrt(2**2+10**2))
     length = P.side_lengths
     assert np.isclose(length[0], 10)
@@ -463,12 +531,14 @@ def test_surface_of_poly2D():
     assert np.isclose(length[3], np.sqrt(2**2+10**2))
     assert len(length) == 4
 
+
 def test_volume_of_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     assert np.isclose(P.volume, 80)
 
+
 def test_normals_of_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     assert len(P.normals) == 4
     assert np.equal(P.normals[0], [-1,0]).all()
     assert np.equal(P.normals[2], [1,0]).all()
@@ -476,18 +546,20 @@ def test_normals_of_poly2D():
     assert np.allclose(P.normals[1], [2/norm, -10/norm])
     assert np.allclose(P.normals[3], [2/norm, 10/norm])
 
+
 def test_inside_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
-    points = [[5,5], [0,0], [10,2], [-3,4]]
+    P =Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
+    points = [[5, 5], [0, 0], [10, 2], [-3, 4]]
     inside = P.is_inside(points)
     assert inside[0]
     assert not inside[1]
     assert not inside[2]
     assert not inside[3]   
 
+
 def test_on_boundary_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
-    points = [[5,5], [0,0], [10,2], [-3,4], [0,8]]
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
+    points = [[5, 5], [0, 0], [10, 2], [-3, 4], [0, 8]]
     on_bound = P.is_on_boundary(points)
     assert not on_bound[0]
     assert on_bound[1]
@@ -495,56 +567,75 @@ def test_on_boundary_poly2D():
     assert not on_bound[3]  
     assert on_bound[4]
 
+
 def test_grid_for_plot_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     points = P.grid_for_plots(150)
     inside = P.is_inside(points)
     bound = P.is_on_boundary(points)
     assert all(np.logical_or(inside, bound))
 
+
 def test_random_sampling_on_boundary_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     points = P.sample_boundary(500)
     assert np.shape(points) == (500,2)
     assert all(P.is_on_boundary(points))
 
+
 def test_grid_sampling_on_boundary_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     points = P.sample_boundary(500, type='grid')
     assert np.shape(points) == (500,2)
     assert all(P.is_on_boundary(points))
 
+
 def test_random_sampling_inside_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     points = P.sample_inside(583)
     assert np.shape(points) == (583,2)
     assert all(P.is_inside(points))
 
+
+def test_random_sampling_inside_poly2D_2():
+    P = Polygon2D([[0, 10], [0, 0], [10, 0], [10, 10]])
+    points = P.sample_inside(50)
+    assert np.shape(points) == (50,2)
+    assert all(P.is_inside(points))
+    P = Polygon2D([[0, 0], [0.3, -2], [0.5, -0.1], [1, -2], [1, 0]])
+    points = P.sample_inside(50)
+    assert np.shape(points) == (50,2)
+    assert all(P.is_inside(points))
+
+
 def test_bounds_for_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     bounds = P._compute_bounds()
-    assert bounds == [0,10,0,10]
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8], [5, 20]])
+    assert bounds == [0, 10, 0, 10]
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8], [5, 20]])
     bounds = P._compute_bounds()
-    assert bounds == [0,10,0,20]
+    assert bounds == [0, 10, 0, 20]
+
 
 def test_grid_sampling_inside_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     points = P.sample_inside(517, type='grid')
     assert np.shape(points) == (517,2)
     assert all(P.is_inside(points))
 
+
 def test_random_sampling_inside_concav_poly2D():
     np.random.seed(0)
-    P = Polygon2D([[0,0], [0,-5], [-10,-5], [-10, -10], [10,-10],
-                   [10,10], [-10,10], [-10,0]])
+    P = Polygon2D([[0, 0], [0, -5], [-10, -5], [-10, -10], [10, -10],
+                   [10, 10], [-10, 10], [-10, 0]])
     points = P.sample_inside(263)
     assert np.shape(points) == (263,2)
     assert all(P.is_inside(points))
 
+
 def test_boundary_normal_for_concav_poly2D():
-    P = Polygon2D([[0,0], [0,-10], [10,-10], [10,10], [-10,10], [-10,0]])
-    points = [[0,-5], [5,-10], [5,10], [-10,7], [-4,0], [10,0]]
+    P = Polygon2D([[0, 0], [0, -10], [10, -10], [10, 10], [-10, 10], [-10, 0]])
+    points = [[0, -5], [5, -10], [5, 10], [-10, 7], [-4, 0], [10, 0]]
     normals = P.boundary_normal(points)
     assert np.allclose(normals[0], [-1, 0])
     assert np.allclose(normals[1], [0, -1])
@@ -553,9 +644,10 @@ def test_boundary_normal_for_concav_poly2D():
     assert np.allclose(normals[4], [0, -1])
     assert np.allclose(normals[5], [1, 0])
 
+
 def test_boundary_normal_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
-    points = [[0,5], [10,5], [1, 2.0/10], [9, 8+2.0/10]]
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
+    points = [[0, 5], [10, 5], [1, 2.0/10], [9, 8+2.0/10]]
     normals = P.boundary_normal(points)
     assert np.allclose(normals[0], [-1, 0])
     assert np.allclose(normals[1], [1, 0])
@@ -563,15 +655,17 @@ def test_boundary_normal_poly2D():
     assert np.allclose(normals[3], [2/norm, 10/norm])
     assert np.allclose(normals[2], [2/norm, -10/norm])
 
+
 def test_console_output_when_not_on_bound_poly2D(capfd):
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
-    point = [[0.1,0.1]]
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
+    point = [[0.1, 0.1]]
     P.boundary_normal(point)
     out, err = capfd.readouterr() 
     assert out == 'Warning: some points are not at the boundary!\n'
 
+
 def test_output_type_poly2D():
-    P = Polygon2D([[0,10], [0,0], [10,2], [10,8]])
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     i_rand = P.sample_inside(1)
     b_rand = P.sample_boundary(1)
     i_grid = P.sample_inside(1, type='grid')
