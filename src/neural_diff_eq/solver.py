@@ -72,10 +72,14 @@ class PINNModule(pl.LightningModule):
         return dataloader_dict
 
     def train_dataloader(self):
+        if self.problem.get_train_conditions() == {}:
+            return None
         return self._get_dataloader(self.problem.get_train_conditions())
 
     def val_dataloader(self):
         # For multiple validation dataloaders, lightning needs a CombinedLoader
+        if self.problem.get_val_conditions() == {}:
+            return None
         dataloader_dict = self._get_dataloader(self.problem.get_val_conditions())
         return pl.trainer.supporters.CombinedLoader(dataloader_dict, 'max_size_cycle')
 
@@ -108,12 +112,13 @@ class PINNModule(pl.LightningModule):
             loss = loss + conditions[name].weight * c
 
     def log_condition_data_plot(self, name, condition, data):
-        if condition.get_data_plot_variables() is not None:
-            fig = _scatter(plot_variables=condition.get_data_plot_variables(),
-                           data=data)
-            self.logger.experiment.add_figure(tag=name+'_data',
-                                              figure=fig,
-                                              global_step=self.global_step)
+        if self.global_step % 10 == 0:
+            if condition.get_data_plot_variables() is not None:
+                fig = _scatter(plot_variables=condition.get_data_plot_variables(),
+                               data=data)
+                self.logger.experiment.add_figure(tag=name+'_data',
+                                                  figure=fig,
+                                                  global_step=self.global_step)
 
     def log_plot(self):
         if self.global_step % self.log_plotter.log_interval == 0:

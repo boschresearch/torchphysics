@@ -49,7 +49,7 @@ class Plotter():
 
     def plot(self, model, device='cpu'):
         return _plot(model, self.plot_variables, self.points,
-                     self.dic_for_other_variables, self.all_variables,
+                     dic_for_other_variables=self.dic_for_other_variables, all_variables=self.all_variables,
                      device=device)
 
 
@@ -125,7 +125,7 @@ def _plot2D(model, plot_variable, points, angle,
 
     ax.set_xlabel(plot_variable.name + '_1')
     ax.set_ylabel(plot_variable.name + '_2')
-    plt.show()
+    #plt.show()
     return fig
 
 
@@ -144,7 +144,7 @@ def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables
         ax.text(1.05, 0.5, info_string, bbox={'facecolor': 'w', 'pad': 5},
                 transform=ax.transAxes,)
     ax.set_xlabel(plot_variable.name)
-    plt.show()
+    #plt.show()
     return fig
 
 
@@ -174,7 +174,7 @@ def _plot2D_2_variables(model, variable_1, variable_2, points, angle,
 
     ax.set_xlabel(variable_1.name)
     ax.set_ylabel(variable_2.name)
-    plt.show()
+    #plt.show()
     return fig
 
 
@@ -239,7 +239,7 @@ def _scatter(plot_variables, data):
     """
     axes = []
     for v in plot_variables:
-        axes.extend(torch.chunk(data[v].detach(), data[v].shape[1], dim=1))
+        axes.extend(torch.chunk(data[v].detach().cpu(), data[v].shape[1], dim=1))
     labels = []
     for v in plot_variables:
         for _ in range(data[v].shape[1]):
@@ -263,7 +263,6 @@ def _scatter(plot_variables, data):
     else:
         raise NotImplementedError("Plot variables should be 1d, 2d or 3d.")
     ax.scatter(*axes)
-    plt.show()
     return fig
 
 
