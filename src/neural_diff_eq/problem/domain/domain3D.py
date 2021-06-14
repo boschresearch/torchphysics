@@ -5,6 +5,7 @@ import logging
 from .domain import Domain
 from .domain2D import Polygon2D
 
+
 class Polygon3D(Domain):
     '''Class for polygons in 3D.
 
@@ -50,7 +51,7 @@ class Polygon3D(Domain):
         '''
         self.mesh.export(name_of_file)
 
-    def project_on_plane(self, plane_origin=[0,0,0], plane_normal=[0,0,1]):
+    def project_on_plane(self, plane_origin=[0, 0, 0], plane_normal=[0, 0, 1]):
         '''Projects the polygon on a plane. 
 
         Parameters
@@ -58,7 +59,8 @@ class Polygon3D(Domain):
         plane_origin : array_like, optional
             The origin of the projection plane.
         plane_normal : array_like, optional
-            The normal vector of the projection plane.
+            The normal vector of the projection plane. It is enough if it points in the
+            direction of normal vector, it does not norm = 1. 
 
         Returns
         ----------
@@ -74,7 +76,7 @@ class Polygon3D(Domain):
         polygon = polygon.simplify(self.tol)
         return Polygon2D(shapely_polygon=polygon, tol=self.tol)
 
-    def slice_with_plane(self, plane_origin=[0,0,0], plane_normal=[0,0,1]):
+    def slice_with_plane(self, plane_origin=[0, 0, 0], plane_normal=[0, 0, 1]):
         '''Slices the polygon with a plane.
 
         Parameters
@@ -82,7 +84,8 @@ class Polygon3D(Domain):
         plane_origin : array_like, optional
             The origin of the plane.
         plane_normal : array_like, optional
-            The normal vector of the plane.
+            The normal vector of the projection plane. It is enough if it points in the
+            direction of normal vector, it does not norm = 1. 
 
         Returns
         ----------

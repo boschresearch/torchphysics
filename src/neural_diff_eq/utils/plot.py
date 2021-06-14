@@ -2,12 +2,17 @@
 neural networks
 '''
 import matplotlib.pyplot as plt
-from matplotlib import cm
+import matplotlib.tri as mtri 
+import scipy.spatial
 import numpy as np
 import torch
 import numbers
+from matplotlib import cm
 
-def plot(model, plot_variables, points, angle=30,
+from neural_diff_eq.problem.domain.domain2D import Triangle
+
+
+def plot(model, plot_variables, points, angle=[30, 30],
          dic_for_other_variables=None, all_variables=None):
     '''Main function for plotting
 
@@ -19,8 +24,8 @@ def plot(model, plot_variables, points, angle=30,
         The main variable(s) over which the solution should be plotted. 
     points : int 
         The number of points that should be used for the plot.
-    angle : float
-        The view angle for surface plots.
+    angle : list, optional
+        The view angle for surface plots. Standart angle is [30, 30]
     dic_for_other_variables : dict, optional
         A dictionary containing values for all the other variables of the 
         model. E.g. {'t' : 1, 'D' : [1,2], ...}
@@ -54,6 +59,7 @@ def plot(model, plot_variables, points, angle=30,
     else:
         raise NotImplementedError
 
+
 def _plot2D(model, plot_variable, points, angle, 
             dic_for_other_variables, all_variables):
     domain_points, input_dic = _create_domain(plot_variable, points)
@@ -61,16 +67,13 @@ def _plot2D(model, plot_variable, points, angle,
     input_dic = _create_input_dic(input_dic, points,
                                   dic_for_other_variables, all_variables)
     output = model.forward(input_dic, track_gradients=False).data.cpu().numpy()
-    axis_1 = domain_points[:, 0]
-    axis_2 = domain_points[:, 1]
+    triangulation =  _triangulation_of_domain(plot_variable, domain_points)
+    
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    ax.view_init(30, angle)
-    # Not perfect for concave domains, see:
-    # https://stackoverflow.com/questions/9170838/surface-plots-in-matplotlib
-    # Should be added if we get problems of this type
-    surf = ax.plot_trisurf(axis_1, axis_2, output.flatten(),
-                           cmap=cm.coolwarm, linewidth=0, antialiased=False)
+    ax.view_init(angle[0], angle[1])
+    surf = ax.plot_trisurf(triangulation, output.flatten(),
+                           cmap=cm.jet, linewidth=0, antialiased=False)
     fig.colorbar(surf, shrink=0.4, aspect=5, pad=0.1)
     if dic_for_other_variables is not None:
         info_string = _create_info_text(dic_for_other_variables)
@@ -100,6 +103,7 @@ def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables
     plt.show()
     return fig
 
+
 def _plot2D_2_variables(model, variable_1, variable_2, points, angle, 
                         dic_for_other_variables, all_variables):
 
@@ -115,7 +119,7 @@ def _plot2D_2_variables(model, variable_1, variable_2, points, angle,
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    ax.view_init(30, angle)
+    ax.view_init(angle[0], angle[1])
     surf = ax.plot_surface(axis_1, axis_2, output.reshape(axis_1.shape),
                            cmap=cm.coolwarm, linewidth=0, antialiased=False)
     fig.colorbar(surf, shrink=0.4, aspect=5, pad=0.1)
@@ -155,7 +159,8 @@ def _create_dic_for_other_variables(points, dic_for_other_variables):
             array = dic_for_other_variables[name]*np.ones((points, length))
             dic[name] = torch.FloatTensor(array)
         else:
-            raise ValueError('Values for variables have to be numbers or lists/arrays.')
+            raise ValueError('Values for variables have to be a number or' \
+                             ' a list/array.')
     return dic
 
 
@@ -172,3 +177,24 @@ def _create_info_text(dic_for_other_variables):
         info_text += vname + ' = ' + str(dic_for_other_variables[vname])
         info_text += '\n'
     return info_text[:-1]
+
+
+def _triangulation_of_domain(plot_variable, domain_points):
+    points = np.vstack([domain_points[:, 0], domain_points[:, 1]]).T
+    tess = scipy.spatial.Delaunay(points) #create triangulation
+    tri = np.empty((0,3))
+    #check what triangles are inside
+    for t in tess.simplices:
+        p = points[t]
+        triangle = Triangle(p[0], p[1], p[2])
+        if _check_triangle_inside(triangle, plot_variable.domain):
+            tri = np.append(tri, [t], axis=0)
+
+    return mtri.Triangulation(x=points[:, 0], y=points[:, 1], triangles=tri)
+
+
+def _check_triangle_inside(triangle, domain):
+    boundary_points = triangle.sample_boundary(10, type='grid')
+    inside = domain.is_inside(boundary_points)
+    boundary = domain.is_on_boundary(boundary_points)
+    return all(np.logical_or(inside, boundary))

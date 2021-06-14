@@ -9,8 +9,9 @@ import torch
 from . import plot 
 from ..problem.domain.domain1D import Interval
 
+
 def animation(model, plot_variables, domain_points,
-              animation_variable, frame_number, ani_speed=50, angle=30,
+              animation_variable, frame_number, ani_speed=50, angle=[30, 30],
               dic_for_other_variables=None, all_variables=None):
     '''Main function for animations
     
@@ -29,8 +30,8 @@ def animation(model, plot_variables, domain_points,
         Number of frames
     ani_speed : Number
         Speed of the animation
-    angle : float
-        The view angle for surface plots.
+    angle : list, optional
+        The view angle for surface plots. Standart angle is [30, 30]
     dic_for_other_variables : dict, optional
         A dictionary containing values for all the other variables of the 
         model. E.g. {'D' : [1,2], ...}
@@ -69,7 +70,7 @@ def animation(model, plot_variables, domain_points,
 def _animation1D(model, plot_variable, points, animation_variable, frame_number,
                  ani_speed, dic_for_other_variables, all_variables):
     domain_points, input_dic = plot._create_domain(plot_variable, points)
-    animation_points, ani_dic = plot._create_domain(animation_variable, frame_number)
+    animation_points = plot._create_domain(animation_variable, frame_number)[0]
 
     input_dic[animation_variable.name] = animation_points[0][0]*torch.ones((points, 1))
     input_dic = plot._create_input_dic(input_dic, points, 
@@ -104,7 +105,7 @@ def _animation1D(model, plot_variable, points, animation_variable, frame_number,
 def _animation2D(model, plot_variable, points, animation_variable, frame_number,
                  ani_speed, angle, dic_for_other_variables, all_variables):
     domain_points, input_dic = plot._create_domain(plot_variable, points)
-    animation_points, ani_dic = plot._create_domain(animation_variable, frame_number)
+    animation_points = plot._create_domain(animation_variable, frame_number)[0]
     points = len(domain_points)
     
     input_dic[animation_variable.name] = animation_points[0][0]*torch.ones((points, 1))
@@ -114,14 +115,13 @@ def _animation2D(model, plot_variable, points, animation_variable, frame_number,
     outputs = _evaluate_model(model, points, animation_points, 
                               animation_variable.name, input_dic)
     output_max, output_min = _get_max_min(outputs)
-    axis_1 = domain_points[:,0]
-    axis_2 = domain_points[:,1]
+    triangulation =  plot._triangulation_of_domain(plot_variable, domain_points)
     # construct the figure handle and axis for the animation
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    ax.view_init(30, angle)
-    ax.set_xlim((np.min(axis_1), np.max(axis_1)))
-    ax.set_ylim((np.min(axis_2), np.max(axis_2)))
+    ax.view_init(angle[0], angle[1])
+    ax.set_xlim((np.min(domain_points[:, 0]), np.max(domain_points[:, 0])))
+    ax.set_ylim((np.min(domain_points[:, 1]), np.max(domain_points[:, 1])))
     ax.set_zlim((output_min, output_max))
     ax.set_xlabel(plot_variable.name + '1')
     ax.set_ylabel(plot_variable.name + '2') 
@@ -129,20 +129,21 @@ def _animation2D(model, plot_variable, points, animation_variable, frame_number,
                          transform=ax.transAxes, va='top', ha='left')   
         
     # construct an auxiliary plot to get a fixed colorbar for the animation     
-    surf = [ax.plot_surface(np.zeros((2,2)),np.zeros((2,2)),np.zeros((2,2)), 
-                            color='0.75', cmap=cm.coolwarm, vmin=output_min,
+    surf = [ax.plot_surface(np.zeros((2, 2)),np.zeros((2, 2)),np.zeros((2, 2)), 
+                            color='0.75', cmap=cm.jet, vmin=output_min,
                             vmax=output_max, antialiased=False)]
-    cb = plt.colorbar(surf[0], shrink=0.5, aspect=10, pad=0.1) 
+    plt.colorbar(surf[0], shrink=0.5, aspect=10, pad=0.1) 
 
     # create the animation
     if dic_for_other_variables is None:
         dic_for_other_variables = {}
     def animate(frame_number, outputs, surf):
         surf[0].remove()
-        surf[0] = ax.plot_trisurf(axis_1, axis_2, outputs[:,frame_number],
-                                  color='0.75', cmap=cm.coolwarm, 
+        surf[0] = ax.plot_trisurf(triangulation, outputs[:, frame_number],
+                                  color='0.75', cmap=cm.jet, 
                                   vmin=output_min, vmax=output_max, antialiased=False)
-        dic_for_other_variables[animation_variable.name] = animation_points[frame_number][0] 
+        new_animation_point = animation_points[frame_number][0] 
+        dic_for_other_variables[animation_variable.name] = new_animation_point
         info_string = plot._create_info_text(dic_for_other_variables)  
         text_box.set_text(info_string)
     

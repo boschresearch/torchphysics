@@ -617,7 +617,8 @@ class Polygon2D(Domain):
         return on_bound.reshape(-1,1)
 
     def grid_for_plots(self, n):
-        return Triangle.grid_for_plots(self, n)
+        points = self._grid_sampling_boundary(n)
+        return np.append(points, Triangle.grid_for_plots(self, n), axis=0)
 
     def _random_sampling_inside(self, n):
         points = np.empty((0,self.dim))
