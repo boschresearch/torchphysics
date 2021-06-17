@@ -3,9 +3,10 @@ They supply the necessary training data to the model.
 """
 import abc
 import torch
+from torch.functional import norm
 
 from .data import Dataset, DataDataset
-
+from ..utils.differentialoperators import normal_derivative
 
 class Condition(torch.nn.Module):
     """
@@ -278,7 +279,7 @@ class DirichletCondition(BoundaryCondition):
     Parameters
     ----------
     dirichlet_fun : function handle
-        A method that takes boundary points (in the usual dictionary form) a an input
+        A method that takes boundary points (in the usual dictionary form) as an input
         and returns the desired boundary values at those points.
     name : str
         name of this condition (should be unique per problem or variable)
@@ -342,6 +343,100 @@ class DirichletCondition(BoundaryCondition):
     def serialize(self):
         dct = super().serialize()
         dct['dirichlet_fun'] = self.dirichlet_fun.__name__
+        dct['dataset_size'] = self.dataset_size
+        dct['sampling_strategy'] = self.sampling_strategy
+        dct['boundary_sampling_strategy'] = self.boundary_sampling_strategy
+        dct['dataset_size'] = self.dataset_size
+        return dct
+
+
+class NeumannCondition(BoundaryCondition):
+    """
+    Implementation of a Neumann boundary condition based on a function handle.
+
+    Parameters
+    ----------
+    neumann_fun : function handle
+        A method that takes boundary points (in the usual dictionary form) as an input
+        and returns the desired values of the normal derivatives of the model.
+    name : str
+        name of this condition (should be unique per problem or variable)
+    norm : torch.nn.Module
+        A Pytorch module which forward pass returns the scalar norm of the difference of
+        two input tensors, and is therefore similar to the implementation of nn.MSELoss.
+        The norm is used to compute the loss for the deviation of the model from the
+        given data.
+    sampling_strategy : str
+        The sampling strategy used to sample data points for this condition. See domains
+        for more details.
+    boundary_sampling_strategy : str
+        The sampling strategy used to sample the boundary variable's points for this
+        condition. See domains for more details.
+    weight : float
+        Scalar weight of this condition that is used in the weighted sum for the
+        training loss. Defaults to 1.
+    batch_size : int
+        Amount of sampled points for this condition per iteration. For full-batch optim
+        methods, this should equal dataset_size.
+    num_workers : int
+        Amount of CPU processes that preprocess the data for this condition. 0 disables
+        multiprocessing.
+    dataset_size : int
+        Amount of samples in the used dataset. The dataset is generated once at the
+        beginning of the training.
+    """
+    def __init__(self, neumann_fun, name, norm,
+                 sampling_strategy='random', boundary_sampling_strategy='random',
+                 weight=1.0, batch_size=1000, num_workers=0, dataset_size=10000,
+                 data_plot_variables=True):
+        super().__init__(name, norm, weight=weight, batch_size=batch_size,
+                         num_workers=num_workers, requires_input_grad=False,
+                         data_plot_variables=data_plot_variables)
+        self.neumann_fun = neumann_fun
+        self.boundary_sampling_strategy = boundary_sampling_strategy
+        self.sampling_strategy = sampling_strategy
+        self.dataset_size = dataset_size
+
+    def forward(self, model, data):
+        target = self.neumann_fun(data)
+        normal_derivatives = self._compute_normal_derivatives(model, data)
+        return self.norm(normal_derivatives, target)
+
+    def _compute_normal_derivatives(self, model, data):
+        u = model(data, track_gradients=True)
+        points = data[self.boundary_variable]
+        normals = self.domain.boundary_normal(points.detach().cpu().numpy())
+        normals = torch.from_numpy(normals).float().to(points.device)
+        normal_derivatives = normal_derivative(model_out=u, 
+                                               deriv_variable_input=points, 
+                                               normals=normals)
+        return normal_derivatives
+
+    def get_dataloader(self):
+        if self.is_registered():
+            dataset = Dataset(self.variables,
+                              sampling_strategy=self.sampling_strategy,
+                              boundary_sampling_strategy=self.boundary_sampling_strategy,
+                              size=self.dataset_size,
+                              boundary=self.boundary_variable)
+            self.domain = self._get_domain()
+            return torch.utils.data.DataLoader(
+                dataset,
+                batch_size=self.batch_size,
+                num_workers=self.num_workers
+            )
+        else:
+            raise RuntimeError("""Conditions need to be registered in a
+                                  Variable or Problem.""")
+
+    def _get_domain(self):
+        for vname in self.variables:
+            if vname == self.boundary_variable:
+                return self.variables[vname].domain
+
+    def serialize(self):
+        dct = super().serialize()
+        dct['neumann_fun'] = self.neumann_fun.__name__
         dct['dataset_size'] = self.dataset_size
         dct['sampling_strategy'] = self.sampling_strategy
         dct['boundary_sampling_strategy'] = self.boundary_sampling_strategy

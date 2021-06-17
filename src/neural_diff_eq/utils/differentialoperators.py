@@ -55,3 +55,28 @@ def gradient(model_out, deriv_variable_input):
     grad = torch.autograd.grad(
         model_out.sum(), deriv_variable_input, create_graph=True)[0]
     return grad
+
+
+def normal_derivative(model_out, deriv_variable_input, normals):
+    '''Computes the gradient of a network with respect to the given variable.
+
+    Parameters
+    ----------
+    model_out : torch.tensor
+        The output tensor of the neural network
+    deriv_variable_input : torch.tensor
+        The input tensor of the variable in which respect the derivatives have to
+        be computed
+    normals : torch.tensor
+        The normal vectors at the points where the derivative has to be computed.
+        In the form: normals = tensor([normal_1, normal_2, ...]
+        
+    Returns
+    ----------
+    torch.tensor
+        A Tensor, where every row contains the values of the the first normal
+        derivatives w.r.t the row of the input variable.
+    '''
+    grad = gradient(model_out, deriv_variable_input)
+    normal_derivatives = torch.multiply(grad, normals)
+    return normal_derivatives.sum(dim=1, keepdim=True)
