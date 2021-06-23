@@ -43,13 +43,13 @@ x.add_train_condition(DirichletCondition(dirichlet_fun=x_dirichlet_fun,
                                          norm=norm,
                                          batch_size=500,
                                          dataset_size=500,
-                                         num_workers=2))
+                                         num_workers=0))
 x.add_val_condition(DirichletCondition(dirichlet_fun=x_dirichlet_fun,
                                        name='dirichlet',
                                        norm=norm,
                                        batch_size=500,
                                        dataset_size=500,
-                                       num_workers=2))
+                                       num_workers=0))
 
 
 def t_dirichlet_fun(input):
@@ -61,14 +61,14 @@ t.add_train_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                          norm=norm,
                                          batch_size=500,
                                          dataset_size=500,
-                                         num_workers=2,
+                                         num_workers=0,
                                          boundary_sampling_strategy='lower_bound_only'))
 t.add_val_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                        name='dirichlet',
                                        norm=norm,
                                        batch_size=500,
                                        dataset_size=500,
-                                       num_workers=2,
+                                       num_workers=0,
                                        boundary_sampling_strategy='lower_bound_only'))
 
 
@@ -80,12 +80,12 @@ train_cond = DiffEqCondition(pde=pde,
                              norm=norm,
                              batch_size=5000,
                              dataset_size=5000,
-                             num_workers=2)
+                             num_workers=0)
 val_cond = DiffEqCondition(pde=pde,
                            norm=norm,
                            batch_size=5000,
                            dataset_size=5000,
-                           num_workers=2)
+                           num_workers=0)
 
 setup = Setting(variables=(x, t),
                 train_conditions={'pde': train_cond},
@@ -94,7 +94,8 @@ setup = Setting(variables=(x, t),
 solver = PINNModule(model=SimpleFCN(input_dim=3),  # TODO: comput input_dim in setting
                     problem=setup)
 
-trainer = pl.Trainer(gpus=None,
+trainer = pl.Trainer(
+                     gpus=None,
                      logger=False,
                      num_sanity_val_steps=5,
                      checkpoint_callback=False)
