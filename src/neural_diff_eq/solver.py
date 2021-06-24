@@ -70,7 +70,7 @@ class PINNModule(pl.LightningModule):
         for name in conditions:
             dataloader_dict[name] = conditions[name].get_dataloader()
         return dataloader_dict
-
+    """
     def train_dataloader(self):
         if self.problem.get_train_conditions() == {}:
             return None
@@ -82,14 +82,14 @@ class PINNModule(pl.LightningModule):
             return None
         dataloader_dict = self._get_dataloader(self.problem.get_val_conditions())
         return pl.trainer.supporters.CombinedLoader(dataloader_dict, 'max_size_cycle')
-
+    """
     def training_step(self, batch, batch_idx):
         loss = torch.zeros(1, device=self.device, requires_grad=True)
         conditions = self.problem.get_train_conditions()
         for name in conditions:
             data = batch[name]
             # log scatter plots of the used training data
-            self.log_condition_data_plot(name, conditions[name], data)
+            # self.log_condition_data_plot(name, conditions[name], data)
             # get error for this conditions
             c = conditions[name](self.model, data)
             self.log(name, c)

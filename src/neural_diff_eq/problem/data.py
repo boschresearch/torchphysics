@@ -1,5 +1,8 @@
 import torch
 
+print("""
+      These classes are old and will be removed!
+      """)
 
 class Dataset(torch.utils.data.Dataset):
     """

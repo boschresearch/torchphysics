@@ -57,8 +57,8 @@ class Condition(torch.nn.Module):
         self.variables = None
 
     @abc.abstractmethod
-    def get_dataloader(self):
-        """Creates and returns a dataloader for the given condition."""
+    def get_data(self):
+        """Creates and returns the data for the given condition."""
         return
 
     @abc.abstractmethod
@@ -128,16 +128,15 @@ class DiffEqCondition(Condition):
         err = self.pde(u, data)
         return self.norm(err, torch.zeros_like(err))
 
-    def get_dataloader(self):
+    def get_data(self):
         if self.is_registered():
-            dataset = Dataset(self.variables,
-                              sampling_strategy=self.sampling_strategy,
-                              size=self.dataset_size)
-            return torch.utils.data.DataLoader(
-                dataset,
-                batch_size=self.batch_size,
-                num_workers=self.num_workers
-            )
+            data = {}
+            for vname in self.variables:
+                data[vname] = self.variables[vname].domain.sample_inside(
+                    self.dataset_size,
+                    type=self.sampling_strategy
+                )
+            return data
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -201,16 +200,9 @@ class DataCondition(Condition):
         u = model(data, track_gradients=False)
         return self.norm(u, target)
 
-    def get_dataloader(self):
+    def get_data(self):
         if self.is_registered():
-            dataset = DataDataset(self.variables,
-                                  data_x=self.data_x,
-                                  data_u=self.data_u)
-            return torch.utils.data.DataLoader(
-                dataset,
-                batch_size=self.batch_size,
-                num_workers=self.num_workers
-            )
+            return (self.data_x, self.data_u)
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -333,26 +325,21 @@ class DirichletCondition(BoundaryCondition):
             target = self.dirichlet_fun(u, data)
         return self.norm(u, target)
 
-    def get_dataloader(self):
+    def get_data(self):
         if self.is_registered():
-            if self.independent_of_model:
-                dataset = FunctiondataDataset(self.variables,
-                                function=self.dirichlet_fun,
-                                sampling_strategy=self.sampling_strategy,
-                                boundary_sampling_strategy=self.boundary_sampling_strategy,
-                                size=self.dataset_size,
-                                boundary=self.boundary_variable)
-            else:
-                dataset = Dataset(self.variables,
-                                sampling_strategy=self.sampling_strategy,
-                                boundary_sampling_strategy=self.boundary_sampling_strategy,
-                                size=self.dataset_size,
-                                boundary=self.boundary_variable)
-            return torch.utils.data.DataLoader(
-                dataset,
-                batch_size=self.batch_size,
-                num_workers=self.num_workers
-                )
+            data = {}
+            for vname in self.variables:
+                if vname == self.boundary:
+                    data[vname] = self.variables[vname].domain.sample_boundary(
+                        self.dataset_size,
+                        type=self.boundary_sampling_strategy
+                    )
+                else:
+                    data[vname] = self.variables[vname].domain.sample_inside(
+                        self.dataset_size,
+                        type=self.sampling_strategy
+                    )
+            return (data, self.dirichlet_fun(data))
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
