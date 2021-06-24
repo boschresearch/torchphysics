@@ -3,6 +3,7 @@ the solution of a 2D heat equation on the unit square
 for time in [0, 1].
 """
 import os
+from typing import Dict
 import torch
 import numpy as np
 import pytorch_lightning as pl
@@ -19,14 +20,14 @@ from neural_diff_eq.utils import laplacian, gradient
 
 import time
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 device = 'cuda'
 
 D = 1.18
 temp_hot = 100.0
 w, h = 10.0, 10.0
-
+print('--Create Problem--')
 x = Variable(name='x',
              order=2,
              domain=Rectangle(corner_dl=[0, 0],
@@ -94,13 +95,22 @@ for name in conditions:
     data[name] = d
 
 for cn in data:
-    for vn in data[cn]:
-        data[cn][vn] = data[cn][vn].to(device)
-
+    if isinstance(data[cn], dict):
+        for vn in data[cn]:
+            data[cn][vn] = data[cn][vn].to(device)
+    else:
+        data_dic, target = data[cn]
+        for vn in data_dic:
+            data_dic[vn] = data_dic[vn].to(device)
+        target = target.to(device)
+        data[cn] = data_dic, target
+            
 optimizer = torch.optim.Adam(model.parameters())
-iterations = 3000
+iterations_adam = 3000
+print('--Start Training--')
+
 start = time.time()
-for i in range(iterations):
+for i in range(iterations_adam):
     optimizer.zero_grad()
     loss = torch.zeros(1, device=device, requires_grad=True)
     for name in conditions:
@@ -109,31 +119,39 @@ for i in range(iterations):
         c = conditions[name](model, d)
         # accumulate weighted error
         loss = loss + conditions[name].weight * c
-    #print(loss)
+    if i % 1000 == 0:
+        print('Epoch:', i, 'loss:', loss.item())
     loss.backward()
     optimizer.step()
 end = time.time()
-print(end-start)
+print('Adam:', end-start)
 
-optimizer = torch.optim.LBFGS(model.parameters())
-iterations = 3000
+optimizer = torch.optim.LBFGS(model.parameters(), lr=0.01, max_iter=2, history_size=100)
+iterations = 8000
 start = time.time()
 for i in range(iterations):
+    #print('Iteration', i)
     def closure():
         optimizer.zero_grad()
         loss = torch.zeros(1, device=device, requires_grad=True)
         for name in conditions:
             d = data[name]
             # get error for this conditions
+            #cond_start = time.time()
             c = conditions[name](model, d)
+            #cond_end = time.time()
+            #print('Condition:', name, 'Time:', cond_end-cond_start)
             # accumulate weighted error
             loss = loss + conditions[name].weight * c
-        #print(loss)
+            #print(loss)
         loss.backward()
         return loss
     optimizer.step(closure)
+    if i % 1000 == 0:
+        loss = closure()
+        print('Epoch:', iterations_adam+i, 'loss:', loss.item())
 end = time.time()
-print(end-start)
+print('LBFGS:', end-start)
 
 loss = torch.zeros(1, device=device, requires_grad=True)
 for name in conditions:
@@ -142,7 +160,24 @@ for name in conditions:
     c = conditions[name](model, d)
     # accumulate weighted error
     loss = loss + conditions[name].weight * c
-print(loss)
+print('End loss:', loss.item())
+print('-- Prediction of Solution--')
+resolution = 40
+x = np.linspace(0, w, resolution)
+y = np.linspace(0, h, resolution)
+points = np.array(np.meshgrid(x, y)).T.reshape(-1, 2)
+points = torch.FloatTensor(points).to(device)
+time_points = 3 * torch.ones((1600, 1)).to(device)
+input = {'x' : points, 't' : time_points}
+start = time.time()
+pred = model(input, track_gradients=False).data.cpu().numpy()
+end = time.time()
+max_pred = np.max(pred)
+min_pred = np.min(pred)
+print('Time to evaluate model:', end-start)
+print('Max at t =', time_points[0].item(), 'is:', max_pred)
+print('Min at t =', time_points[0].item(), 'is:', min_pred)
+
 """
 solver = PINNModule(model=SimpleFCN(input_dim=3),  # TODO: comput input_dim in setting
                     problem=setup)

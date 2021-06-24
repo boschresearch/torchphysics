@@ -4,7 +4,7 @@ They supply the necessary training data to the model.
 import abc
 import torch
 
-from .data import Dataset, DataDataset
+from .data import Dataset, DataDataset, FunctiondataDataset
 
 
 class Condition(torch.nn.Module):
@@ -305,11 +305,15 @@ class DirichletCondition(BoundaryCondition):
     dataset_size : int
         Amount of samples in the used dataset. The dataset is generated once at the
         beginning of the training.
+    independent_of_model : bool
+        Indicates if the condition can be computed without the output of the model.
+        E.g. a inital condition for the model is independent of the output, a condition
+        for the first derivative needs the output to compute the derivative.  
     """
     def __init__(self, dirichlet_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
                  weight=1.0, batch_size=1000, num_workers=0, dataset_size=10000,
-                 data_plot_variables=True):
+                 data_plot_variables=True, independent_of_model=True):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
                          num_workers=num_workers, requires_input_grad=False,
                          data_plot_variables=data_plot_variables)
@@ -317,24 +321,38 @@ class DirichletCondition(BoundaryCondition):
         self.boundary_sampling_strategy = boundary_sampling_strategy
         self.sampling_strategy = sampling_strategy
         self.dataset_size = dataset_size
+        self.independent_of_model = independent_of_model
 
     def forward(self, model, data):
-        u = model(data, track_gradients=False)
-        target = self.dirichlet_fun(data)
+        if self.independent_of_model:
+            data, target = data
+            u = model(data, track_gradients=False)
+        else: 
+            u = model(data, track_gradients=True) # track gradient if we have condtions
+                                                  # for the derivative
+            target = self.dirichlet_fun(u, data)
         return self.norm(u, target)
 
     def get_dataloader(self):
         if self.is_registered():
-            dataset = Dataset(self.variables,
-                              sampling_strategy=self.sampling_strategy,
-                              boundary_sampling_strategy=self.boundary_sampling_strategy,
-                              size=self.dataset_size,
-                              boundary=self.boundary_variable)
+            if self.independent_of_model:
+                dataset = FunctiondataDataset(self.variables,
+                                function=self.dirichlet_fun,
+                                sampling_strategy=self.sampling_strategy,
+                                boundary_sampling_strategy=self.boundary_sampling_strategy,
+                                size=self.dataset_size,
+                                boundary=self.boundary_variable)
+            else:
+                dataset = Dataset(self.variables,
+                                sampling_strategy=self.sampling_strategy,
+                                boundary_sampling_strategy=self.boundary_sampling_strategy,
+                                size=self.dataset_size,
+                                boundary=self.boundary_variable)
             return torch.utils.data.DataLoader(
                 dataset,
                 batch_size=self.batch_size,
                 num_workers=self.num_workers
-            )
+                )
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
