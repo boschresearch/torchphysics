@@ -24,9 +24,6 @@ class Condition(torch.nn.Module):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal the number of samples in the used dataset.
     num_workers : int
         Amount of CPU processes that preprocess the data for this condition. 0 disables
         multiprocessing.
@@ -43,14 +40,13 @@ class Condition(torch.nn.Module):
     """
 
     def __init__(self, name, norm, weight=1.0,
-                 batch_size=1000, num_workers=0,
+                 num_workers=0,
                  track_gradients=True,
                  data_plot_variables=True):
         super().__init__()
         self.name = name
         self.norm = norm
         self.weight = weight
-        self.batch_size = batch_size
         self.num_workers = num_workers
         self.track_gradients = track_gradients
         self.data_plot_variables = data_plot_variables
@@ -75,7 +71,6 @@ class Condition(torch.nn.Module):
         dct['name'] = self.name
         dct['norm'] = self.norm.__class__.__name__
         dct['weight'] = self.weight
-        dct['batch_size'] = self.batch_size
         dct['num_workers'] = self.num_workers
         return dct
 
@@ -103,9 +98,6 @@ class DiffEqCondition(Condition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal dataset_size.
     num_workers : int
         Amount of CPU processes that preprocess the data for this condition. 0 disables
         multiprocessing.
@@ -115,10 +107,9 @@ class DiffEqCondition(Condition):
     """
     def __init__(self, pde, norm, name='pde',
                  sampling_strategy='random', weight=1.0,
-                 batch_size=1000, num_workers=0, dataset_size=10000,
+                 num_workers=0, dataset_size=10000,
                  track_gradients=True, data_plot_variables=False):
         super().__init__(name, norm, weight,
-                         batch_size=batch_size,
                          num_workers=num_workers,
                          track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
@@ -181,17 +172,13 @@ class DataCondition(Condition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal dataset_size.
     num_workers : int
         Amount of CPU processes that preprocess the data for this condition. 0 disables
         multiprocessing.
     """
     def __init__(self, data_x, data_u, name, norm,
-                 weight=1.0, batch_size=1000, num_workers=2):
+                 weight=1.0, num_workers=2):
         super().__init__(name, norm, weight,
-                         batch_size=batch_size,
                          num_workers=num_workers,
                          track_gradients=False,
                          data_plot_variables=False)
@@ -236,16 +223,13 @@ class BoundaryCondition(Condition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal dataset_size.
     num_workers : int
         Amount of CPU processes that preprocess the data for this condition. 0 disables
         multiprocessing.
     """
     def __init__(self, name, norm, track_gradients, weight=1.0,
-                 batch_size=10000, num_workers=0, data_plot_variables=True):
-        super().__init__(name, norm, weight=weight, batch_size=batch_size,
+                 num_workers=0, data_plot_variables=True):
+        super().__init__(name, norm, weight=weight,
                          num_workers=num_workers,
                          track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
@@ -291,9 +275,6 @@ class DirichletCondition(BoundaryCondition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal dataset_size.
     num_workers : int
         Amount of CPU processes that preprocess the data for this condition. 0 disables
         multiprocessing.
@@ -307,11 +288,10 @@ class DirichletCondition(BoundaryCondition):
     """
     def __init__(self, dirichlet_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
-                 weight=1.0, batch_size=1000, num_workers=0, dataset_size=10000,
+                 weight=1.0, num_workers=0, dataset_size=10000,
                  data_plot_variables=True, independent_of_model=True):
-        super().__init__(name, norm, weight=weight, batch_size=batch_size,
-                         num_workers=num_workers, track_gradients=False,
-                         data_plot_variables=data_plot_variables)
+        super().__init__(name, norm, weight=weight, num_workers=num_workers,
+                         track_gradients=False, data_plot_variables=data_plot_variables)
         self.dirichlet_fun = dirichlet_fun
         self.boundary_sampling_strategy = boundary_sampling_strategy
         self.sampling_strategy = sampling_strategy
