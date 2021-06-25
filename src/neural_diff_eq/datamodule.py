@@ -38,11 +38,20 @@ class ProblemDataModule(pl.LightningDataModule):
             if isinstance(self.data[cn], dict):
                 for vn in self.data[cn]:
                     self.data[cn][vn] = torch.from_numpy(self.data[cn][vn]).cuda()
+                    self.data[cn][vn].requires_grad = True
+                    #TODO: only set requieres_grad = True for the variables that need a
+                    #      derivative
             else:
                 data_dic, target = self.data[cn]
                 for vn in data_dic:
-                    data_dic[vn] = torch.from_numpy(data_dic[vn]).cuda() #TODO: only call cuda if trainer.on_gpu is True!
-                target = torch.from_numpy(target).cuda()
+                    if isinstance(data_dic[vn], torch.Tensor):
+                        data_dic[vn] = data_dic[vn].cuda() #TODO: only call cuda if trainer.on_gpu is True!
+                    else:
+                        self.data[cn][vn] = torch.from_numpy(self.data[cn][vn]).cuda()
+                if isinstance(target, torch.Tensor):
+                    target = target.cuda()
+                else:
+                    target = torch.from_numpy(target).cuda()
                 self.data[cn] = data_dic, target
 
     def train_dataloader(self):

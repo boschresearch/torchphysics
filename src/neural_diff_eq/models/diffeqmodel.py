@@ -34,6 +34,7 @@ class DiffEqModel(nn.Module):
         torch.Tensor
             A single tensor containing all input variables.
         """
+        '''
         # enable gradient tracking
         if isinstance(track_gradients, bool):
             if track_gradients:
@@ -44,6 +45,7 @@ class DiffEqModel(nn.Module):
                 input_dict[key].requires_grad = True
         else:
             raise TypeError('track_gradients should be either bool or iterable.')
+        '''
         # construct single torch tensor from dictionary
         return torch.cat([v for k, v in input_dict.items()], dim=1)
 
