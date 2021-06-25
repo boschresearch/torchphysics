@@ -329,16 +329,20 @@ class DirichletCondition(BoundaryCondition):
         if self.is_registered():
             data = {}
             for vname in self.variables:
-                if vname == self.boundary:
+                if vname == self.boundary_variable:
                     data[vname] = self.variables[vname].domain.sample_boundary(
                         self.dataset_size,
                         type=self.boundary_sampling_strategy
                     )
+                    if self.independent_of_model:
+                        data[vname] = torch.from_numpy(data[vname])
                 else:
                     data[vname] = self.variables[vname].domain.sample_inside(
                         self.dataset_size,
                         type=self.sampling_strategy
                     )
+                    if self.independent_of_model:
+                        data[vname] = torch.from_numpy(data[vname])
             return (data, self.dirichlet_fun(data))
         else:
             raise RuntimeError("""Conditions need to be registered in a
