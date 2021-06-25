@@ -24,9 +24,6 @@ class Condition(torch.nn.Module):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
     track_gradients : bool or list of str or list of DiffVariables
         Whether the gradients w.r.t. the inputs should be tracked.
         Tracking can be necessary for training of a PDE.
@@ -40,14 +37,12 @@ class Condition(torch.nn.Module):
     """
 
     def __init__(self, name, norm, weight=1.0,
-                 num_workers=0,
                  track_gradients=True,
                  data_plot_variables=True):
         super().__init__()
         self.name = name
         self.norm = norm
         self.weight = weight
-        self.num_workers = num_workers
         self.track_gradients = track_gradients
         self.data_plot_variables = data_plot_variables
 
@@ -71,7 +66,6 @@ class Condition(torch.nn.Module):
         dct['name'] = self.name
         dct['norm'] = self.norm.__class__.__name__
         dct['weight'] = self.weight
-        dct['num_workers'] = self.num_workers
         return dct
 
 
@@ -98,19 +92,15 @@ class DiffEqCondition(Condition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
     dataset_size : int
         Amount of samples in the used dataset. The dataset is generated once at the
         beginning of the training.
     """
     def __init__(self, pde, norm, name='pde',
-                 sampling_strategy='random', weight=1.0,
-                 num_workers=0, dataset_size=10000,
-                 track_gradients=True, data_plot_variables=False):
+                 sampling_strategy='random', weight=1.0, 
+                 dataset_size=10000, track_gradients=True,
+                 data_plot_variables=False):
         super().__init__(name, norm, weight,
-                         num_workers=num_workers,
                          track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
         self.sampling_strategy = sampling_strategy
@@ -172,14 +162,10 @@ class DataCondition(Condition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
     """
     def __init__(self, data_x, data_u, name, norm,
-                 weight=1.0, num_workers=2):
+                 weight=1.0):
         super().__init__(name, norm, weight,
-                         num_workers=num_workers,
                          track_gradients=False,
                          data_plot_variables=False)
         self.data_x = data_x
@@ -223,14 +209,10 @@ class BoundaryCondition(Condition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
     """
     def __init__(self, name, norm, track_gradients, weight=1.0,
-                 num_workers=0, data_plot_variables=True):
+                 data_plot_variables=True):
         super().__init__(name, norm, weight=weight,
-                         num_workers=num_workers,
                          track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
         # boundary_variable is registered when the condition is added to that variable
@@ -275,9 +257,6 @@ class DirichletCondition(BoundaryCondition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
     dataset_size : int
         Amount of samples in the used dataset. The dataset is generated once at the
         beginning of the training.
@@ -288,9 +267,9 @@ class DirichletCondition(BoundaryCondition):
     """
     def __init__(self, dirichlet_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
-                 weight=1.0, num_workers=0, dataset_size=10000,
+                 weight=1.0, dataset_size=10000,
                  data_plot_variables=True, independent_of_model=True):
-        super().__init__(name, norm, weight=weight, num_workers=num_workers,
+        super().__init__(name, norm, weight=weight,
                          track_gradients=False, data_plot_variables=data_plot_variables)
         self.dirichlet_fun = dirichlet_fun
         self.boundary_sampling_strategy = boundary_sampling_strategy

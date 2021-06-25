@@ -30,11 +30,17 @@ class ProblemDataModule(pl.LightningDataModule):
     """
     TODO: enable varying batches, i.e. non-full-batch-mode and maybe even a mode
     for datasets that are too large for gpu mem
+
+    num_workers : int
+        Amount of CPU processes that preprocess the data for this problem. 0 disables
+        multiprocessing. Since the whole dataset should stay on the gpu, this preprocessing
+        does not happen during training but only before.
     """
-    def __init__(self, problem, n_iterations):
+    def __init__(self, problem, n_iterations, num_workers=0):
         super().__init__()
         self.problem = problem
         self.n_iterations = n_iterations
+        self.num_workers = num_workers
 
     def prepare_data(self):
         # Define steps that should be done
@@ -105,7 +111,8 @@ class ProblemDataModule(pl.LightningDataModule):
         # Return DataLoader for Training Data here
         dataloader = torch.utils.data.DataLoader(
             SimpleDataset(self.train_data, self.n_iterations),
-            batch_size=None
+            batch_size=None,
+            num_workers=self.num_workers
         )
         return dataloader
 
@@ -113,6 +120,7 @@ class ProblemDataModule(pl.LightningDataModule):
         # Return DataLoader for Validation Data here
         dataloader = torch.utils.data.DataLoader(
             SimpleDataset(self.val_data, 1),
-            batch_size=None
+            batch_size=None,
+            num_workers=self.num_workers
         )
         return dataloader
