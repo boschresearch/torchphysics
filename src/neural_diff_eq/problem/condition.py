@@ -97,7 +97,7 @@ class DiffEqCondition(Condition):
         beginning of the training.
     """
     def __init__(self, pde, norm, name='pde',
-                 sampling_strategy='random', weight=1.0, 
+                 sampling_strategy='random', weight=1.0,
                  dataset_size=10000, track_gradients=True,
                  data_plot_variables=False):
         super().__init__(name, norm, weight,
@@ -268,14 +268,13 @@ class DirichletCondition(BoundaryCondition):
     def __init__(self, dirichlet_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
                  weight=1.0, dataset_size=10000,
-                 data_plot_variables=True, independent_of_model=True):
+                 data_plot_variables=True):
         super().__init__(name, norm, weight=weight,
                          track_gradients=False, data_plot_variables=data_plot_variables)
         self.dirichlet_fun = dirichlet_fun
         self.boundary_sampling_strategy = boundary_sampling_strategy
         self.sampling_strategy = sampling_strategy
         self.dataset_size = dataset_size
-        self.independent_of_model = independent_of_model
 
     def forward(self, model, data):
         data, target = data
