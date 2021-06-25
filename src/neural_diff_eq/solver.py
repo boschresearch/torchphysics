@@ -70,19 +70,7 @@ class PINNModule(pl.LightningModule):
         for name in conditions:
             dataloader_dict[name] = conditions[name].get_dataloader()
         return dataloader_dict
-    """
-    def train_dataloader(self):
-        if self.problem.get_train_conditions() == {}:
-            return None
-        return self._get_dataloader(self.problem.get_train_conditions())
 
-    def val_dataloader(self):
-        # For multiple validation dataloaders, lightning needs a CombinedLoader
-        if self.problem.get_val_conditions() == {}:
-            return None
-        dataloader_dict = self._get_dataloader(self.problem.get_val_conditions())
-        return pl.trainer.supporters.CombinedLoader(dataloader_dict, 'max_size_cycle')
-    """
     def training_step(self, batch, batch_idx):
         loss = torch.zeros(1, device=self.device, requires_grad=True)
         conditions = self.problem.get_train_conditions()
@@ -105,7 +93,7 @@ class PINNModule(pl.LightningModule):
         for name in conditions:
             # if a condition does not require input gradients, we do not
             # compute them during validation
-            torch.set_grad_enabled(conditions[name].requires_input_grad)
+            torch.set_grad_enabled(conditions[name].track_gradients is not False)
             data = batch[name]
             c = conditions[name](self.model, data)
             self.log(name, c)

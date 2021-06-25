@@ -4,8 +4,6 @@ They supply the necessary training data to the model.
 import abc
 import torch
 
-from .data import Dataset, DataDataset, FunctiondataDataset
-
 
 class Condition(torch.nn.Module):
     """
@@ -32,9 +30,13 @@ class Condition(torch.nn.Module):
     num_workers : int
         Amount of CPU processes that preprocess the data for this condition. 0 disables
         multiprocessing.
-    requires_input_grad : bool
-        If True, the gradients are still tracked during validation to enable the
-        computation of derivatives w.r.t. the inputs
+    track_gradients : bool or list of str or list of DiffVariables
+        Whether the gradients w.r.t. the inputs should be tracked.
+        Tracking can be necessary for training of a PDE.
+        If True, all gradients will be tracked.
+        If a list of strings or variables is passed, gradient is tracked
+        only for the variables in the list.
+        If False, no gradients will be tracked.
     data_plot_variables : bool or tuple
         The variables which are used to log the used training data in a scatter plot.
         If False, no plots are created. If True, behaviour is defined in each condition.
@@ -42,7 +44,7 @@ class Condition(torch.nn.Module):
 
     def __init__(self, name, norm, weight=1.0,
                  batch_size=1000, num_workers=0,
-                 requires_input_grad=True,
+                 track_gradients=True,
                  data_plot_variables=True):
         super().__init__()
         self.name = name
@@ -50,7 +52,7 @@ class Condition(torch.nn.Module):
         self.weight = weight
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.requires_input_grad = requires_input_grad
+        self.track_gradients = track_gradients
         self.data_plot_variables = data_plot_variables
 
         # variables are registered when the condition is added to a problem or variable
@@ -114,10 +116,11 @@ class DiffEqCondition(Condition):
     def __init__(self, pde, norm, name='pde',
                  sampling_strategy='random', weight=1.0,
                  batch_size=1000, num_workers=0, dataset_size=10000,
-                 data_plot_variables=False):
+                 track_gradients=True, data_plot_variables=False):
         super().__init__(name, norm, weight,
                          batch_size=batch_size,
                          num_workers=num_workers,
+                         track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
         self.sampling_strategy = sampling_strategy
         self.pde = pde
@@ -190,7 +193,7 @@ class DataCondition(Condition):
         super().__init__(name, norm, weight,
                          batch_size=batch_size,
                          num_workers=num_workers,
-                         requires_input_grad=False,
+                         track_gradients=False,
                          data_plot_variables=False)
         self.data_x = data_x
         self.data_u = data_u
@@ -240,11 +243,11 @@ class BoundaryCondition(Condition):
         Amount of CPU processes that preprocess the data for this condition. 0 disables
         multiprocessing.
     """
-    def __init__(self, name, norm, requires_input_grad, weight=1.0,
+    def __init__(self, name, norm, track_gradients, weight=1.0,
                  batch_size=10000, num_workers=0, data_plot_variables=True):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
                          num_workers=num_workers,
-                         requires_input_grad=requires_input_grad,
+                         track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
         # boundary_variable is registered when the condition is added to that variable
         self.boundary_variable = None  # string
@@ -255,9 +258,9 @@ class BoundaryCondition(Condition):
         return dct
 
     def get_data_plot_variables(self):
-        if self.data_plot_variables == True:
+        if self.data_plot_variables is True:
             return self.boundary_variable
-        elif self.data_plot_variables == False:
+        elif self.data_plot_variables is False:
             return None
         else:
             return self.data_plot_variables
@@ -300,14 +303,14 @@ class DirichletCondition(BoundaryCondition):
     independent_of_model : bool
         Indicates if the condition can be computed without the output of the model.
         E.g. a inital condition for the model is independent of the output, a condition
-        for the first derivative needs the output to compute the derivative.  
+        for the first derivative needs the output to compute the derivative.
     """
     def __init__(self, dirichlet_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
                  weight=1.0, batch_size=1000, num_workers=0, dataset_size=10000,
                  data_plot_variables=True, independent_of_model=True):
         super().__init__(name, norm, weight=weight, batch_size=batch_size,
-                         num_workers=num_workers, requires_input_grad=False,
+                         num_workers=num_workers, track_gradients=False,
                          data_plot_variables=data_plot_variables)
         self.dirichlet_fun = dirichlet_fun
         self.boundary_sampling_strategy = boundary_sampling_strategy
@@ -316,13 +319,8 @@ class DirichletCondition(BoundaryCondition):
         self.independent_of_model = independent_of_model
 
     def forward(self, model, data):
-        if self.independent_of_model:
-            data, target = data
-            u = model(data, track_gradients=False)
-        else: 
-            u = model(data, track_gradients=True) # track gradient if we have condtions
-                                                  # for the derivative
-            target = self.dirichlet_fun(u, data)
+        data, target = data
+        u = model(data)
         return self.norm(u, target)
 
     def get_data(self):
@@ -334,15 +332,11 @@ class DirichletCondition(BoundaryCondition):
                         self.dataset_size,
                         type=self.boundary_sampling_strategy
                     )
-                    if self.independent_of_model:
-                        data[vname] = torch.from_numpy(data[vname])
                 else:
                     data[vname] = self.variables[vname].domain.sample_inside(
                         self.dataset_size,
                         type=self.sampling_strategy
                     )
-                    if self.independent_of_model:
-                        data[vname] = torch.from_numpy(data[vname])
             return (data, self.dirichlet_fun(data))
         else:
             raise RuntimeError("""Conditions need to be registered in a
