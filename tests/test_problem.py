@@ -1,6 +1,6 @@
-from neural_diff_eq.problem import Setting, Variable
+from neural_diff_eq.problem import Variable
 from neural_diff_eq.problem.condition import BoundaryCondition, Condition
-
+from neural_diff_eq.setting import Setting
 
 def test_empty_init():
     x = Variable(name='x',
