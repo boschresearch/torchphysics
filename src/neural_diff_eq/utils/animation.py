@@ -6,7 +6,7 @@ from matplotlib import cm
 from matplotlib import animation as anim
 import numpy as np
 import torch
-from . import plot 
+from . import plot
 from ..problem.domain.domain1D import Interval
 
 
@@ -14,7 +14,7 @@ def animation(model, plot_variables, domain_points,
               animation_variable, frame_number, ani_speed=50, angle=[30, 30],
               dic_for_other_variables=None, all_variables=None):
     '''Main function for animations
-    
+
     Parameters
     ----------
     model : DiffEqModel
@@ -50,17 +50,17 @@ def animation(model, plot_variables, domain_points,
         The figure handle of the created plot   
     animation.FuncAnimation
         The function that handles the animation  
-    '''    
+    '''
     if not isinstance(animation_variable.domain, Interval):
         raise ValueError('Domain of animation variable has to be an interval')
     if not isinstance(plot_variables, list):
         plot_variables = [plot_variables]
     if len(plot_variables) == 1 and plot_variables[0].domain.dim == 2:
-        return _animation2D(model, plot_variables[0], domain_points, 
+        return _animation2D(model, plot_variables[0], domain_points,
                             animation_variable, frame_number, ani_speed,
                             angle, dic_for_other_variables, all_variables)
     elif len(plot_variables) == 1 and plot_variables[0].domain.dim == 1:
-        return _animation1D(model, plot_variables[0], domain_points, 
+        return _animation1D(model, plot_variables[0], domain_points,
                             animation_variable, frame_number, ani_speed,
                             dic_for_other_variables, all_variables)
     else:
@@ -73,10 +73,10 @@ def _animation1D(model, plot_variable, points, animation_variable, frame_number,
     animation_points = plot._create_domain(animation_variable, frame_number)[0]
 
     input_dic[animation_variable.name] = animation_points[0][0]*torch.ones((points, 1))
-    input_dic = plot._create_input_dic(input_dic, points, 
+    input_dic = plot._create_input_dic(input_dic, points,
                                        dic_for_other_variables, all_variables)
-    
-    outputs = _evaluate_model(model, points, animation_points, 
+
+    outputs = _evaluate_model(model, points, animation_points,
                               animation_variable.name, input_dic)
     output_max, output_min = _get_max_min(outputs)
     # construct the figure handle and axis for the animation
@@ -86,18 +86,19 @@ def _animation1D(model, plot_variable, points, animation_variable, frame_number,
     ax.set_xlabel(plot_variable.name)
     ax.grid()
     line, = ax.plot([], [], lw=2)
-    text_box = ax.text(0.05,0.95, '', bbox={'facecolor':'w', 'pad':5}, 
-                       transform=ax.transAxes, va='top', ha='left')   
+    text_box = ax.text(0.05, 0.95, '', bbox={'facecolor': 'w', 'pad': 5},
+                       transform=ax.transAxes, va='top', ha='left')
     # create the animation
     if dic_for_other_variables is None:
         dic_for_other_variables = {}
+
     def animate(frame_number, outputs, line):
-        line.set_data(domain_points.flatten(), outputs[:,frame_number])
-        dic_for_other_variables[animation_variable.name] = animation_points[frame_number][0] 
-        info_string = plot._create_info_text(dic_for_other_variables)  
+        line.set_data(domain_points.flatten(), outputs[:, frame_number])
+        dic_for_other_variables[animation_variable.name] = animation_points[frame_number][0]
+        info_string = plot._create_info_text(dic_for_other_variables)
         text_box.set_text(info_string)
-    
-    ani = anim.FuncAnimation(fig, animate, frames=frame_number, 
+
+    ani = anim.FuncAnimation(fig, animate, frames=frame_number,
                              fargs=(outputs, line), interval=ani_speed)
     return fig, ani
 
@@ -107,15 +108,15 @@ def _animation2D(model, plot_variable, points, animation_variable, frame_number,
     domain_points, input_dic = plot._create_domain(plot_variable, points)
     animation_points = plot._create_domain(animation_variable, frame_number)[0]
     points = len(domain_points)
-    
+
     input_dic[animation_variable.name] = animation_points[0][0]*torch.ones((points, 1))
-    input_dic = plot._create_input_dic(input_dic, points, 
+    input_dic = plot._create_input_dic(input_dic, points,
                                        dic_for_other_variables, all_variables)
-    
-    outputs = _evaluate_model(model, points, animation_points, 
+
+    outputs = _evaluate_model(model, points, animation_points,
                               animation_variable.name, input_dic)
     output_max, output_min = _get_max_min(outputs)
-    triangulation =  plot._triangulation_of_domain(plot_variable, domain_points)
+    triangulation = plot._triangulation_of_domain(plot_variable, domain_points)
     # construct the figure handle and axis for the animation
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
@@ -124,32 +125,33 @@ def _animation2D(model, plot_variable, points, animation_variable, frame_number,
     ax.set_ylim((np.min(domain_points[:, 1]), np.max(domain_points[:, 1])))
     ax.set_zlim((output_min, output_max))
     ax.set_xlabel(plot_variable.name + '1')
-    ax.set_ylabel(plot_variable.name + '2') 
-    text_box = ax.text2D(1.1,0, '', bbox={'facecolor':'w', 'pad':5}, 
-                         transform=ax.transAxes, va='top', ha='left')   
-        
-    # construct an auxiliary plot to get a fixed colorbar for the animation     
-    surf = [ax.plot_surface(np.zeros((2, 2)),np.zeros((2, 2)),np.zeros((2, 2)), 
+    ax.set_ylabel(plot_variable.name + '2')
+    text_box = ax.text2D(1.1, 0, '', bbox={'facecolor': 'w', 'pad': 5},
+                         transform=ax.transAxes, va='top', ha='left')
+
+    # construct an auxiliary plot to get a fixed colorbar for the animation
+    surf = [ax.plot_surface(np.zeros((2, 2)), np.zeros((2, 2)), np.zeros((2, 2)),
                             color='0.75', cmap=cm.jet, vmin=output_min,
                             vmax=output_max, antialiased=False)]
-    plt.colorbar(surf[0], shrink=0.5, aspect=10, pad=0.1) 
+    plt.colorbar(surf[0], shrink=0.5, aspect=10, pad=0.1)
 
     # create the animation
     if dic_for_other_variables is None:
         dic_for_other_variables = {}
+
     def animate(frame_number, outputs, surf):
         surf[0].remove()
         surf[0] = ax.plot_trisurf(triangulation, outputs[:, frame_number],
-                                  color='0.75', cmap=cm.jet, 
+                                  color='0.75', cmap=cm.jet,
                                   vmin=output_min, vmax=output_max, antialiased=False)
-        new_animation_point = animation_points[frame_number][0] 
+        new_animation_point = animation_points[frame_number][0]
         dic_for_other_variables[animation_variable.name] = new_animation_point
-        info_string = plot._create_info_text(dic_for_other_variables)  
+        info_string = plot._create_info_text(dic_for_other_variables)
         text_box.set_text(info_string)
-    
-    ani = anim.FuncAnimation(fig, animate, frames=frame_number, 
-                                  fargs=(outputs, surf), interval=ani_speed)
-    
+
+    ani = anim.FuncAnimation(fig, animate, frames=frame_number,
+                             fargs=(outputs, surf), interval=ani_speed)
+
     return fig, ani
 
 
@@ -161,6 +163,6 @@ def _evaluate_model(model, points, animation_points, animation_name, input_dic):
     outputs = np.zeros((points, len(animation_points)))
     for i in range(len(animation_points)):
         input_dic[animation_name] = animation_points[i][0]*torch.ones((points, 1))
-        out = model.forward(input_dic, track_gradients=False)
-        outputs[:,i] = out.data.cpu().numpy().flatten()
+        out = model.forward(input_dic)
+        outputs[:, i] = out.data.cpu().numpy().flatten()
     return outputs

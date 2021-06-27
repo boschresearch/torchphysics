@@ -13,7 +13,7 @@ class DiffEqModel(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def _prepare_inputs(self, input_dict, track_gradients=True):
+    def _prepare_inputs(self, input_dict):
         """Stacks all input variables into a single tensor.
 
         Parameters

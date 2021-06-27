@@ -32,7 +32,7 @@ class PINNModule(pl.LightningModule):
                  lr=1, log_plotter=None):
         super().__init__()
         self.model = model
-        self.problem = problem
+        self.datamodule = problem
 
         self.optimizer = optimizer
         self.lr = lr
@@ -43,7 +43,7 @@ class PINNModule(pl.LightningModule):
         dct = {}
         dct['name'] = 'PINNModule'
         dct['model'] = self.model.serialize()
-        dct['problem'] = self.problem.serialize()
+        dct['problem'] = self.datamodule.serialize()
         dct['optimizer'] = {'name': self.optimizer.__class__.__name__,
                             'lr': self.lr
                             }
@@ -52,7 +52,14 @@ class PINNModule(pl.LightningModule):
     def forward(self, inputs):
         """Run the model on a given input batch, without tracking gradients
         """
-        return self.model.forward(inputs)
+        try:
+            ordered_inputs = {k: inputs[k] for k in self.datamodule.variables.keys()}
+            if len(ordered_inputs) < len(inputs):
+                raise KeyError
+        except KeyError:
+            print(f"""The model was trained on Variables with different names.
+                      Please use keys {self.datamodule.variables.keys()}.""")
+        return self.model.forward(ordered_inputs)
 
     def on_train_start(self):
         self.logger.experiment.add_text(
@@ -73,7 +80,7 @@ class PINNModule(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         loss = torch.zeros(1, device=self.device, requires_grad=True)
-        conditions = self.problem.get_train_conditions()
+        conditions = self.datamodule.get_train_conditions()
         for name in conditions:
             data = batch[name]
             # log scatter plots of the used training data
@@ -89,7 +96,7 @@ class PINNModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss = torch.zeros(1, device=self.device)
-        conditions = self.problem.get_val_conditions()
+        conditions = self.datamodule.get_val_conditions()
         for name in conditions:
             # if a condition does not require input gradients, we do not
             # compute them during validation
