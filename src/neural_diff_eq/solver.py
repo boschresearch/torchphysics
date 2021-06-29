@@ -29,13 +29,16 @@ class PINNModule(pl.LightningModule):
     """
 
     def __init__(self, model, problem, optimizer=torch.optim.LBFGS,
-                 lr=1, log_plotter=None):
+                 optim_params={}, lr=1, log_plotter=None,
+                 scheduler=None):
         super().__init__()
         self.model = model
         self.datamodule = problem
 
         self.optimizer = optimizer
         self.lr = lr
+        self.optim_params = optim_params
+        self.scheduler = scheduler
 
         self.log_plotter = log_plotter
 
@@ -47,6 +50,7 @@ class PINNModule(pl.LightningModule):
         dct['optimizer'] = {'name': self.optimizer.__class__.__name__,
                             'lr': self.lr
                             }
+        dct['optim_params'] = self.optim_params
         return dct
 
     def forward(self, inputs):
@@ -70,7 +74,14 @@ class PINNModule(pl.LightningModule):
         )
 
     def configure_optimizers(self):
-        return self.optimizer(self.model.parameters(), lr=self.lr)
+        optimizer = self.optimizer(self.model.parameters(),
+                                   lr=self.lr,
+                                   **self.optim_params)
+        if self.scheduler is None:
+            return optimizer
+        lr_scheduler = self.scheduler['class'](
+            optimizer, **self.scheduler['args'])
+        return [optimizer], [lr_scheduler]
 
     def _get_dataloader(self, conditions):
         dataloader_dict = {}
@@ -87,9 +98,10 @@ class PINNModule(pl.LightningModule):
             # self.log_condition_data_plot(name, conditions[name], data)
             # get error for this conditions
             c = conditions[name](self.model, data)
-            self.log(name, c)
+            self.log(f'{name}/train', c)
             # accumulate weighted error
             loss = loss + conditions[name].weight * c
+        self.log('loss/train', loss)
         if self.log_plotter is not None:
             self.log_plot()
         return loss
@@ -103,8 +115,9 @@ class PINNModule(pl.LightningModule):
             torch.set_grad_enabled(conditions[name].track_gradients is not False)
             data = batch[name]
             c = conditions[name](self.model, data)
-            self.log(name, c)
+            self.log(f'{name}/val', c)
             loss = loss + conditions[name].weight * c
+        self.log('loss/val', loss)
 
     def log_condition_data_plot(self, name, condition, data):
         if self.global_step % 10 == 0:
