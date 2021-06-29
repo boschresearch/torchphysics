@@ -173,7 +173,7 @@ class DataCondition(Condition):
 
     def forward(self, model, data):
         data, target = data
-        u = model(data, track_gradients=False)
+        u = model(data)
         return self.norm(u, target)
 
     def get_data(self):

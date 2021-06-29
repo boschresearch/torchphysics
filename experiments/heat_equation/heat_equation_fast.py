@@ -8,8 +8,7 @@ import torch
 import numpy as np
 import pytorch_lightning as pl
 
-from neural_diff_eq.problem import (Variable,
-                                    Setting)
+from neural_diff_eq.problem import Variable
 from neural_diff_eq.problem.domain import (Rectangle,
                                            Interval)
 from neural_diff_eq.problem.condition import (DirichletCondition,
@@ -17,12 +16,12 @@ from neural_diff_eq.problem.condition import (DirichletCondition,
 from neural_diff_eq.models import SimpleFCN
 from neural_diff_eq import PINNModule
 from neural_diff_eq.utils import laplacian, gradient
-from neural_diff_eq.datamodule import ProblemDataModule
+from neural_diff_eq.setting import Setting
 
 import time
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+pl.seed_everything(43)
 device = 'cuda'
 
 D = 1.18
@@ -54,9 +53,8 @@ norm = torch.nn.MSELoss()
 x.add_train_condition(DirichletCondition(dirichlet_fun=x_dirichlet_fun,
                                          name='dirichlet',
                                          norm=norm,
-                                         batch_size=500,
                                          dataset_size=500,
-                                         num_workers=0))
+                                         ))
 
 
 def t_dirichlet_fun(input):
@@ -66,9 +64,7 @@ def t_dirichlet_fun(input):
 t.add_train_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                          name='dirichlet',
                                          norm=norm,
-                                         batch_size=1000,
                                          dataset_size=1000,
-                                         num_workers=0,
                                          boundary_sampling_strategy='lower_bound_only'))
 
 
@@ -78,46 +74,62 @@ def pde(u, input):
 
 train_cond = DiffEqCondition(pde=pde,
                              norm=norm,
-                             batch_size=2500,
                              dataset_size=2500,
-                             num_workers=2)
+                             )
 
 setup = Setting(variables=(x, t),
-                train_conditions={'pde': train_cond})
+                train_conditions={'pde': train_cond},
+                n_iterations=3000,
+                num_workers=0)
 
 model = SimpleFCN(input_dim=3).to(device)
+
+scheduler = {
+            'class': torch.optim.lr_scheduler.StepLR,
+            'args': {'step_size': 1, 'gamma': 0.8}}
 
 solver = PINNModule(model=model,
                     problem=setup,
                     optimizer=torch.optim.Adam,
-                    lr=1e-3,
+                    lr=5e-3,
+                    scheduler=scheduler
                     #log_plotter=plotter
                     )
-datamod = ProblemDataModule(problem=setup, n_iterations=3000)
+
 trainer = pl.Trainer(gpus='-1',
                      #accelerator='ddp',
                      #plugins=pl.plugins.DDPPlugin(find_unused_parameters=False),
                      num_sanity_val_steps=0,
                      check_val_every_n_epoch=100,
-                     log_every_n_steps=1,
-                     max_epochs=1,
+                     log_every_n_steps=10,
+                     flush_logs_every_n_steps=200,
+                     max_epochs=10,
+                     benchmark=True,
                      # limit_val_batches=10,  # The validation dataset is probably pretty big,
                      # so you need to see how much you want to
                      # check every validation
                      # checkpoint_callback=False)
+                     logger=pl.loggers.TensorBoardLogger(save_dir=os.getcwd(),
+                                                         version='Adam_lr5e-3_',
+                                                         name='lightning_logs')
                      )
 
 print('--Start Training--')
+"""
+solver.optimizer = torch.optim.LBFGS
+solver.optim_params = {'max_iter': 10,
+                       'history_size': 100}
 start = time.time()
-trainer.fit(solver, datamod)
+trainer.fit(solver)
+end = time.time()
+print('LBFGS:', end-start)
+"""
+start = time.time()
+trainer.fit(solver)
 end = time.time()
 print('Adam:', end-start)
 
-solver.optimizer = torch.optim.LBFGS
-start = time.time()
-trainer.fit(solver, datamod)
-end = time.time()
-print('LBFGS:', end-start)
+
 print('-- Prediction of Solution--')
 resolution = 40
 x = np.linspace(0, w, resolution)

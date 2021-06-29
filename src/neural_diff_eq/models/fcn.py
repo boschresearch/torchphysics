@@ -56,7 +56,7 @@ class BlockFCN(DiffEqModel):
         dct['output_dim'] = self.output_dim
         return dct
 
-    def forward(self, input_dict, track_gradients=True):
+    def forward(self, input_dict):
         """Stacks all input variables into a single tensor.
 
         Parameters
@@ -78,7 +78,7 @@ class BlockFCN(DiffEqModel):
             Output of the model
         """
         # prepare input
-        x = self._prepare_inputs(input_dict, track_gradients)
+        x = self._prepare_inputs(input_dict)
         # apply model
         for layer in self.layers:
             x = layer(x)
@@ -132,7 +132,7 @@ class SimpleFCN(DiffEqModel):
         dct['output_dim'] = self.output_dim
         return dct
 
-    def forward(self, input_dict, track_gradients=True):
+    def forward(self, input_dict):
         """Stacks all input variables into a single tensor.
 
         Parameters
@@ -154,7 +154,7 @@ class SimpleFCN(DiffEqModel):
             Output of the model
         """
         # prepare input
-        x = self._prepare_inputs(input_dict, track_gradients)
+        x = self._prepare_inputs(input_dict)
         # apply model
         for layer in self.layers:
             x = layer(x)

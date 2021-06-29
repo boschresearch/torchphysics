@@ -109,7 +109,7 @@ def _plot2D(model, plot_variable, points, angle,
     points = len(domain_points)
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
                                   all_variables, device)
-    output = model.forward(input_dic, track_gradients=False).data.cpu().numpy()
+    output = model.forward(input_dic).data.cpu().numpy()
     triangulation = _triangulation_of_domain(plot_variable, domain_points)
 
     fig = plt.figure()
@@ -134,7 +134,7 @@ def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables
     domain_points, input_dic = _create_domain(plot_variable, points, device)
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
                                   all_variables, device)
-    output = model.forward(input_dic, track_gradients=False).data.cpu().numpy()
+    output = model.forward(input_dic).data.cpu().numpy()
     fig = plt.figure()
     ax = fig.add_subplot()
     ax.grid()
@@ -159,7 +159,7 @@ def _plot2D_2_variables(model, variable_1, variable_2, points, angle,
                  variable_2.name: torch.FloatTensor(np.ravel(axis_2, device=device).reshape(-1, 1))}
     input_dic = _create_input_dic(input_dic, points**2, dic_for_other_variables,
                                   all_variables, device)
-    output = model.forward(input_dic, track_gradients=False).data.cpu().numpy()
+    output = model.forward(input_dic).data.cpu().numpy()
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
