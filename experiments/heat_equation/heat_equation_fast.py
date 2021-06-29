@@ -20,7 +20,7 @@ from neural_diff_eq.setting import Setting
 
 import time
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 pl.seed_everything(43)
 device = 'cuda'
 
@@ -82,7 +82,7 @@ setup = Setting(variables=(x, t),
                 n_iterations=3000,
                 num_workers=0)
 
-model = SimpleFCN(input_dim=3).to(device)
+model = SimpleFCN(input_dim=3)
 
 scheduler = {
             'class': torch.optim.lr_scheduler.StepLR,
@@ -96,7 +96,7 @@ solver = PINNModule(model=model,
                     #log_plotter=plotter
                     )
 
-trainer = pl.Trainer(gpus='-1',
+trainer = pl.Trainer(gpus=None,#'-1',
                      #accelerator='ddp',
                      #plugins=pl.plugins.DDPPlugin(find_unused_parameters=False),
                      num_sanity_val_steps=0,
