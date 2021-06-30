@@ -1,7 +1,177 @@
+import pytest
 from neural_diff_eq.problem import Variable
+from neural_diff_eq.problem import problem
 from neural_diff_eq.problem.condition import BoundaryCondition, Condition
 from neural_diff_eq.setting import Setting
+from neural_diff_eq.problem.domain.domain import Domain
 
+
+# Test Problem
+def test_create_empty_problem():
+    prob = problem.Problem(train_conditions={}, val_conditions={})
+    assert prob.train_conditions == {}
+    assert prob.val_conditions == {}
+
+
+def test_create_problem_wrong_conditions():
+    with pytest.raises(TypeError):
+        _ = problem.Problem(train_conditions=3, val_conditions={})
+
+
+def test_none_methods_problem():
+    prob = problem.Problem(train_conditions={}, val_conditions={})
+    assert prob.serialize() is None
+    assert prob.get_dim() is None
+    assert prob.get_train_conditions() is None
+    assert prob.get_val_conditions() is None
+    assert prob.add_train_condition(1) is None
+    assert prob.add_val_condition(1) is None
+    assert prob.is_well_posed() is None
+
+
+# Test Variable:
+def test_create_variable():
+    vari = Variable(name='test', domain=None)
+    assert vari.name == 'test'
+    assert vari.domain is None
+    assert vari.context is None
+    assert vari.train_conditions == {}
+    assert vari.val_conditions == {}
+    assert vari.order == 0
+
+
+def test_create_variable_with_conditions():
+    condi = BoundaryCondition(name='test cond', norm=None,
+                              track_gradients=True)
+    vari = Variable(name='test', domain=None, 
+                    train_conditions=condi, val_conditions={})
+    assert vari.train_conditions['test cond'] == condi
+
+
+def test_create_variable_with_list_of_conditions():
+    condi = BoundaryCondition(name='test cond', norm=None,
+                              track_gradients=True)
+    condi_2 = BoundaryCondition(name='test cond 2', norm=None,
+                                track_gradients=True)
+    vari = Variable(name='test', domain=None, 
+                    train_conditions=[condi, condi_2])
+    assert vari.train_conditions['test cond'] == condi
+    assert vari.train_conditions['test cond 2'] == condi_2
+
+
+def test_create_variable_with_dic_of_conditions():
+    condi = BoundaryCondition(name='test cond', norm=None,
+                              track_gradients=True)
+    condi_2 = BoundaryCondition(name='test cond 2', norm=None,
+                                track_gradients=True)
+    vari = Variable(name='test', domain=None, 
+                    train_conditions={'1': condi, '2': condi_2})
+    assert vari.train_conditions['test cond'] == condi
+    assert vari.train_conditions['test cond 2'] == condi_2
+
+
+def test_add_wrong_train_condition_variable():
+    vari = Variable(name='test', domain=None)
+    with pytest.raises(AssertionError):
+        vari.add_train_condition(Condition(name='test', norm=None))
+
+
+def test_cant_add_train_condition_two_times_to_variable():
+    vari = Variable(name='test', domain=None)
+    vari.add_train_condition(BoundaryCondition(name='test', norm=None,
+                                               track_gradients=True))
+    with pytest.raises(AssertionError):
+        vari.add_train_condition(BoundaryCondition(name='test', norm=None,
+                                                   track_gradients=True))
+
+
+def test_add_wrong_validation_condition_variable():
+    vari = Variable(name='test', domain=None)
+    with pytest.raises(AssertionError):
+        vari.add_val_condition(Condition(name='test', norm=None))
+
+
+def test_cant_add_valiation_condition_two_times_to_variable():
+    vari = Variable(name='test', domain=None)
+    vari.add_val_condition(BoundaryCondition(name='test', norm=None,
+                                             track_gradients=True))
+    with pytest.raises(AssertionError):
+        vari.add_val_condition(BoundaryCondition(name='test', norm=None,
+                                                 track_gradients=True))
+
+
+def test_add_train_condition_in_variable():
+    vari = Variable(name='test', domain=None)
+    condi = BoundaryCondition(name='test cond', norm=None,
+                              track_gradients=True)
+    vari.add_train_condition(condi)
+    assert condi.boundary_variable == 'test'
+    assert vari.train_conditions['test cond'] == condi
+    assert vari.val_conditions == {}
+
+
+def test_add_validation_condition_in_variable():
+    vari = Variable(name='test', domain=None)
+    condi = BoundaryCondition(name='test cond', norm=None,
+                            track_gradients=True)
+    vari.add_val_condition(condi)
+    assert condi.boundary_variable == 'test'
+    assert vari.val_conditions['test cond'] == condi
+    assert vari.train_conditions == {}
+
+
+def test_get_train_conditions():
+    vari = Variable(name='test', domain=None)
+    condi = BoundaryCondition(name='test cond', norm=None,
+                              track_gradients=True)
+    vari.add_train_condition(condi)
+    condi_2 = BoundaryCondition(name='test cond 2', norm=None,
+                                track_gradients=True)
+    vari.add_train_condition(condi_2)
+    dic = vari.get_train_conditions()
+    assert dic['test cond'] == condi
+    assert dic['test cond 2'] == condi_2
+
+
+def test_get_validation_conditions():
+    vari = Variable(name='test', domain=None)
+    condi = BoundaryCondition(name='test cond', norm=None,
+                              track_gradients=True)
+    vari.add_val_condition(condi)
+    condi_2 = BoundaryCondition(name='test cond 2', norm=None,
+                                track_gradients=True)
+    vari.add_val_condition(condi_2)
+    dic = vari.get_val_conditions()
+    assert dic['test cond'] == condi
+    assert dic['test cond 2'] == condi_2
+
+
+def test_well_posed_variable():
+    vari = Variable(name='test', domain=None)
+    with pytest.raises(NotImplementedError):
+        vari.is_well_posed() # Add a test if implemented!
+
+
+def test_get_dim_of_variable():
+    vari = Variable(name='test', domain=Domain(dim=4, volume=2, surface=1, tol=0))
+    assert vari.get_dim() == 4
+
+
+def test_serialize_variable():
+    condi = BoundaryCondition(name='test cond', norm=None,
+                              track_gradients=True)
+    d = Domain(dim=4, volume=2, surface=1, tol=0)
+    vari = Variable(name='test', domain=d, 
+                    train_conditions={'test cond': condi}, 
+                    val_conditions={'test cond': condi})
+    dct = vari.serialize()
+    assert dct['name'] == 'test'
+    assert dct['domain'] == d.serialize()
+    assert dct['train_conditions']['test cond'] == condi.serialize()
+    assert dct['val_conditions']['test cond'] == condi.serialize()
+
+
+# Test Setting
 def test_empty_init():
     x = Variable(name='x',
                  domain=None)

@@ -255,6 +255,20 @@ def test_cut_many_times():
     assert C.is_on_boundary(i).all()
 
 
+def test_serialize_cut():
+    R, C = _create_domains()
+    C = Cut(R, C)
+    dct = C.serialize()
+    assert dct['dim'] == 2
+    assert dct['tol'] == 1e-06
+    assert dct['name'] == '(Rectangle - Circle)'
+    C = Cut(C, Circle([1, 1], 0.5))
+    dct = C.serialize()
+    assert dct['dim'] == 2
+    assert dct['tol'] == 1e-06
+    assert dct['name'] == '((Rectangle - Circle) - Circle)'
+
+
 # Test Union
 def test_union():
     R, C = _create_domains()
@@ -473,6 +487,20 @@ def test_union_of_intervals_upper_bound_sampling():
     assert all(points == 4)  
 
 
+def test_serialize_union():
+    R, C = _create_domains()
+    U = Union(R, C)
+    dct = U.serialize()
+    assert dct['dim'] == 2
+    assert dct['tol'] == 1e-06
+    assert dct['name'] == '(Rectangle + Circle)'
+    U = Cut(U, Circle([1, 1], 0.5))
+    dct = U.serialize()
+    assert dct['dim'] == 2
+    assert dct['tol'] == 1e-06
+    assert dct['name'] == '((Rectangle + Circle) - Circle)'
+
+
 # Test intersection
 
 def test_intersection():
@@ -598,3 +626,12 @@ def test_boundary_normal_intersection():
     assert np.equal(normals[1], [0, -1]).all()
     assert np.equal(normals[2], [-1, 0]).all()
     assert np.allclose(normals[3], [np.cos(np.pi/4), np.sin(np.pi/4)]) 
+
+
+def test_serialize_intersection():
+    R, C = _create_domains()
+    I = Intersection(R, C) 
+    dct = I.serialize()
+    assert dct['dim'] == 2
+    assert dct['tol'] == 1e-06
+    assert dct['name'] == '(Rectangle intersect Circle)'

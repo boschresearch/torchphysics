@@ -1,6 +1,21 @@
 import pytest
 import numpy as np
 from neural_diff_eq.problem.domain.domain1D import Interval
+from neural_diff_eq.problem.domain.domain import Domain
+
+
+def test_none_by_domain():
+    D = Domain(1, 2, 3, 4)
+    assert D._compute_bounds() is None
+    assert D.is_inside(1) is None
+    assert D.is_on_boundary(1) is None
+    assert D.grid_for_plots(1) is None
+    assert D.boundary_normal(1) is None
+    assert D._grid_sampling_boundary(1) is None
+    assert D._random_sampling_boundary(1) is None
+    assert D._grid_sampling_inside(1) is None 
+    assert D._random_sampling_inside(1) is None
+
 
 def test_interval_has_correct_bounds():
     I = Interval(1, 3.5)
@@ -109,3 +124,13 @@ def test_grid_for_plot():
     assert p[0] == I.low_bound
     assert p[-1] == I.up_bound
     assert all(I.is_inside(p[1:-1]))
+
+
+def test_serialize_interval():
+    I = Interval(-1, 2)
+    dct = I.serialize()
+    assert dct['dim'] == 1
+    assert dct['tol'] == 1e-06
+    assert dct['name'] == 'Interval'
+    assert dct['low_bound'] == -1
+    assert dct['up_bound'] == 2
