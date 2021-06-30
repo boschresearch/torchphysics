@@ -222,7 +222,7 @@ def _create_input_dic(input_dic, points, dic_for_other_variables, all_variables,
     if dic_for_other_variables is not None: # create points for all other variables
         other_inputs = _create_dic_for_other_variables(
             points, dic_for_other_variables, device)
-        input_dic = input_dic | other_inputs
+        input_dic = {**input_dic, **other_inputs}
     if all_variables is not None: # order the dic
         input_dic = _order_input_dic(input_dic, all_variables)
     return input_dic
