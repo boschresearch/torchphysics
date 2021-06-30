@@ -306,5 +306,4 @@ class DirichletCondition(BoundaryCondition):
         dct['dataset_size'] = self.dataset_size
         dct['sampling_strategy'] = self.sampling_strategy
         dct['boundary_sampling_strategy'] = self.boundary_sampling_strategy
-        dct['dataset_size'] = self.dataset_size
         return dct

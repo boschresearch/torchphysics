@@ -23,9 +23,17 @@ class PINNModule(pl.LightningModule):
         i.e. variables with their domains and boundary conditions
     optimizer : torch optimizer class
         The PyTorch Optimizer that should be used in training
+    optim_params : dic
+        Additional parameters for the optimizer
     lr : float
         The (initial) learning rate of the used optimizer. Should be set
         to 1e-3 for Adam
+    log_plotter : Plotter
+        A plotter from utils.plot, that plots the solution at desired 
+        training epochs to the tensorboard
+    scheduler : torch.optim.lr_scheduler
+        A scheduler to change/adjust the learning rate based on the number of epochs
+        or loss size
     """
 
     def __init__(self, model, problem, optimizer=torch.optim.LBFGS,

@@ -49,7 +49,7 @@ class BlockFCN(DiffEqModel):
 
     def serialize(self):
         dct = {}
-        dct['name'] = 'SimpleFCN'
+        dct['name'] = 'BlockFCN'
         dct['input_dim'] = self.input_dim
         dct['blocks'] = self.blocks
         dct['width'] = self.width

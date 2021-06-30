@@ -52,7 +52,7 @@ class Variable(Problem):
         raise NotImplementedError
 
     def get_dim(self):
-        pass
+        return self.domain.dim
 
     def serialize(self):
         dct = {}
