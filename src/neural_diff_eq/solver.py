@@ -4,10 +4,12 @@ the NN model to solve this problem
 classes inherit from LightningModules"""
 
 import json
+from typing import Dict
 
 import torch
 import pytorch_lightning as pl
 from .utils.plot import _scatter
+
 
 class PINNModule(pl.LightningModule):
     """A LightningModule to solve PDEs using the PINN approach
@@ -28,12 +30,11 @@ class PINNModule(pl.LightningModule):
         to 1e-3 for Adam
     """
 
-    def __init__(self, model, problem, optimizer=torch.optim.LBFGS,
-                 optim_params={}, lr=1, log_plotter=None,
+    def __init__(self, model, optimizer=torch.optim.LBFGS,
+                 lr=1, optim_params={}, log_plotter=None,
                  scheduler=None):
         super().__init__()
         self.model = model
-        self.datamodule = problem
 
         self.optimizer = optimizer
         self.lr = lr
@@ -41,12 +42,16 @@ class PINNModule(pl.LightningModule):
         self.scheduler = scheduler
 
         self.log_plotter = log_plotter
+        self.variable_dims = None
 
     def serialize(self):
         dct = {}
         dct['name'] = 'PINNModule'
         dct['model'] = self.model.serialize()
-        dct['problem'] = self.datamodule.serialize()
+        if self.trainer is not None:
+            dct['problem'] = self.trainer.datamodule.serialize()
+        else:
+            dct['problem'] = None
         dct['optimizer'] = {'name': self.optimizer.__class__.__name__,
                             'lr': self.lr
                             }
@@ -54,18 +59,35 @@ class PINNModule(pl.LightningModule):
         return dct
 
     def forward(self, inputs):
-        """Run the model on a given input batch, without tracking gradients
         """
+        Run the model on a given input batch, without tracking gradients.
+        """
+        assert isinstance(inputs, Dict), "Please pass a dict of variables and data."
+        # check whether the input has the expected variables and shape
+        if self.variable_dims is None:
+            print("""The correct input variables for the model have not been
+                     set yet. This can lead to unexpected behaiour. Please train
+                     the model or set the module.variable_dims property.""")
         try:
-            ordered_inputs = {k: inputs[k] for k in self.datamodule.variables.keys()}
+            ordered_inputs = {}
+            for k in self.variable_dims:
+                if inputs[k].shape[1] != self.variable_dims[k]:
+                    print(f"""The input {k} has the wrong dimension. This can
+                              lead to unexpected behaviour.""")
+                ordered_inputs[k] = inputs[k]
             if len(ordered_inputs) < len(inputs):
                 raise KeyError
         except KeyError:
             print(f"""The model was trained on Variables with different names.
-                      Please use keys {self.datamodule.variables.keys()}.""")
+                      This can lead to unexpected behaviour.
+                      Please use Variables {self.variable_dims}.""")
+
         return self.model.forward(ordered_inputs)
 
     def on_train_start(self):
+        # register the variables on which the model is trained
+        self.variable_dims = {k: v.domain.dim for (k, v) in self.trainer.datamodule.variables.items()}
+        # log summary to tensorboard
         self.logger.experiment.add_text(
             tag='summary',
             text_string=json.dumps(
@@ -91,7 +113,7 @@ class PINNModule(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         loss = torch.zeros(1, device=self.device, requires_grad=True)
-        conditions = self.datamodule.get_train_conditions()
+        conditions = self.trainer.datamodule.get_train_conditions()
         for name in conditions:
             data = batch[name]
             # log scatter plots of the used training data
@@ -108,7 +130,7 @@ class PINNModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss = torch.zeros(1, device=self.device)
-        conditions = self.datamodule.get_val_conditions()
+        conditions = self.trainer.datamodule.get_val_conditions()
         for name in conditions:
             # if a condition does not require input gradients, we do not
             # compute them during validation
