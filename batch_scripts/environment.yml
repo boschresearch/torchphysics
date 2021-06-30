@@ -1,0 +1,23 @@
+name: vib-acc
+dependencies:
+- python 
+- numpy>=1.20.2
+- pytest
+- pytest-cov
+- flake8
+- scipy
+- pandas
+- jupyter
+- shapely
+- pip
+- pip:
+  - pylife
+  - tsfresh
+  - spyder
+  - spyder-unittest
+  - torch>=1.7.1
+  - pytorch-lightning>=1.3.0
+  - trimesh>=3.9.19
+  - rtree>=0.9.7
+  - networkx>=2.5.1
+  - matplotlib>=3.4.2
