@@ -112,7 +112,7 @@ class PINNModule(pl.LightningModule):
         return dataloader_dict
 
     def training_step(self, batch, batch_idx):
-        loss = torch.zeros(1, device=self.device, requires_grad=True)
+        loss = torch.zeros(1, device=self.device, requires_grad=True) # maybe this slows down training a bit
         conditions = self.trainer.datamodule.get_train_conditions()
         for name in conditions:
             data = batch[name]

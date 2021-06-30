@@ -80,7 +80,7 @@ setting = Setting(variables=(x, t),
                 train_conditions={'pde': train_cond},
                 n_iterations=3000,
                 num_workers=0)
-setting.prepare_data()
+
 model = SimpleFCN(input_dim=3)
 
 scheduler = {
