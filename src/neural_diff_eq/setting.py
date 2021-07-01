@@ -73,6 +73,9 @@ class Setting(Problem, DataModule):
         Problem.__init__(self,
                          train_conditions=train_conditions,
                          val_conditions=val_conditions)
+        # run data preparation manually
+        self.prepare_data()
+
 
     """Methods to load data with lightning"""
 
@@ -116,7 +119,7 @@ class Setting(Problem, DataModule):
         return data
 
     def _setup_target_data(self, target):
-        device = 'cuda' if self.trainer.on_gpu else 'cpu'
+        device = self.trainer.model.device
         if isinstance(target, torch.Tensor):
             target = target.to(device)
         else:
@@ -124,7 +127,7 @@ class Setting(Problem, DataModule):
         return target
 
     def _setup_input_data(self, data, track_gradients):
-        device = 'cuda' if self.trainer.on_gpu else 'cpu'
+        device = self.trainer.model.device
         for vn in data:
             if isinstance(data[vn], torch.Tensor):
                 data[vn] = data[vn].to(device)

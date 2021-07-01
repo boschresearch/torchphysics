@@ -1,0 +1,28 @@
+#!/bin/bash -l
+# Sample script for tensorflow job
+
+## Scheduler parameters ##
+
+#BSUB -J CNN_CC_low            # job name
+#BSUB -o CNN_CC.%J.stdout   # optional: have output written to specific file
+#BSUB -e CNN_CC.%J.stderr   # optional: have errors written to specific file
+# #BSUB -q rb_basic               # optional: use highend nodes w/ Volta GPUs (default: Geforce GPUs)
+#BSUB -W 1:30                       # fill in desired wallclock time [hours,]minutes (hours are optional)
+#BSUB -n 4                          # min CPU cores,max CPU cores (max cores is optional)
+#BSUB -M 2400                      # fill in required amount of RAM (in Mbyte)
+# #BSUB -R "span[hosts=1]"          # optional: run on single host (if using more than 1 CPU cores)
+# #BSUB -R "span[ptile=28]"         # optional: fill in to specify cores per node (max 28)
+# #BSUB -P myProject                # optional: fill in cluster project
+#BSUB -gpu "num=2"
+
+## Job parameters ##
+vEnv=softsensor
+
+# Load modules
+module purge 
+module load conda
+module load cudnn/11.0_v8.0
+
+source activate $vEnv
+
+python heat_equation
