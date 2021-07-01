@@ -15,7 +15,7 @@ __pycache__/*
 .DS_Store
 
 # Log folders
-*/lightning_logs/*
+**/lightning_logs/**
 
 # Project files
 .ropeproject

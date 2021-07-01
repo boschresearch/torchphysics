@@ -3,10 +3,9 @@ They supply the necessary training data to the model.
 """
 import abc
 import torch
-from torch.functional import norm
 
-from .data import Dataset, DataDataset
 from ..utils.differentialoperators import normal_derivative
+
 
 class Condition(torch.nn.Module):
     """
@@ -27,39 +26,34 @@ class Condition(torch.nn.Module):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal the number of samples in the used dataset.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
-    requires_input_grad : bool
-        If True, the gradients are still tracked during validation to enable the
-        computation of derivatives w.r.t. the inputs
+    track_gradients : bool or list of str or list of DiffVariables
+        Whether the gradients w.r.t. the inputs should be tracked.
+        Tracking can be necessary for training of a PDE.
+        If True, all gradients will be tracked.
+        If a list of strings or variables is passed, gradient is tracked
+        only for the variables in the list.
+        If False, no gradients will be tracked.
     data_plot_variables : bool or tuple
         The variables which are used to log the used training data in a scatter plot.
         If False, no plots are created. If True, behaviour is defined in each condition.
     """
 
     def __init__(self, name, norm, weight=1.0,
-                 batch_size=1000, num_workers=0,
-                 requires_input_grad=True,
+                 track_gradients=True,
                  data_plot_variables=True):
         super().__init__()
         self.name = name
         self.norm = norm
         self.weight = weight
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.requires_input_grad = requires_input_grad
+        self.track_gradients = track_gradients
         self.data_plot_variables = data_plot_variables
 
         # variables are registered when the condition is added to a problem or variable
         self.variables = None
 
     @abc.abstractmethod
-    def get_dataloader(self):
-        """Creates and returns a dataloader for the given condition."""
+    def get_data(self):
+        """Creates and returns the data for the given condition."""
         return
 
     @abc.abstractmethod
@@ -74,8 +68,6 @@ class Condition(torch.nn.Module):
         dct['name'] = self.name
         dct['norm'] = self.norm.__class__.__name__
         dct['weight'] = self.weight
-        dct['batch_size'] = self.batch_size
-        dct['num_workers'] = self.num_workers
         return dct
 
 
@@ -102,23 +94,17 @@ class DiffEqCondition(Condition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal dataset_size.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
     dataset_size : int
         Amount of samples in the used dataset. The dataset is generated once at the
         beginning of the training.
     """
+
     def __init__(self, pde, norm, name='pde',
                  sampling_strategy='random', weight=1.0,
-                 batch_size=1000, num_workers=0, dataset_size=10000,
+                 dataset_size=10000, track_gradients=True,
                  data_plot_variables=False):
         super().__init__(name, norm, weight,
-                         batch_size=batch_size,
-                         num_workers=num_workers,
+                         track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
         self.sampling_strategy = sampling_strategy
         self.pde = pde
@@ -129,16 +115,15 @@ class DiffEqCondition(Condition):
         err = self.pde(u, data)
         return self.norm(err, torch.zeros_like(err))
 
-    def get_dataloader(self):
+    def get_data(self):
         if self.is_registered():
-            dataset = Dataset(self.variables,
-                              sampling_strategy=self.sampling_strategy,
-                              size=self.dataset_size)
-            return torch.utils.data.DataLoader(
-                dataset,
-                batch_size=self.batch_size,
-                num_workers=self.num_workers
-            )
+            data = {}
+            for vname in self.variables:
+                data[vname] = self.variables[vname].domain.sample_inside(
+                    self.dataset_size,
+                    type=self.sampling_strategy
+                )
+            return data
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -180,38 +165,24 @@ class DataCondition(Condition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal dataset_size.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
     """
+
     def __init__(self, data_x, data_u, name, norm,
-                 weight=1.0, batch_size=1000, num_workers=2):
+                 weight=1.0):
         super().__init__(name, norm, weight,
-                         batch_size=batch_size,
-                         num_workers=num_workers,
-                         requires_input_grad=False,
+                         track_gradients=False,
                          data_plot_variables=False)
         self.data_x = data_x
         self.data_u = data_u
 
     def forward(self, model, data):
         data, target = data
-        u = model(data, track_gradients=False)
+        u = model(data)
         return self.norm(u, target)
 
-    def get_dataloader(self):
+    def get_data(self):
         if self.is_registered():
-            dataset = DataDataset(self.variables,
-                                  data_x=self.data_x,
-                                  data_u=self.data_u)
-            return torch.utils.data.DataLoader(
-                dataset,
-                batch_size=self.batch_size,
-                num_workers=self.num_workers
-            )
+            return (self.data_x, self.data_u)
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -242,18 +213,12 @@ class BoundaryCondition(Condition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal dataset_size.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
     """
-    def __init__(self, name, norm, requires_input_grad, weight=1.0,
-                 batch_size=10000, num_workers=0, data_plot_variables=True):
-        super().__init__(name, norm, weight=weight, batch_size=batch_size,
-                         num_workers=num_workers,
-                         requires_input_grad=requires_input_grad,
+
+    def __init__(self, name, norm, track_gradients, weight=1.0,
+                 data_plot_variables=True):
+        super().__init__(name, norm, weight=weight,
+                         track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
         # boundary_variable is registered when the condition is added to that variable
         self.boundary_variable = None  # string
@@ -264,9 +229,9 @@ class BoundaryCondition(Condition):
         return dct
 
     def get_data_plot_variables(self):
-        if self.data_plot_variables == True:
+        if self.data_plot_variables is True:
             return self.boundary_variable
-        elif self.data_plot_variables == False:
+        elif self.data_plot_variables is False:
             return None
         else:
             return self.data_plot_variables
@@ -297,45 +262,46 @@ class DirichletCondition(BoundaryCondition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal dataset_size.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
     dataset_size : int
         Amount of samples in the used dataset. The dataset is generated once at the
         beginning of the training.
+    independent_of_model : bool
+        Indicates if the condition can be computed without the output of the model.
+        E.g. a inital condition for the model is independent of the output, a condition
+        for the first derivative needs the output to compute the derivative.
     """
+
     def __init__(self, dirichlet_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
-                 weight=1.0, batch_size=1000, num_workers=0, dataset_size=10000,
+                 weight=1.0, dataset_size=10000,
                  data_plot_variables=True):
-        super().__init__(name, norm, weight=weight, batch_size=batch_size,
-                         num_workers=num_workers, requires_input_grad=False,
-                         data_plot_variables=data_plot_variables)
+        super().__init__(name, norm, weight=weight,
+                         track_gradients=False, data_plot_variables=data_plot_variables)
         self.dirichlet_fun = dirichlet_fun
         self.boundary_sampling_strategy = boundary_sampling_strategy
         self.sampling_strategy = sampling_strategy
         self.dataset_size = dataset_size
 
     def forward(self, model, data):
-        u = model(data, track_gradients=False)
-        target = self.dirichlet_fun(data)
+        data, target = data
+        u = model(data)
         return self.norm(u, target)
 
-    def get_dataloader(self):
+    def get_data(self):
         if self.is_registered():
-            dataset = Dataset(self.variables,
-                              sampling_strategy=self.sampling_strategy,
-                              boundary_sampling_strategy=self.boundary_sampling_strategy,
-                              size=self.dataset_size,
-                              boundary=self.boundary_variable)
-            return torch.utils.data.DataLoader(
-                dataset,
-                batch_size=self.batch_size,
-                num_workers=self.num_workers
-            )
+            data = {}
+            for vname in self.variables:
+                if vname == self.boundary_variable:
+                    data[vname] = self.variables[vname].domain.sample_boundary(
+                        self.dataset_size,
+                        type=self.boundary_sampling_strategy
+                    )
+                else:
+                    data[vname] = self.variables[vname].domain.sample_inside(
+                        self.dataset_size,
+                        type=self.sampling_strategy
+                    )
+            return (data, self.dirichlet_fun(data))
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -375,9 +341,6 @@ class NeumannCondition(BoundaryCondition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    batch_size : int
-        Amount of sampled points for this condition per iteration. For full-batch optim
-        methods, this should equal dataset_size.
     num_workers : int
         Amount of CPU processes that preprocess the data for this condition. 0 disables
         multiprocessing.
@@ -385,20 +348,22 @@ class NeumannCondition(BoundaryCondition):
         Amount of samples in the used dataset. The dataset is generated once at the
         beginning of the training.
     """
+
     def __init__(self, neumann_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
-                 weight=1.0, batch_size=1000, num_workers=0, dataset_size=10000,
+                 weight=1.0, num_workers=0, dataset_size=10000,
                  data_plot_variables=True):
-        super().__init__(name, norm, weight=weight, batch_size=batch_size,
+        super().__init__(name, norm, weight=weight,
                          num_workers=num_workers, requires_input_grad=False,
                          data_plot_variables=data_plot_variables)
         self.neumann_fun = neumann_fun
         self.boundary_sampling_strategy = boundary_sampling_strategy
         self.sampling_strategy = sampling_strategy
         self.dataset_size = dataset_size
+        self.domain = None
 
     def forward(self, model, data):
-        target = self.neumann_fun(data)
+        data, target = data
         normal_derivatives = self._compute_normal_derivatives(model, data)
         return self.norm(normal_derivatives, target)
 
@@ -407,24 +372,27 @@ class NeumannCondition(BoundaryCondition):
         points = data[self.boundary_variable]
         normals = self.domain.boundary_normal(points.detach().cpu().numpy())
         normals = torch.from_numpy(normals).float().to(points.device)
-        normal_derivatives = normal_derivative(model_out=u, 
-                                               deriv_variable_input=points, 
+        normal_derivatives = normal_derivative(model_out=u,
+                                               deriv_variable_input=points,
                                                normals=normals)
         return normal_derivatives
 
-    def get_dataloader(self):
+    def get_data(self):
         if self.is_registered():
-            dataset = Dataset(self.variables,
-                              sampling_strategy=self.sampling_strategy,
-                              boundary_sampling_strategy=self.boundary_sampling_strategy,
-                              size=self.dataset_size,
-                              boundary=self.boundary_variable)
             self.domain = self._get_domain()
-            return torch.utils.data.DataLoader(
-                dataset,
-                batch_size=self.batch_size,
-                num_workers=self.num_workers
-            )
+            data = {}
+            for vname in self.variables:
+                if vname == self.boundary_variable:
+                    data[vname] = self.variables[vname].domain.sample_boundary(
+                        self.dataset_size,
+                        type=self.boundary_sampling_strategy
+                    )
+                else:
+                    data[vname] = self.variables[vname].domain.sample_inside(
+                        self.dataset_size,
+                        type=self.sampling_strategy
+                    )
+            return (data, self.neumann_fun(data))
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")

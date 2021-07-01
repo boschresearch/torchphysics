@@ -1,13 +1,13 @@
-from neural_diff_eq.problem import Setting, Variable
+from neural_diff_eq.problem import Variable
 from neural_diff_eq.problem.condition import BoundaryCondition, Condition
-
+from neural_diff_eq.setting import Setting
 
 def test_empty_init():
     x = Variable(name='x',
                  domain=None)
     c = BoundaryCondition(name='c',
                           norm=None,
-                          requires_input_grad=False)
+                          track_gradients=False)
     x.add_train_condition(c)
     setup = Setting()
     setup.add_variable(x)
@@ -16,7 +16,7 @@ def test_empty_init():
 
     d = BoundaryCondition(name='d',
                           norm=None,
-                          requires_input_grad=False)
+                          track_gradients=False)
     y = Variable(name='y',
                  domain=None,
                  train_conditions=d)
@@ -34,20 +34,20 @@ def test_empty_init():
 def test_full_init():
     c = BoundaryCondition(name='c',
                           norm=None,
-                          requires_input_grad=False)
+                          track_gradients=False)
     x = Variable(name='x',
                  domain=None,
                  val_conditions=c)
     d = BoundaryCondition(name='d',
                           norm=None,
-                          requires_input_grad=False)
+                          track_gradients=False)
     y = Variable(name='y',
                  domain=None)
     y.add_val_condition(d)
 
     e = Condition(name='e',
                   norm=None,
-                  requires_input_grad=False)
+                  track_gradients=False)
     setup = Setting((x, y), val_conditions=e)
 
     assert setup.variables['x'].context == {'x': x, 'y': y}
@@ -58,7 +58,7 @@ def test_full_init():
 
     f = BoundaryCondition(name='f',
                           norm=None,
-                          requires_input_grad=False)
+                          track_gradients=False)
 
     setup.add_val_condition(f, boundary_var='x')
 
@@ -66,4 +66,3 @@ def test_full_init():
     assert setup.get_val_conditions() == {'e': e, 'x_c': c, 'y_d': d, 'x_f': f}
     assert d.variables == {'x': x, 'y': y}
     assert y.context == {'x': x, 'y': y}
-
