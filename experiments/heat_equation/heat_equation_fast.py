@@ -20,9 +20,8 @@ from neural_diff_eq.setting import Setting
 
 import time
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 pl.seed_everything(43)
-device = 'cuda'
 
 D = 1.18
 temp_hot = 100.0
@@ -77,19 +76,18 @@ train_cond = DiffEqCondition(pde=pde,
                              dataset_size=2500,
                              )
 
-setup = Setting(variables=(x, t),
+setting = Setting(variables=(x, t),
                 train_conditions={'pde': train_cond},
                 n_iterations=3000,
                 num_workers=0)
 
-model = SimpleFCN(input_dim=3).to(device)
+model = SimpleFCN(input_dim=3)
 
 scheduler = {
             'class': torch.optim.lr_scheduler.StepLR,
             'args': {'step_size': 1, 'gamma': 0.8}}
 
 solver = PINNModule(model=model,
-                    problem=setup,
                     optimizer=torch.optim.Adam,
                     lr=5e-3,
                     scheduler=scheduler
@@ -97,8 +95,8 @@ solver = PINNModule(model=model,
                     )
 
 trainer = pl.Trainer(gpus='-1',
-                     #accelerator='ddp',
-                     #plugins=pl.plugins.DDPPlugin(find_unused_parameters=False),
+                     accelerator='ddp',
+                     plugins=pl.plugins.DDPPlugin(find_unused_parameters=False),
                      num_sanity_val_steps=0,
                      check_val_every_n_epoch=100,
                      log_every_n_steps=10,
@@ -110,7 +108,7 @@ trainer = pl.Trainer(gpus='-1',
                      # check every validation
                      # checkpoint_callback=False)
                      logger=pl.loggers.TensorBoardLogger(save_dir=os.getcwd(),
-                                                         version='Adam_lr5e-3_',
+                                                         version='test',
                                                          name='lightning_logs')
                      )
 
@@ -125,7 +123,7 @@ end = time.time()
 print('LBFGS:', end-start)
 """
 start = time.time()
-trainer.fit(solver)
+trainer.fit(solver, setting)
 end = time.time()
 print('Adam:', end-start)
 
@@ -135,8 +133,8 @@ resolution = 40
 x = np.linspace(0, w, resolution)
 y = np.linspace(0, h, resolution)
 points = np.array(np.meshgrid(x, y)).T.reshape(-1, 2)
-points = torch.FloatTensor(points).to(device)
-time_points = 3 * torch.ones((1600, 1)).to(device)
+points = torch.FloatTensor(points).to('cuda')
+time_points = 3 * torch.ones((1600, 1)).to('cuda')
 input = {'x' : points, 't' : time_points}
 start = time.time()
 pred = solver(input).data.cpu().numpy()
