@@ -631,3 +631,86 @@ def test_boundary_data_creation_with_2D_boundary_grid_random_int():
     assert np.shape(data['t']) == (100, 1)
     assert x.domain.is_on_boundary(data['x']).all()
     assert t.domain.is_inside(data['t']).all()
+
+
+# Test neumann conditions
+def neumann_fun(input):
+    return np.zeros_like(input['t'])
+
+def create_neumann():
+    return condi.NeumannCondition(neumann_fun=neumann_fun,
+                                  name='test neumann',
+                                  norm=torch.nn.MSELoss(),
+                                  sampling_strategy='grid',
+                                  boundary_sampling_strategy='grid',
+                                  weight=1,
+                                  dataset_size=50,
+                                  data_plot_variables=True)
+
+
+def test_create_neumann_condition():
+    cond = create_neumann()
+    assert cond.neumann_fun == neumann_fun
+    assert cond.name == 'test neumann'
+    assert isinstance(cond.norm, torch.nn.MSELoss)
+    assert cond.datacreator.sampling_strategy == 'grid'
+    assert cond.datacreator.boundary_sampling_strategy == 'grid'
+    assert cond.boundary_variable is None
+    assert cond.weight == 1
+    assert cond.datacreator.dataset_size == 50
+    assert cond.data_plot_variables 
+
+
+def test_serialize_neumann_condition():
+    cond = create_neumann()
+    dct = cond.serialize()
+    assert dct['neumann_fun'] == 'neumann_fun'
+    assert dct['dataset_size'] == 50
+    assert dct['sampling_strategy'] == 'grid'
+    assert dct['boundary_sampling_strategy'] == 'grid'
+
+
+def test_get_data_neumann_condition_not_registered():
+    cond = create_neumann()
+    with pytest.raises(RuntimeError):
+        cond.get_data()
+
+
+def test_get_data_neumann_condition():
+    cond = create_neumann()
+    x = Variable(name='x', domain=Rectangle([0, 0], [1, 0], [0, 1]))
+    t = Variable(name='t', domain=Interval(-3, -2))
+    cond.variables = {'x': x, 't': t}
+    cond.boundary_variable = 'x'
+    data, target, normals = cond.get_data()
+    assert np.shape(data['x']) == (64, 2)
+    assert np.shape(data['t']) == (64, 1)
+    assert np.shape(normals) == (64, 2)
+    assert np.shape(target) == (64, 1)
+    assert t.domain.is_inside(data['t']).all()
+    assert x.domain.is_on_boundary(data['x']).all()
+    for i in range(len(normals)):
+        assert np.isclose(np.linalg.norm(normals[i]), 1)
+        assert np.isclose(target[i], 0)
+    for i in range(len(normals)):
+        new_normal = x.domain.boundary_normal([data['x'][i]])
+        assert np.allclose(new_normal, normals[i])
+
+
+def test_forward_neumann_condition():
+    cond = create_neumann()
+    x = Variable(name='x', domain=Rectangle([0, 0], [1, 0], [0, 1]))
+    t = Variable(name='t', domain=Interval(-3, -2))
+    cond.variables = {'x': x, 't': t}
+    cond.boundary_variable = 'x'
+    data, target, normals = cond.get_data()
+    target = torch.from_numpy(target)
+    normals = torch.from_numpy(normals)
+    data['x'] = torch.from_numpy(data['x'])
+    data['x'].requires_grad = True 
+    data = data, target, normals
+    out = cond.forward(model_function, data)
+    assert out.item() == 1 
+    assert isinstance(out, torch.Tensor)
+    norm = torch.nn.MSELoss()
+    assert torch.isclose(out, norm(normals.sum(dim=1, keepdim=True), target))

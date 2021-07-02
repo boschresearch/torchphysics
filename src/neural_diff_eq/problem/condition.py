@@ -286,7 +286,8 @@ class DirichletCondition(BoundaryCondition):
                  weight=1.0, dataset_size=10000,
                  data_plot_variables=True):
         super().__init__(name, norm, weight=weight,
-                         track_gradients=False, data_plot_variables=data_plot_variables)
+                         track_gradients=False,
+                         data_plot_variables=data_plot_variables)
         self.dirichlet_fun = dirichlet_fun
         self.datacreator = dc.BoundaryDataCreator(variables=self.variables,
                                                   dataset_size=dataset_size,
@@ -346,69 +347,52 @@ class NeumannCondition(BoundaryCondition):
     num_workers : int
         Amount of CPU processes that preprocess the data for this condition. 0 disables
         multiprocessing.
-    dataset_size : int
+    dataset_size : int, list, tuple or dic
         Amount of samples in the used dataset. The dataset is generated once at the
-        beginning of the training.
+        beginning of the training. 
+        If an int is given, the methode will use at least as many data points as the
+        number. The number of desired points can also be uniquely picked for each
+        variable, if a list, tuple or dic is given as an input. Then the whole number
+        of data points will be the product of the given numbers.
     """
 
     def __init__(self, neumann_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
-                 weight=1.0, num_workers=0, dataset_size=10000,
+                 weight=1.0, dataset_size=10000,
                  data_plot_variables=True):
         super().__init__(name, norm, weight=weight,
-                         num_workers=num_workers, requires_input_grad=False,
+                         track_gradients=True,
                          data_plot_variables=data_plot_variables)
         self.neumann_fun = neumann_fun
-        self.boundary_sampling_strategy = boundary_sampling_strategy
-        self.sampling_strategy = sampling_strategy
-        self.dataset_size = dataset_size
-        self.domain = None
+        self.datacreator = dc.BoundaryDataCreator(variables=self.variables,
+                                                  dataset_size=dataset_size,
+                                                  sampling_strategy=sampling_strategy,
+                                                  boundary_sampling_strategy=
+                                                  boundary_sampling_strategy)
 
     def forward(self, model, data):
-        data, target = data
-        normal_derivatives = self._compute_normal_derivatives(model, data)
+        data, target, normals = data
+        u = model(data)
+        normal_derivatives = normal_derivative(u, data[self.boundary_variable],
+                                               normals)
         return self.norm(normal_derivatives, target)
-
-    def _compute_normal_derivatives(self, model, data):
-        u = model(data, track_gradients=True)
-        points = data[self.boundary_variable]
-        normals = self.domain.boundary_normal(points.detach().cpu().numpy())
-        normals = torch.from_numpy(normals).float().to(points.device)
-        normal_derivatives = normal_derivative(model_out=u,
-                                               deriv_variable_input=points,
-                                               normals=normals)
-        return normal_derivatives
 
     def get_data(self):
         if self.is_registered():
-            self.domain = self._get_domain()
-            data = {}
-            for vname in self.variables:
-                if vname == self.boundary_variable:
-                    data[vname] = self.variables[vname].domain.sample_boundary(
-                        self.dataset_size,
-                        type=self.boundary_sampling_strategy
-                    )
-                else:
-                    data[vname] = self.variables[vname].domain.sample_inside(
-                        self.dataset_size,
-                        type=self.sampling_strategy
-                    )
-            return (data, self.neumann_fun(data))
+            self.datacreator.variables = self.variables
+            self.datacreator.boundary_variable = self.boundary_variable
+            data = self.datacreator.get_data()
+            normals = self.variables[self.boundary_variable] \
+                      .domain.boundary_normal(data[self.boundary_variable])
+            return (data, self.neumann_fun(data), normals)
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
 
-    def _get_domain(self):
-        for vname in self.variables:
-            if vname == self.boundary_variable:
-                return self.variables[vname].domain
-
     def serialize(self):
         dct = super().serialize()
         dct['neumann_fun'] = self.neumann_fun.__name__
-        dct['dataset_size'] = self.dataset_size
-        dct['sampling_strategy'] = self.sampling_strategy
-        dct['boundary_sampling_strategy'] = self.boundary_sampling_strategy
-        dct['dataset_size'] = self.dataset_size
+        dct['dataset_size'] = self.datacreator.dataset_size
+        dct['sampling_strategy'] = self.datacreator.sampling_strategy
+        dct['boundary_sampling_strategy'] = self.datacreator.boundary_sampling_strategy
         return dct
