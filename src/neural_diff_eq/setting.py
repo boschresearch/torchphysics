@@ -109,13 +109,20 @@ class Setting(Problem, DataModule):
                 # only input data is given
                 data[cn] = self._setup_input_data(data[cn],
                                                   conditions[cn].track_gradients)
-            else:
+            elif len(data[cn]) == 2:
                 # pairs of inputs and targets are given
                 data_dic, target = data[cn]
                 data_dic = self._setup_input_data(data_dic,
                                                   conditions[cn].track_gradients)
                 target = self._setup_target_data(target)
                 data[cn] = data_dic, target
+            else: # triple of inputs, targets and normals are given
+                data_dic, target, normals = data[cn]
+                data_dic = self._setup_input_data(data_dic,
+                                                  conditions[cn].track_gradients)
+                target = self._setup_target_data(target)
+                normals = self._setup_input_data(normals)
+                data[cn] = data_dic, target, normals                
         return data
 
     def _setup_target_data(self, target):

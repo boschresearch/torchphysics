@@ -187,9 +187,18 @@ def test_bounds_for_rect():
     assert bounds == [0, 2, -1, 1]
 
 
+def test_serialize_rect():
+    R = Rectangle([0, 0], [1, 0], [0, 1])
+    dct = R.serialize()
+    assert dct['dim'] == 2
+    assert dct['tol'] == 1e-06
+    assert dct['name'] == 'Rectangle'
+    assert np.equal(dct['corner_dl'], [0, 0]).all()
+    assert np.equal(dct['corner_tl'], [0, 1]).all()
+    assert np.equal(dct['corner_dr'], [1, 0]).all()
+
+
 # Test for circle
-
-
 def test_create_circle():
     _ = Circle([0, 0], 2)
 
@@ -329,9 +338,17 @@ def test_bounds_for_circle():
     assert bounds == [-4, 6, -5, 5]
 
 
+def test_serialize_circle():
+    C = Circle([1, 0], 5)
+    dct = C.serialize()
+    assert dct['dim'] == 2
+    assert dct['tol'] == 1e-06
+    assert dct['name'] == 'Circle'
+    assert np.equal(dct['center'], [1, 0]).all()
+    assert np.equal(dct['radius'], 5).all()
+
+
 # Test for triangle class
-
-
 def test_create_triangle():
     Triangle([0, 0], [1, 0], [0, 1])
 
@@ -489,9 +506,18 @@ def test_grid_for_plot_triangle():
     assert all(np.logical_or(inside, bound))
 
 
+def test_serialize_triangle():
+    T = Triangle([0, 10], [13, 5], [-12, 2])
+    dct = T.serialize()
+    assert dct['dim'] == 2
+    assert dct['tol'] == 1e-06
+    assert dct['name'] == 'Triangle'
+    assert np.equal(dct['corner_1'], [0, 10]).all()
+    assert np.equal(dct['corner_3'], [13, 5]).all()
+    assert np.equal(dct['corner_2'], [-12, 2]).all()
+
+
 # Test Polygon2D
-
-
 def test_create_poly2D():
     P = Polygon2D([[0, 10], [10, 5], [10, 2], [0, 0]])
 
@@ -677,3 +703,15 @@ def test_output_type_poly2D():
     assert isinstance(b_rand[0][0], np.float32)
     assert isinstance(i_grid[0][0], np.float32)
     assert isinstance(b_grid[0][0], np.float32)
+
+
+def test_serialize_poly2D():
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]], tol=0.1)
+    dct = P.serialize()
+    assert dct['dim'] == 2
+    assert dct['tol'] == 0.1
+    assert dct['name'] == 'Polygon2D'
+    assert np.equal(dct['corner_0'], [0, 10]).all()
+    assert np.equal(dct['corner_1'], [0, 0]).all()
+    assert np.equal(dct['corner_2'], [10, 2]).all()
+    assert np.equal(dct['corner_3'], [10, 8]).all()

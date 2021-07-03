@@ -21,7 +21,7 @@ class Domain_operation(Domain):
             raise ValueError('It is more efficient to create a new interval!')
 
     def _check_boundary_ratio(self, domain, n=100, type='grid'):
-        '''Approximates how much percent of the boundary from old domain 
+        '''Approximates how much percent of the boundary from the old domain 
         belongs to the new domain.
 
         Parameters
@@ -39,7 +39,7 @@ class Domain_operation(Domain):
         return number/n
 
     def _check_volume_ratio(self, domain_1, domain_2, n=100, type='grid'):
-        '''Approximates how much percent of the inside from old domain 
+        '''Approximates how much percent of the inside from the old domain 
         belongs to the new domain.
 
         Parameters
@@ -57,15 +57,17 @@ class Domain_operation(Domain):
         return number/n
 
     def _sample_new_points_inside(self, domain_1, domain_2, n, type):
-        new_points = domain_1.sample_inside(n, type)
-        inside_2 = domain_2.is_inside(new_points)
+        new_points = domain_1.sample_inside(n, type) # sample points
+        inside_2 = domain_2.is_inside(new_points) # check if there are inside of
+                                                  # of the new domain    
         index = np.where(inside_2)[0]
         new_points = np.delete(new_points, index, axis=0)
         return new_points
 
     def _sample_new_points_boundary(self, domain_1, n, type):
-        new_points = domain_1.sample_boundary(n, type)
-        on_bound = self.is_on_boundary(new_points)
+        new_points = domain_1.sample_boundary(n, type) # sample points
+        on_bound = self.is_on_boundary(new_points) # check if there at the boundary of
+                                                   # of the new domain
         index = np.where(np.invert(on_bound))[0]
         new_points = np.delete(new_points, index, axis=0)
         return new_points
@@ -76,6 +78,7 @@ class Domain_operation(Domain):
         scaled_n = [int(np.ceil(domain_1.surface*n/self.surface)),
                     int(np.ceil(domain_2.surface*n/self.surface))]
         current_domain_is_1 = True
+        # alternate between the two domains and sample on each boundary
         while len(points) < n:
             current_domain = domains[current_domain_is_1]
             current_n = scaled_n[current_domain_is_1]
@@ -83,22 +86,24 @@ class Domain_operation(Domain):
                                                           type='random')
             points = np.append(points, new_points, axis=0)
             current_domain_is_1 = not current_domain_is_1
-        if len(points) > n:
+        if len(points) > n: # check if to many points
             points = self._cut_points(points, n)
         return points.astype(np.float32)
 
     def _grid_sampling_boundary(self, domain_1, domain_2, n):
         points = np.empty((0,self.dim))
-        base_n = int(domain_1.surface*n/self.surface)
-        new_points = self._sample_new_points_boundary(domain_1, base_n, type='grid')
+        # sample on domain_1, scale the n according to the percent of the surface
+        n_1 = int(domain_1.surface*n/self.surface)
+        new_points = self._sample_new_points_boundary(domain_1, n_1, type='grid')
         points = np.append(points, new_points, axis=0)
-        cut_n = int(domain_2.surface*n/self.surface)
-        new_points = self._sample_new_points_boundary(domain_2, cut_n, type='grid')
+        # sample on domain_2, scale the n according to the percent of the surface
+        n_2 = int(domain_2.surface*n/self.surface)
+        new_points = self._sample_new_points_boundary(domain_2, n_2, type='grid')
         points = np.append(points, new_points, axis=0)
-        if len(points) < n:
+        if len(points) < n: # check if not enough points -> add random points
             points = np.append(points, self._random_sampling_boundary(n-len(points)),
                                axis=0)
-        if len(points) > n:
+        if len(points) > n: # check if to many points
             points = self._cut_points(points, n)
         return points.astype(np.float32)
 
@@ -107,10 +112,10 @@ class Domain_operation(Domain):
         on_1 = domain_1.is_on_boundary(points)
         on_2 = domain_2.is_on_boundary(points)
         points = np.array(points)
-        if any(on_1):
+        if any(on_1): # points at boundary of domain_1
             index_1 = np.where(on_1)[0]
             normals[index_1] += domain_1.boundary_normal(points[index_1])
-        if any(on_2):
+        if any(on_2): # points at boundary of domain_2
             index_2 = np.where(on_2)[0]
             if operation_is_cut:
                 # normals of the cut domain needs to be multiplied by -1
@@ -118,7 +123,7 @@ class Domain_operation(Domain):
             else : 
                 normals[index_2] += domain_2.boundary_normal(points[index_2])
         index_both = np.where(np.logical_and(on_1, on_2))[0]
-        normals[index_both] *= 1/np.sqrt(2)  
+        normals[index_both] *= 1/np.sqrt(2) # point at both -> scale vector
         return normals.astype(np.float32)
 
     @abc.abstractmethod
@@ -128,6 +133,9 @@ class Domain_operation(Domain):
     @abc.abstractmethod
     def _approximate_surface(self, n):
         return
+
+    def serialize(self):
+        return super().serialize()
 
 
 class Cut(Domain_operation):
@@ -154,10 +162,14 @@ class Cut(Domain_operation):
                          surface=surface)
     
     def _approximate_volume(self, n):
+        # Instead of exactly computing the volume we only approximate it. 
+        # Needed for example if we want cut this domain again. 
         volume_ratio = self._check_volume_ratio(self.cut, self.base, n)
         return self.base.volume-volume_ratio*self.cut.volume
         
     def _approximate_surface(self, n):
+        # Instead of exactly computing the surface we only approximate it. 
+        # Needed for example if we want cut this domain again. 
         bound_ratio_base = self._check_boundary_ratio(self.base, n)
         bound_ratio_cut = self._check_boundary_ratio(self.cut, n)
         return self.base.surface*bound_ratio_base + self.cut.surface*bound_ratio_cut 
@@ -206,10 +218,10 @@ class Cut(Domain_operation):
         new_points = self._sample_new_points_inside(self.base, self.cut,
                                                     scaled_n, type='grid')
         points = np.append(points, new_points, axis=0)
-        if len(points) < n:
+        if len(points) < n: # check if we have enough points
             points = np.append(points, self._random_sampling_inside(n-len(points)),
                                axis=0)
-        if len(points) > n:
+        if len(points) > n: # check if we have to many points
             points = self._cut_points(points, n)
         return points.astype(np.float32)
 
@@ -218,6 +230,16 @@ class Cut(Domain_operation):
 
     def _grid_sampling_boundary(self, n):
         return super()._grid_sampling_boundary(self.base, self.cut, n)
+
+    def serialize(self):
+        # to show data/information in tensorboard
+        dct = super().serialize()
+        dct_1 = self.base.serialize()
+        dct_2 = self.cut.serialize()
+        dct['name'] = '(' + dct_1['name'] + ' - ' + dct_2['name'] + ')'
+        dct['base'] = dct_1
+        dct['cut'] = dct_2
+        return dct
 
 
 class Union(Domain_operation):
@@ -241,10 +263,14 @@ class Union(Domain_operation):
                          volume=volume, surface=surface)
 
     def _approximate_volume(self, n):
+        # Instead of exactly computing the volume we only approximate it. 
+        # Needed for example if we want cut/unit/intersect this domain again. 
         volume_ratio = self._check_volume_ratio(self.domain_1, self.domain_2, n)
         return self.domain_2.volume+(1-volume_ratio)*self.domain_1.volume
 
     def _approximate_surface(self, n):
+        # Instead of exactly computing the surface we only approximate it. 
+        # Needed for example if we want cut this domain again. 
         surf_ratio_1 = self._check_boundary_ratio(self.domain_1, n)
         surf_ratio_2 = self._check_boundary_ratio(self.domain_2, n)
         return self.domain_1.surface*surf_ratio_1 + self.domain_2.surface*surf_ratio_2
@@ -257,6 +283,7 @@ class Union(Domain_operation):
                 raise ValueError('The intervals are not disjoint!') 
 
     def _order_domains_in_size(self, domain_1, domain_2):
+        # the order is important for a good distribution of points
         if domain_1.volume > domain_2.volume:
             return domain_1, domain_2
         else:
@@ -290,6 +317,7 @@ class Union(Domain_operation):
         return points
 
     def sample_boundary(self, n, type='random'):
+        # check if we have intervals, for them we have special strategies
         if self.dim == 1:
             if type == 'lower_bound_only':
                 low_bound = np.min([self.domain_1.low_bound, self.domain_2.low_bound])
@@ -306,6 +334,7 @@ class Union(Domain_operation):
     	return self._create_points_inside(n, type='grid')
 
     def _create_points_inside(self, n, type):
+        # just create points in either domain
         points = np.empty((0,self.dim))
         scaled_n = int(n*self.domain_1.volume/self.volume)
         new_points = self._sample_new_points_inside(self.domain_1, self.domain_2,
@@ -320,6 +349,16 @@ class Union(Domain_operation):
 
     def _grid_sampling_boundary(self, n):
         return super()._grid_sampling_boundary(self.domain_1, self.domain_2, n)
+
+    def serialize(self):
+        # to show data/information in tensorboard
+        dct = super().serialize()
+        dct_1 = self.domain_1.serialize()
+        dct_2 = self.domain_2.serialize()
+        dct['name'] = '(' + dct_1['name'] + ' + ' + dct_2['name'] + ')'
+        dct['domain 1'] = dct_1
+        dct['domain 2'] = dct_2
+        return dct
 
 
 class Intersection(Domain_operation):
@@ -349,10 +388,14 @@ class Intersection(Domain_operation):
             return domain_2, domain_1
 
     def _approximate_volume(self, n):
+        # Instead of exactly computing the volume we only approximate it. 
+        # Needed for example if we want cut/unit/intersect this domain again.
         volume_ratio = self._check_volume_ratio(self.domain_1, self.domain_2, n)
         return volume_ratio*self.domain_1.volume
 
     def _approximate_surface(self, n):
+        # Instead of exactly computing the volume we only approximate it. 
+        # Needed for example if we want cut/unit/intersect this domain again.
         surf_ratio_1 = self._check_boundary_ratio(self.domain_1, n)
         surf_ratio_2 = self._check_boundary_ratio(self.domain_2, n)
         return self.domain_1.surface*surf_ratio_1 + self.domain_2.surface*surf_ratio_2
@@ -389,10 +432,10 @@ class Intersection(Domain_operation):
         in_2 = self.domain_2.is_inside(new_points)
         index = np.where(in_2)[0]
         points = np.append(points, new_points[index], axis=0)
-        if len(points) < n:
+        if len(points) < n: # check if not enough points
             points = np.append(points, self._random_sampling_inside(n-len(points)),
                                axis=0)
-        if len(points) > n:
+        if len(points) > n: # check if to many points
             points = self._cut_points(points, n)
         return points.astype(np.float32)
 
@@ -401,3 +444,13 @@ class Intersection(Domain_operation):
 
     def _grid_sampling_boundary(self,n):
         return super()._grid_sampling_boundary(self.domain_1, self.domain_2, n)
+
+    def serialize(self):
+        # to show data/information in tensorboard
+        dct = super().serialize()
+        dct_1 = self.domain_1.serialize()
+        dct_2 = self.domain_2.serialize()
+        dct['name'] = '(' + dct_1['name'] + ' intersect ' + dct_2['name'] + ')'
+        dct['domain 1'] = dct_1
+        dct['domain 2'] = dct_2
+        return dct

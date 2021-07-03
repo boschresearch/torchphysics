@@ -38,18 +38,20 @@ class Plotter():
         training of a model.
     '''
 
-    def __init__(self, plot_variables, points,
+    def __init__(self, plot_variables, points, angle=[30, 30],
                  dic_for_other_variables=None, all_variables=None,
                  log_interval=None):
         self.plot_variables = plot_variables
         self.points = points
+        self.angle = angle
         self.dic_for_other_variables = dic_for_other_variables
         self.all_variables = all_variables
         self.log_interval = log_interval
 
     def plot(self, model, device='cpu'):
-        return _plot(model, self.plot_variables, self.points,
-                     dic_for_other_variables=self.dic_for_other_variables, all_variables=self.all_variables,
+        return _plot(model, self.plot_variables, self.points, angle=self.angle,
+                     dic_for_other_variables=self.dic_for_other_variables,
+                     all_variables=self.all_variables,
                      device=device)
 
 
@@ -88,12 +90,15 @@ def _plot(model, plot_variables, points, angle=[30, 30],
     '''
     if not isinstance(plot_variables, list):
         plot_variables = [plot_variables]
+    # surface plots:
     if len(plot_variables) == 1 and plot_variables[0].domain.dim == 2:
         return _plot2D(model, plot_variables[0], points, angle,
                        dic_for_other_variables, all_variables, device)
+    # line plots:                       
     elif len(plot_variables) == 1 and plot_variables[0].domain.dim == 1:
         return _plot1D(model, plot_variables[0], points,
                        dic_for_other_variables, all_variables, device)
+    # surface plots for two different variables:
     elif (len(plot_variables) == 2 and
           plot_variables[0].domain.dim + plot_variables[0].domain.dim == 2):
         return _plot2D_2_variables(model, plot_variables[0], plot_variables[1],
@@ -105,19 +110,26 @@ def _plot(model, plot_variables, points, angle=[30, 30],
 
 def _plot2D(model, plot_variable, points, angle,
             dic_for_other_variables, all_variables, device):
+    '''Handels surface plots w.r.t. a two dimensional variable.
+    Inputs are the same as _plot().
+    '''
+    # First create the input dic. for the model
     domain_points, input_dic = _create_domain(plot_variable, points, device)
     points = len(domain_points)
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
                                   all_variables, device)
+    # Evaluate the model
     output = model.forward(input_dic).data.cpu().numpy()
+    # For complex domains it is best to triangulate them for the plotting
     triangulation = _triangulation_of_domain(plot_variable, domain_points)
-
+    # Create the plot
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     ax.view_init(angle[0], angle[1])
     surf = ax.plot_trisurf(triangulation, output.flatten(),
                            cmap=cm.jet, linewidth=0, antialiased=False)
     fig.colorbar(surf, shrink=0.4, aspect=5, pad=0.1)
+    # add a text box for the values of the other variables
     if dic_for_other_variables is not None:
         info_string = _create_info_text(dic_for_other_variables)
         ax.text2D(1.2, 0.1, info_string, bbox={'facecolor': 'w', 'pad': 5},
@@ -131,14 +143,21 @@ def _plot2D(model, plot_variable, points, angle,
 
 def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables,
             device):
+    '''Handels line plots w.r.t. a one dimensional variable.
+    Inputs are the same as _plot().
+    '''
+    # First create the input dic. for the model
     domain_points, input_dic = _create_domain(plot_variable, points, device)
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
                                   all_variables, device)
+    # Evaluate the model
     output = model.forward(input_dic).data.cpu().numpy()
+    # Create the plot
     fig = plt.figure()
     ax = fig.add_subplot()
     ax.grid()
     ax.plot(domain_points.flatten(), output.flatten())
+    # add a text box for the values of the other variables
     if dic_for_other_variables is not None:
         info_string = _create_info_text(dic_for_other_variables)
         ax.text(1.05, 0.5, info_string, bbox={'facecolor': 'w', 'pad': 5},
@@ -150,17 +169,21 @@ def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables
 
 def _plot2D_2_variables(model, variable_1, variable_2, points, angle,
                         dic_for_other_variables, all_variables, device):
-
+    '''Handels surface plots if the inputs are two intervals
+    '''
+    # Create the input dic.
     points = int(np.ceil(np.sqrt(points)))
     domain_1 = variable_1.domain.grid_for_plots(points)
     domain_2 = variable_2.domain.grid_for_plots(points)
     axis_1, axis_2 = np.meshgrid(domain_1, domain_2)
-    input_dic = {variable_1.name: torch.FloatTensor(np.ravel(axis_1, device=device).reshape(-1, 1)),
-                 variable_2.name: torch.FloatTensor(np.ravel(axis_2, device=device).reshape(-1, 1))}
+    input_dic = {variable_1.name: torch.FloatTensor(np.ravel(axis_1), device=device).reshape(-1, 1),
+                 variable_2.name: torch.FloatTensor(np.ravel(axis_2), device=device).reshape(-1, 1)}
     input_dic = _create_input_dic(input_dic, points**2, dic_for_other_variables,
                                   all_variables, device)
+    # Evaluate model
     output = model.forward(input_dic).data.cpu().numpy()
-
+    # Create the plot (we dont need a triangulation, since the plot over two intervalls
+    # will be a rectangle)
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     ax.view_init(angle[0], angle[1])
@@ -186,16 +209,29 @@ def _create_domain(plot_variable, points, device):
 
 def _create_input_dic(input_dic, points, dic_for_other_variables, all_variables,
                       device):
-    if dic_for_other_variables is not None:
+    '''Creates the input dictonary for the model
+    Parameters
+    ----------
+    input_dic : dic
+        The dictonary that already contains the data for the plot variable
+    dic_for_other_variables : dic
+        The data for all other variables
+    all_variables : dic or list
+        The right order of the dic    
+    '''
+    if dic_for_other_variables is not None: # create points for all other variables
         other_inputs = _create_dic_for_other_variables(
             points, dic_for_other_variables, device)
-        input_dic = input_dic | other_inputs
-    if all_variables is not None:
+        input_dic = {**input_dic, **other_inputs}
+    if all_variables is not None: # order the dic
         input_dic = _order_input_dic(input_dic, all_variables)
     return input_dic
 
 
 def _create_dic_for_other_variables(points, dic_for_other_variables, device):
+    '''Creates tensors for the other inputs of the model and puts them in 
+    a dic.
+    '''
     dic = {}
     for name in dic_for_other_variables:
         if isinstance(dic_for_other_variables[name], numbers.Number):
@@ -273,7 +309,7 @@ def _triangulation_of_domain(plot_variable, domain_points):
     # check what triangles are inside
     for t in tess.simplices:
         p = points[t]
-        triangle = Triangle(p[0], p[1], p[2])
+        triangle = __HelperTriangle(p[0], p[1], p[2])
         if _check_triangle_inside(triangle, plot_variable.domain):
             tri = np.append(tri, [t], axis=0)
 
@@ -281,7 +317,26 @@ def _triangulation_of_domain(plot_variable, domain_points):
 
 
 def _check_triangle_inside(triangle, domain):
-    boundary_points = triangle.sample_boundary(10, type='grid')
+    boundary_points = triangle.points_on_boundary(10)
     inside = domain.is_inside(boundary_points)
     boundary = domain.is_on_boundary(boundary_points)
     return all(np.logical_or(inside, boundary))
+
+class __HelperTriangle():
+    '''A helper class for triangulation of the domain.
+    The Triangle class of domain2D computes, when initialized, things 
+    that are not needed for the triangulation (e.g. inverse transformation matrix...)
+
+    Parameters
+    -----------
+    corner_1, corner_2, corner_3 : array_like
+        The three corners of the triangle.
+    '''
+    def __init__(self, corner_1, corner_2, corner_3):
+        self.corners = np.array([corner_1, corner_2, corner_3, corner_1])
+        self.side_lengths = Triangle._compute_side_lengths(self)
+        self.surface = sum(self.side_lengths)
+
+    def points_on_boundary(self, n):
+        line_points = np.linspace(0, self.surface, n+1)[:-1]
+        return Triangle._distribute_line_to_boundary(self, line_points)

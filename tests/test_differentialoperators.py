@@ -32,6 +32,7 @@ def test_laplacian_for_many_inputs():
     assert np.all(l.detach().numpy() == [4, 4, 4, 4])
 
 
+
 def test_laplacian_in_1D():
     a = torch.tensor([[1.0], [2.0], [1.3]], requires_grad=True)
     output = torch.zeros(a.shape[0])
@@ -42,6 +43,7 @@ def test_laplacian_in_1D():
     assert np.all(l.detach().numpy() == [2, 2, 2])
 
 
+
 def test_laplacian_in_3D():
     a = torch.tensor([[1.0, 3.4, 1.0], [2.0, 0, 0], [1.3, 9, 1]], requires_grad=True)
     output = torch.zeros(a.shape[0])
@@ -50,6 +52,7 @@ def test_laplacian_in_3D():
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [6, 6, 6])
+
 
 
 def test_laplacian_for_complexer_function_1():
@@ -96,6 +99,7 @@ def test_laplacian_for_two_inputs_one_linear():
     assert np.all(l.detach().numpy() == [0, 0])  
 
 
+
 def test_laplacian_for_two_not_linear_inputs():
     a = torch.tensor([[1.0, 1.0], [2.0, 0]], requires_grad=True)
     b = torch.tensor([[1.0], [0.5]], requires_grad=True)
@@ -111,6 +115,7 @@ def test_laplacian_for_two_not_linear_inputs():
     assert l.shape[0] == b.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [[6], [3]]) 
+
 
 
 def test_laplacian_multiply_varibales():
@@ -130,6 +135,7 @@ def test_laplacian_multiply_varibales():
     assert np.all(l.detach().numpy() == [[2], [0]])    
 
 
+
 def test_laplacian_with_chain_rule():
     a = torch.tensor([[1.0, 1], [2.0, 1]], requires_grad=True)
     def function1(a):
@@ -140,6 +146,7 @@ def test_laplacian_with_chain_rule():
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.allclose(l.detach().numpy(), [[-0.97203], [-0.22555]], atol=1e-04)  
+
 
 def test_laplacian_with_tanh():
     a = torch.tensor([[1.0, 1.0, 2.0], [2.0, 0, 1.0]], requires_grad=True)

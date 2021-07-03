@@ -199,14 +199,15 @@ class Rectangle(Domain):
         return normal_vectors
 
     def grid_for_plots(self, n):
-        nx = int(np.sqrt(n*self.length_lr/self.length_td))
-        ny = int(np.sqrt(n*self.length_td/self.length_lr))
+        nx = int(np.ceil(np.sqrt(n)*self.length_lr/self.length_td))
+        ny = int(np.ceil(np.sqrt(n)*self.length_td/self.length_lr))
         x = np.linspace(0, 1, nx)
         y = np.linspace(0, 1, ny)
         points = np.array(np.meshgrid(x, y)).T.reshape(-1, 2)
         return self._transform_to_rectangle(points).astype(np.float32)
 
     def serialize(self):
+        # For showing data/information in tensorbaord
         dct = super().serialize()
         dct['name'] = 'Rectangle'
         dct['corner_dl'] = [int(a) for a in list(self.corner_dl)]
@@ -333,14 +334,14 @@ class Circle(Domain):
         return normal_vectors
 
     def grid_for_plots(self, n):
-        scaled_n = 2*int(np.ceil(np.sqrt(n/np.pi)))
-        axis = np.linspace(-self.radius-self.tol, self.radius+self.tol, scaled_n+1)
-        points = np.array(np.meshgrid(axis, axis)).T.reshape(-1, 2)
-        points = np.add(points, self.center)
-        inside = np.nonzero(self.is_inside(points))[0]
-        return points[inside].astype(np.float32)
+        points_inside = self._grid_sampling_inside(n)
+        # add some points at the boundary to better show the form of the circle
+        points_boundary = self._grid_sampling_boundary(int(np.ceil(n/4)))
+        points = np.append(points_inside, points_boundary, axis=0)
+        return points.astype(np.float32)
 
     def serialize(self):
+        # to show data/information in tensorboard
         dct = super().serialize()
         dct['name'] = 'Circle'
         dct['center'] = [int(a) for a in list(self.center)]
@@ -509,7 +510,7 @@ class Triangle(Domain):
         return self._distribute_line_to_boundary(line_points)
 
     def _distribute_line_to_boundary(self, line_points):
-        points = np.empty((0, self.dim))
+        points = np.empty((0, 2))
         for i in range(len(line_points)):
             for k in range(len(self.corners)-1):
                 if line_points[i] < sum(self.side_lengths[:k+1]):
@@ -545,15 +546,19 @@ class Triangle(Domain):
         return normals.astype(np.float32)
 
     def grid_for_plots(self, n):
-        bounds = self._compute_bounds()
-        bounding_box = Rectangle([bounds[0], bounds[2]], [bounds[1], bounds[2]],
-                                 [bounds[0], bounds[3]])
-        scaled_n = int(bounding_box.volume/self.volume * n)
-        points = bounding_box.grid_for_plots(scaled_n)
-        inside = self.is_inside(points)
-        index = np.where(np.invert(inside))[0]
-        return np.delete(points, index, axis=0)
+        points_inside = self._grid_sampling_inside(n)
+        # add some points at the boundary to better show the form of the circle
+        points_boundary = self._grid_sampling_boundary(int(np.ceil(n/4)))
+        return np.append(points_inside, points_boundary, axis=0).astype(np.float32)
 
+    def serialize(self):
+        # to show data/information in tensorboard
+        dct = super().serialize()
+        dct['name'] = 'Triangle'
+        dct['corner_1'] = [int(a) for a in list(self.corners[0])]
+        dct['corner_2'] = [int(a) for a in list(self.corners[1])]
+        dct['corner_3'] = [int(a) for a in list(self.corners[2])]
+        return dct
 
 class Polygon2D(Domain):
     '''Class for polygons in 2D.
@@ -634,8 +639,7 @@ class Polygon2D(Domain):
         return on_bound.reshape(-1, 1)
 
     def grid_for_plots(self, n):
-        points = self._grid_sampling_boundary(n)
-        return np.append(points, Triangle.grid_for_plots(self, n), axis=0)
+        return Triangle.grid_for_plots(self, n)
 
     def _random_sampling_inside(self, n):
         points = np.empty((0, self.dim))
@@ -715,3 +719,11 @@ class Polygon2D(Domain):
     def _compute_bounds(self):
         bounds = self.polygon.bounds
         return [bounds[0], bounds[2], bounds[1], bounds[3]]
+
+    def serialize(self):
+        # to show data/information in tensorboard
+        dct = super().serialize()
+        dct['name'] = 'Polygon2D'
+        for i in range(len(self.corners)-1):
+            dct['corner_' + str(i)] = [int(a) for a in list(self.corners[i])]
+        return dct
