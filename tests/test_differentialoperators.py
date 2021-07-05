@@ -3,7 +3,8 @@ import torch
 import numpy as np
 from neural_diff_eq.utils.differentialoperators import (laplacian, 
                                                         gradient, 
-                                                        normal_derivative)
+                                                        normal_derivative, 
+                                                        div)
 
 # Test laplace-operator
 def function(a):
@@ -267,3 +268,72 @@ def test_normal_derivative_complexer_function():
     assert n.shape[0] == b.shape[0]
     assert n.shape[1] == 1
     assert np.allclose(n.detach().numpy(), [[3], [27/np.sqrt(2)]])
+
+
+# Test divergence
+def div_function(x):
+    return x**2
+
+
+def test_div_one_input():
+    a = torch.tensor([[1.0, 0]], requires_grad=True)
+    output = div_function(a)
+    d = div(output, a)
+    assert d.shape[0] == 1
+    assert d.shape[1] == 1
+    d = d.detach().numpy()
+    assert d[0] == 2
+
+
+def test_div_many_inputs():
+    a = torch.tensor([[1.0, 1.0], [2.0, 1.0]], requires_grad=True)
+    output = div_function(a)
+    d = div(output, a)
+    assert d.shape[0] == 2
+    assert d.shape[1] == 1
+    d = d.detach().numpy()
+    assert d[0] == 4
+    assert d[1] == 6
+
+
+def test_div_in_3D():
+    a = torch.tensor([[1.0, 1.0, 2.0], [2.0, 1.0, 0]], requires_grad=True)
+    output = div_function(a)
+    d = div(output, a)
+    assert d.shape[0] == 2
+    assert d.shape[1] == 1
+    d = d.detach().numpy()
+    assert d[0] == 8
+    assert d[1] == 6
+
+
+def test_div_for_complexer_function_1():
+    def f(x):
+        out = x**2
+        out[:, :1] *= x[:, 1:]
+        return out
+    a = torch.tensor([[1.0, 1.0], [2.0, 1.0], [5.0, 2.0]], requires_grad=True)
+    output = f(a)
+    d = div(output, a)
+    assert d.shape[0] == 3
+    assert d.shape[1] == 1
+    d = d.detach().numpy()
+    assert d[0] == 4
+    assert d[1] == 6
+    assert d[2] == 24
+
+
+def test_div_for_complexer_function_2():
+    def f(x):
+        out = x**2
+        out[:, :1] = torch.sin(x[:, 1:] * x[:, :1])
+        return out
+    a = torch.tensor([[1.0, 1.0], [2.0, 1.0], [5.0, 2.0]], requires_grad=True)
+    output = f(a)
+    d = div(output, a)
+    assert d.shape[0] == 3
+    assert d.shape[1] == 1
+    d = d.detach().numpy()
+    assert np.isclose(d[0], 1*(2+np.cos(1)))
+    assert np.isclose(d[1], 1*(2+np.cos(2)))
+    assert np.isclose(d[2], 2*(2+np.cos(10)))
