@@ -20,7 +20,7 @@ def laplacian(model_out, deriv_variable_input):
         A Tensor, where every row contains the value of the sum of the second
         derivatives (laplace) w.r.t the row of the input variable.
     '''
-    assert len(model_out.shape) == 2 and model_out.shape[1] == 1, """
+    assert model_out.shape[-1] == 1, """
         Laplace: the given output should be a batch of scalar data.
         Multi-dimensional laplace is currently not implemented.
         """
@@ -56,7 +56,7 @@ def grad(model_out, deriv_variable_input):
         A Tensor, where every row contains the values of the the first
         derivatives (gradient) w.r.t the row of the input variable.
     '''
-    assert len(model_out.shape) == 2 and model_out.shape[1] == 1, """
+    assert model_out.shape[-1] == 1, """
         Gradient: the given output should be a batch of scalar data.
         If you aim to compute the jacobian, use utils.jac() instead.
         """
@@ -86,7 +86,7 @@ def normal_derivative(model_out, deriv_variable_input, normals):
         A Tensor, where every row contains the values of the normal
         derivatives w.r.t the row of the input variable.
     '''
-    assert len(model_out.shape) == 2 and model_out.shape[1] == 1, """
+    assert model_out.shape[-1] == 1, """
         Normal derivative: the given model output should be a batch of scalar data.
         """
     gradient = grad(model_out, deriv_variable_input)
@@ -111,7 +111,7 @@ def div(model_out, deriv_variable_input):
         A Tensor, where every row contains the values the divergence
         of the model w.r.t the row of the input variable.
     '''
-    assert len(model_out.shape) == 2 and model_out.shape[1] == deriv_variable_input.shape[1], """
+    assert model_out.shape[-1] == deriv_variable_input.shape[-1], """
         Divergence: the given model output and input should be batches of the same
         dimension.
         """
@@ -140,9 +140,6 @@ def jac(model_out, deriv_variable_input):
     torch.tensor
         A Tensor of shape (b, m, n), where every row contains a jacobian.
     '''
-    assert len(model_out.shape) == 2, """
-        Jacobian: the shape of the model output should have length 2.
-        """
     Du_rows = []
     for i in range(model_out.shape[1]):
         Du_rows.append(torch.autograd.grad(model_out[:, i].sum(),
@@ -201,12 +198,12 @@ def partial(model_out, *deriv_variable_inputs):
         A Tensor, where every row contains the values the divergence
         of the model w.r.t the row of the input variable.
     '''
-    assert len(model_out.shape) == 2 and model_out.shape[1] == 1, """
+    assert model_out.shape[-1] == 1, """
         Partial derivative: the given model output should be a batch of scalars.
         """
     du = model_out.sum()
     for inp in deriv_variable_inputs:
-        assert len(inp.shape) == 2 and inp.shape[1] == 1, """
+        assert inp.shape[-1] == 1, """
             Partial derivative: the given model inputs should be batches of scalars.
         """
         du = torch.autograd.grad(du,
