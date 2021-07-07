@@ -2,7 +2,7 @@ import pytest
 import torch
 import numpy as np
 from neural_diff_eq.utils.differentialoperators import (laplacian, 
-                                                        gradient, 
+                                                        grad, 
                                                         normal_derivative, 
                                                         div)
 
