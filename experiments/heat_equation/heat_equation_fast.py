@@ -15,12 +15,12 @@ from neural_diff_eq.problem.condition import (DirichletCondition,
                                               DiffEqCondition)
 from neural_diff_eq.models import SimpleFCN
 from neural_diff_eq import PINNModule
-from neural_diff_eq.utils import laplacian, gradient
+from neural_diff_eq.utils import laplacian, grad
 from neural_diff_eq.setting import Setting
 
 import time
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 pl.seed_everything(43)
 
 D = 1.18
@@ -68,7 +68,7 @@ t.add_train_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
 
 
 def pde(u, input):
-    return gradient(u, input['t']) - D*laplacian(u, input['x'])
+    return grad(u, input['t']) - D*laplacian(u, input['x'])
 
 
 train_cond = DiffEqCondition(pde=pde,
@@ -95,8 +95,8 @@ solver = PINNModule(model=model,
                     )
 
 trainer = pl.Trainer(gpus='-1',
-                     accelerator='ddp',
-                     plugins=pl.plugins.DDPPlugin(find_unused_parameters=False),
+                     #accelerator='ddp',
+                     #plugins=pl.plugins.DDPPlugin(find_unused_parameters=False),
                      num_sanity_val_steps=0,
                      check_val_every_n_epoch=100,
                      log_every_n_steps=10,

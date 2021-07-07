@@ -165,7 +165,7 @@ def test_laplacian_with_tanh():
 def test_gradient_for_one_input():
     a = torch.tensor([[1.0, 1.0]], requires_grad=True)
     output = function(a[0])
-    g = gradient(output, a)
+    g = grad(output, a)
     assert g.shape[0] == 1
     assert g.shape[1] == 2
     assert np.equal(g.detach().numpy(), [2, 2]).all()
@@ -175,7 +175,7 @@ def test_gradient_many_inputs():
     a = torch.tensor([[1.0, 1.0], [2, 0], [3, 1]], requires_grad=True)
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]) : output[i] = function(a[i])
-    g = gradient(output, a)
+    g = grad(output, a)
     assert g.shape[0] == 3
     assert g.shape[1] == 2
     assert np.equal(g.detach().numpy(), [[2, 2], [4, 0], [6, 2]]).all()   
@@ -185,7 +185,7 @@ def test_gradient_1D():
     a = torch.tensor([[1.0], [2.0], [0]], requires_grad=True)
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]) : output[i] = function(a[i])
-    g = gradient(output, a)
+    g = grad(output, a)
     assert g.shape[0] == 3
     assert g.shape[1] == 1
     assert np.equal(g.detach().numpy(), [[2], [4], [0]]).all()
@@ -195,7 +195,7 @@ def test_gradient_3D():
     a = torch.tensor([[1.0, 5, 2], [2.0, 2.0, 2.0]], requires_grad=True)
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]) : output[i] = function(a[i])
-    g = gradient(output, a)
+    g = grad(output, a)
     assert g.shape[0] == 2
     assert g.shape[1] == 3
     assert np.equal(g.detach().numpy(), [[2, 10, 4], [4, 4, 4]]).all()
@@ -208,11 +208,11 @@ def test_gradient_mixed_input():
         return a[0]**2 + a[1] + b[0]**3
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]) : output[i] = function1(a[i], b[i])
-    g = gradient(output, a)
+    g = grad(output, a)
     assert g.shape[0] == a.shape[0]
     assert g.shape[1] == 2
     assert np.equal(g.detach().numpy(), [[2, 1], [4, 1]]).all()  
-    g = gradient(output, b)
+    g = grad(output, b)
     assert g.shape[0] == b.shape[0]
     assert g.shape[1] == 1
     assert np.equal(g.detach().numpy(), [[3], [3/4]]).all() 
