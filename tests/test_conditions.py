@@ -714,3 +714,95 @@ def test_forward_neumann_condition():
     assert isinstance(out, torch.Tensor)
     norm = torch.nn.MSELoss()
     assert torch.isclose(out, norm(normals.sum(dim=1, keepdim=True), target))
+
+
+# Test DiffEqBoundaryCondition for arbitrary boundary conditions
+def create_arbitrary():
+    return condi.DiffEqBoundaryCondition(bound_condition_fun=dirichlet_fun,
+                                         name='test arbitrary',
+                                         norm=torch.nn.MSELoss(),
+                                         sampling_strategy='random',
+                                         boundary_sampling_strategy='lower_bound_only',
+                                         dataset_size=5)
+
+
+def test_create_diffEqBoundary_condition():
+    cond = create_arbitrary()
+    assert cond.bound_condition_fun == dirichlet_fun
+    assert cond.name == 'test arbitrary'
+    assert isinstance(cond.norm, torch.nn.MSELoss)
+    assert cond.datacreator.sampling_strategy == 'random'
+    assert cond.datacreator.boundary_sampling_strategy == 'lower_bound_only'
+    assert cond.boundary_variable is None
+    assert cond.weight == 1
+    assert cond.datacreator.dataset_size == 5
+    assert cond.data_plot_variables 
+    assert cond.data_fun is None
+
+
+def test_serialize_diffEqBoundary_condition():
+    cond = create_arbitrary()
+    dct = cond.serialize()
+    assert dct['bound_condition_fun'] == 'dirichlet_fun'
+    assert dct['dataset_size'] == 5
+    assert dct['sampling_strategy'] == 'random'
+    assert dct['boundary_sampling_strategy'] == 'lower_bound_only'
+    cond.data_fun = neumann_fun
+    dct = cond.serialize()
+    assert dct['data_fun'] == 'neumann_fun'    
+
+
+def test_get_data_diffEqBoundary_condition_not_registered():
+    cond = create_arbitrary()
+    with pytest.raises(RuntimeError):
+        cond.get_data()
+
+
+def test_get_data_diffEqBoundary_condition():
+    cond = create_arbitrary()
+    x = Variable(name='x', domain=Interval(0, 1))
+    t = Variable(name='t', domain=Interval(-3, -2))
+    cond.variables = {'x': x, 't': t}
+    cond.boundary_variable = 't'
+    data, normals = cond.get_data()
+    assert np.shape(data['x']) == (5, 1)
+    assert np.shape(data['t']) == (5, 1)
+    assert np.equal(normals, [[-1], [-1], [-1], [-1], [-1]]).all()
+    assert not x.domain.is_inside(data['t']).all()
+
+
+def test_get_data_with_target_diffEqBoundary_condition():
+    cond = create_arbitrary()
+    x = Variable(name='x', domain=Interval(0, 1))
+    t = Variable(name='t', domain=Interval(-3, -2))
+    cond.variables = {'x': x, 't': t}
+    cond.boundary_variable = 't'
+    cond.data_fun = dirichlet_fun
+    data, target, normals = cond.get_data()
+    assert np.shape(data['x']) == (5, 1)
+    assert np.shape(target) == (5, 1)
+    assert np.shape(data['t']) == (5, 1)
+    assert np.equal(normals, [[-1], [-1], [-1], [-1], [-1]]).all()
+    assert not x.domain.is_inside(data['t']).all()
+    assert np.equal(data['x'], target).all()
+
+
+def test_forward_diffEqBoundary_condition_with_MSE():
+    def condition_function(model, data, normals):
+        return model - data['out']
+    data = {'x': torch.FloatTensor([[1, 1], [1, 0]]), 
+            'out': torch.FloatTensor([[1, 1], [1, 0]])}
+    normals = [[1, 0], [1, 0]]
+    data_comb = data, normals
+    cond = create_arbitrary()
+    cond.bound_condition_fun = condition_function
+    out = cond.forward(model_function, data_comb)
+    assert out == 0  
+    cond.data_fun = 2 # data_fun not None
+    target = torch.FloatTensor([[2, 0], [1, 0]])
+    def condition_function(model, data, normals, target):
+        return model - target
+    data_comb = data, target, normals 
+    cond.bound_condition_fun = condition_function
+    out = cond.forward(model_function, data_comb)
+    assert out == 1/2 

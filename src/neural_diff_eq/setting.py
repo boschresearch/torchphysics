@@ -121,7 +121,7 @@ class Setting(Problem, DataModule):
                 data_dic = self._setup_input_data(data_dic,
                                                   conditions[cn].track_gradients)
                 target = self._setup_target_data(target)
-                normals = self._setup_input_data(normals)
+                normals = self._setup_target_data(normals)
                 data[cn] = data_dic, target, normals                
         return data
 

@@ -279,6 +279,9 @@ class DirichletCondition(BoundaryCondition):
         number. The number of desired points can also be uniquely picked for each
         variable, if a list, tuple or dic is given as an input. Then the whole number
         of data points will be the product of the given numbers.
+    data_plot_variables : bool or tuple
+        The variables which are used to log the used training data in a scatter plot.
+        If False, no plots are created. If True, behaviour is defined in each condition.
     """
 
     def __init__(self, dirichlet_fun, name, norm,
@@ -344,9 +347,6 @@ class NeumannCondition(BoundaryCondition):
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this condition. 0 disables
-        multiprocessing.
     dataset_size : int, list, tuple or dic
         Amount of samples in the used dataset. The dataset is generated once at the
         beginning of the training. 
@@ -354,6 +354,9 @@ class NeumannCondition(BoundaryCondition):
         number. The number of desired points can also be uniquely picked for each
         variable, if a list, tuple or dic is given as an input. Then the whole number
         of data points will be the product of the given numbers.
+    data_plot_variables : bool or tuple
+        The variables which are used to log the used training data in a scatter plot.
+        If False, no plots are created. If True, behaviour is defined in each condition.
     """
 
     def __init__(self, neumann_fun, name, norm,
@@ -392,6 +395,105 @@ class NeumannCondition(BoundaryCondition):
     def serialize(self):
         dct = super().serialize()
         dct['neumann_fun'] = self.neumann_fun.__name__
+        dct['dataset_size'] = self.datacreator.dataset_size
+        dct['sampling_strategy'] = self.datacreator.sampling_strategy
+        dct['boundary_sampling_strategy'] = self.datacreator.boundary_sampling_strategy
+        return dct
+
+
+class DiffEqBoundaryCondition(BoundaryCondition):
+    """
+    Implementation a arbitrary boundary condition based on a function handle.
+
+    Parameters
+    ----------
+    bound_condition_fun : function handle
+        A method that takes the output and input (in the usual dictionary form) of a
+        model, the boundary normals and additional data (given through data_fun, and 
+        only when needed) as an input. The method then computes and returns 
+        the desired boundary condition.
+    name : str
+        name of this condition (should be unique per problem or variable)
+    norm : torch.nn.Module
+        A Pytorch module which forward pass returns the scalar norm of the difference of
+        two input tensors, and is therefore similar to the implementation of nn.MSELoss.
+        The norm is used to compute the loss for the deviation of the model from the
+        given data.
+    sampling_strategy : str
+        The sampling strategy used to sample data points for this condition. See domains
+        for more details.
+    boundary_sampling_strategy : str
+        The sampling strategy used to sample the boundary variable's points for this
+        condition. See domains for more details.
+    weight : float
+        Scalar weight of this condition that is used in the weighted sum for the
+        training loss. Defaults to 1.
+    dataset_size : int, list, tuple or dic
+        Amount of samples in the used dataset. The dataset is generated once at the
+        beginning of the training. 
+        If an int is given, the methode will use at least as many data points as the
+        number. The number of desired points can also be uniquely picked for each
+        variable, if a list, tuple or dic is given as an input. Then the whole number
+        of data points will be the product of the given numbers.
+    data_fun : function handle
+        A method that represents the right-hand side of the boundary condition. As 
+        an input it takes the boundary points in the usual dictionary form.
+        If the right-hand side is independent of the model, it is more efficient to 
+        compute the values only once and save them.
+        If the right-hand side dependents on the model outputs, or is zero, this 
+        parameter should be None and the whole condition has to be implemented in
+        bound_condition_fun. 
+    data_plot_variables : bool or tuple
+        The variables which are used to log the used training data in a scatter plot.
+        If False, no plots are created. If True, behaviour is defined in each condition.
+    """
+
+    def __init__(self, bound_condition_fun, name, norm,
+                 sampling_strategy='random', boundary_sampling_strategy='random',
+                 weight=1.0, dataset_size=10000, data_fun=None,
+                 data_plot_variables=True):
+        super().__init__(name, norm, weight=weight,
+                         track_gradients=True,
+                         data_plot_variables=data_plot_variables)
+        self.bound_condition_fun = bound_condition_fun
+        self.data_fun = data_fun
+        self.datacreator = dc.BoundaryDataCreator(variables=self.variables,
+                                                  dataset_size=dataset_size,
+                                                  sampling_strategy=sampling_strategy,
+                                                  boundary_sampling_strategy=
+                                                  boundary_sampling_strategy)
+
+    def forward(self, model, data):
+        if self.data_fun is None:
+            data, normals = data
+            u = model(data)
+            err = self.bound_condition_fun(u, data, normals)
+        else:
+            data, target, normals = data
+            u = model(data)
+            err = self.bound_condition_fun(u, data, normals, target)
+        return self.norm(err, torch.zeros_like(err))
+
+    def get_data(self):
+        if self.is_registered():
+            self.datacreator.variables = self.variables
+            self.datacreator.boundary_variable = self.boundary_variable
+            data = self.datacreator.get_data()
+            normals = self.variables[self.boundary_variable] \
+                      .domain.boundary_normal(data[self.boundary_variable])
+            if self.data_fun is None:
+                return (data, normals)
+            else: 
+                return (data, self.data_fun(data), normals)
+        else:
+            raise RuntimeError("""Conditions need to be registered in a
+                                  Variable or Problem.""")
+
+    def serialize(self):
+        dct = super().serialize()
+        dct['bound_condition_fun'] = self.bound_condition_fun.__name__
+        if self.data_fun is not None:
+            dct['data_fun'] = self.data_fun.__name__
         dct['dataset_size'] = self.datacreator.dataset_size
         dct['sampling_strategy'] = self.datacreator.sampling_strategy
         dct['boundary_sampling_strategy'] = self.datacreator.boundary_sampling_strategy
