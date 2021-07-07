@@ -134,3 +134,15 @@ def test_serialize_interval():
     assert dct['name'] == 'Interval'
     assert dct['low_bound'] == -1
     assert dct['up_bound'] == 2
+
+def test_get_bounds_interval():
+    I = Interval(-1, 2)
+    bounds = I._compute_bounds()
+    assert bounds[0] == -1
+    assert bounds[1] == 2
+
+def test_bounday_normals_interval():
+    I = Interval(-5, 21)
+    points = [[-5], [21], [21], [-5], [21]]
+    normals = I.boundary_normal(points)
+    assert np.equal(normals, [[-1], [1], [1], [-1], [1]]).all()

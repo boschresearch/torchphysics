@@ -116,3 +116,9 @@ class Interval(Domain):
         dct['low_bound'] = self.low_bound
         dct['up_bound'] = self.up_bound
         return dct
+
+    def boundary_normal(self, points):
+        return np.where(np.isclose(points, self.low_bound, atol=self.tol), -1, 1)
+
+    def _compute_bounds(self):
+        return [self.low_bound, self.up_bound]
