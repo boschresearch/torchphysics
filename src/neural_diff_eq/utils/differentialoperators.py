@@ -20,10 +20,6 @@ def laplacian(model_out, deriv_variable_input):
         A Tensor, where every row contains the value of the sum of the second
         derivatives (laplace) w.r.t the row of the input variable.
     '''
-    assert model_out.shape[-1] == 1, """
-        Laplace: the given output should be a batch of scalar data.
-        Multi-dimensional laplace is currently not implemented.
-        """
     laplacian = torch.zeros((deriv_variable_input.shape[0], 1),
                             device=deriv_variable_input.device)
     Du = torch.autograd.grad(model_out.sum(), deriv_variable_input,
@@ -56,10 +52,6 @@ def grad(model_out, deriv_variable_input):
         A Tensor, where every row contains the values of the the first
         derivatives (gradient) w.r.t the row of the input variable.
     '''
-    assert model_out.shape[-1] == 1, """
-        Gradient: the given output should be a batch of scalar data.
-        If you aim to compute the jacobian, use utils.jac() instead.
-        """
     grad = torch.autograd.grad(
         model_out.sum(), deriv_variable_input, create_graph=True)[0]
     return grad
@@ -86,9 +78,6 @@ def normal_derivative(model_out, deriv_variable_input, normals):
         A Tensor, where every row contains the values of the normal
         derivatives w.r.t the row of the input variable.
     '''
-    assert model_out.shape[-1] == 1, """
-        Normal derivative: the given model output should be a batch of scalar data.
-        """
     gradient = grad(model_out, deriv_variable_input)
     normal_derivatives = gradient*normals
     return normal_derivatives.sum(dim=1, keepdim=True)
@@ -111,10 +100,6 @@ def div(model_out, deriv_variable_input):
         A Tensor, where every row contains the values the divergence
         of the model w.r.t the row of the input variable.
     '''
-    assert model_out.shape[-1] == deriv_variable_input.shape[-1], """
-        Divergence: the given model output and input should be batches of the same
-        dimension.
-        """
     divergence = torch.zeros((deriv_variable_input.shape[0], 1),
                              device=deriv_variable_input.device)
     for i in range(deriv_variable_input.shape[1]):
@@ -198,14 +183,8 @@ def partial(model_out, *deriv_variable_inputs):
         A Tensor, where every row contains the values the divergence
         of the model w.r.t the row of the input variable.
     '''
-    assert model_out.shape[-1] == 1, """
-        Partial derivative: the given model output should be a batch of scalars.
-        """
     du = model_out.sum()
     for inp in deriv_variable_inputs:
-        assert inp.shape[-1] == 1, """
-            Partial derivative: the given model inputs should be batches of scalars.
-        """
         du = torch.autograd.grad(du,
                                  inp,
                                  create_graph=True)[0].sum()
