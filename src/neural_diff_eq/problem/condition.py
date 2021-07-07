@@ -113,18 +113,22 @@ class DiffEqCondition(Condition):
     def __init__(self, pde, norm, name='pde',
                  sampling_strategy='random', weight=1.0,
                  dataset_size=10000, track_gradients=True,
-                 data_plot_variables=False):
+                 data_plot_variables=False, inverse_problem=False):
         super().__init__(name, norm, weight,
                          track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
         self.pde = pde
+        self.inverse_problem = inverse_problem
         self.datacreator = dc.InnerDataCreator(variables=self.variables,
                                                dataset_size=dataset_size, 
                                                sampling_strategy=sampling_strategy)
 
     def forward(self, model, data):
         u = model(data)
-        err = self.pde(u, data)
+        if self.inverse_problem:
+            err = self.pde(u, data, model.get_parameters())
+        else: 
+            err = self.pde(u, data)
         return self.norm(err, torch.zeros_like(err))
 
     def get_data(self):
