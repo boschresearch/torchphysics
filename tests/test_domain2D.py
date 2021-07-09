@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import shapely.geometry as s_geo
 from neural_diff_eq.problem.domain.domain2D import (Rectangle, Circle,
                                                     Triangle, Polygon2D)
 
@@ -545,20 +546,14 @@ def test_check_no_input_poly2D():
 def test_ordering_of_corners_poly2D():
     P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 5]])
     order = [[0, 10], [0, 0], [10, 2], [10, 5], [0, 10]]
-    assert np.equal(P.corners, order).all()
+    assert np.equal(P.polygon.exterior.coords, order).all()
     P = Polygon2D([[0, 10], [10, 5], [10, 2], [0, 0]])
-    assert np.equal(P.corners, order).all()
+    assert np.equal(P.polygon.exterior.coords, order).all()
 
 
 def test_surface_of_poly2D():
     P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
     assert np.isclose(P.surface, 16+2*np.sqrt(2**2+10**2))
-    length = P.side_lengths
-    assert np.isclose(length[0], 10)
-    assert np.isclose(length[1], np.sqrt(2**2+10**2))
-    assert np.isclose(length[2], 6)
-    assert np.isclose(length[3], np.sqrt(2**2+10**2))
-    assert len(length) == 4
 
 
 def test_volume_of_poly2D():
@@ -568,12 +563,31 @@ def test_volume_of_poly2D():
 
 def test_normals_of_poly2D():
     P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
-    assert len(P.normals) == 4
-    assert np.equal(P.normals[0], [-1, 0]).all()
-    assert np.equal(P.normals[2], [1, 0]).all()
+    assert len(P.exterior_normals) == 4
+    assert np.equal(P.exterior_normals[0], [-1, 0]).all()
+    assert np.equal(P.exterior_normals[2], [1, 0]).all()
     norm = np.sqrt(2**2+10**2)
-    assert np.allclose(P.normals[1], [2/norm, -10/norm])
-    assert np.allclose(P.normals[3], [2/norm, 10/norm])
+    assert np.allclose(P.exterior_normals[1], [2/norm, -10/norm])
+    assert np.allclose(P.exterior_normals[3], [2/norm, 10/norm])
+    assert len(P.inner_normals) == 0
+
+
+def test_normals_of_poly2D_with_hole():
+    h = s_geo.Polygon(shell=[[1, 1], [3, 1], [1, 3]])
+    p = s_geo.Polygon(shell=[[0, 10], [0, 0], [10, 2], [10, 8]],
+                      holes=[h.exterior.coords])
+    P = Polygon2D(shapely_polygon=p)
+    assert len(P.exterior_normals) == 4
+    assert np.equal(P.exterior_normals[0], [-1, 0]).all()
+    assert np.equal(P.exterior_normals[2], [1, 0]).all()
+    norm = np.sqrt(2**2+10**2)
+    assert np.allclose(P.exterior_normals[1], [2/norm, -10/norm])
+    assert np.allclose(P.exterior_normals[3], [2/norm, 10/norm])
+    assert len(P.inner_normals) == 1
+    assert len(P.inner_normals[0]) == 3
+    assert np.equal(P.inner_normals[0][2], [0, 1]).all()
+    assert np.allclose(P.inner_normals[0][1], [-1/np.sqrt(2), -1/np.sqrt(2)])
+    assert np.equal(P.inner_normals[0][0], [1, 0]).all()
 
 
 def test_inside_poly2D():
@@ -613,9 +627,31 @@ def test_random_sampling_on_boundary_poly2D():
 
 
 def test_grid_sampling_on_boundary_poly2D():
-    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
-    points = P.sample_boundary(500, type='grid')
+    P = Polygon2D([[0, 10], [0, 0], [10, 0], [10, 10]])
+    points = P.sample_boundary(15, type='grid')
+    assert np.shape(points) == (15, 2)
+    assert all(P.is_on_boundary(points))
+
+
+def test_random_sampling_on_boundary_for_hole_in_poly2D():
+    h = s_geo.Polygon(shell=[[0.20, 0.15], [0.5, 0.25], [0.25, 0.5]])
+    p = s_geo.Polygon(shell=[[0, 0], [1, 0], [0, 1]], holes=[h.exterior.coords])
+    P = Polygon2D(shapely_polygon=p)
+    H = Polygon2D(shapely_polygon=h)
+    points = P.sample_boundary(500)
     assert np.shape(points) == (500, 2)
+    assert any(H.is_on_boundary(points))    
+    assert all(P.is_on_boundary(points))
+
+
+def test_grid_sampling_on_boundary__for_hole_in_poly2Dpoly2D():
+    h = s_geo.Polygon(shell=[[0.20, 0.15], [0.5, 0.25], [0.25, 0.5]])
+    p = s_geo.Polygon(shell=[[0, 0], [1, 0], [0, 1]], holes=[h.exterior.coords])
+    P = Polygon2D(shapely_polygon=p)
+    H = Polygon2D(shapely_polygon=h)
+    points = P.sample_boundary(50, type='grid')
+    assert np.shape(points) == (50, 2)
+    assert any(H.is_on_boundary(points))    
     assert all(P.is_on_boundary(points))
 
 
@@ -648,8 +684,8 @@ def test_bounds_for_poly2D():
 
 def test_grid_sampling_inside_poly2D():
     P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
-    points = P.sample_inside(517, type='grid')
-    assert np.shape(points) == (517, 2)
+    points = P.sample_inside(250, type='grid')
+    assert np.shape(points) == (250, 2)
     assert all(P.is_inside(points))
 
 
@@ -685,12 +721,16 @@ def test_boundary_normal_poly2D():
     assert np.allclose(normals[2], [2/norm, -10/norm])
 
 
-def test_console_output_when_not_on_bound_poly2D(capfd):
-    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
-    point = [[0.1, 0.1]]
-    P.boundary_normal(point)
-    out, err = capfd.readouterr()
-    assert out == 'Warning: some points are not at the boundary!\n'
+def test_boundary_normal_poly2D_with_hole():
+    h = s_geo.Polygon(shell=[[0.15, 0.15], [0.25, 0.15], [0.15, 0.25]])
+    p = s_geo.Polygon(shell=[[0, 0], [1, 0], [0, 1]], holes=[h.exterior.coords])
+    P = Polygon2D(shapely_polygon=p)
+    points = [[0.5, 0], [0, 0.5], [0.2, 0.15]]
+    normals = P.boundary_normal(points)
+    assert np.shape(normals) == (3, 2)
+    assert np.allclose(normals[0], [0, -1])
+    assert np.allclose(normals[1], [-1, 0])
+    assert np.allclose(normals[2], [0, 1])
 
 
 def test_output_type_poly2D():

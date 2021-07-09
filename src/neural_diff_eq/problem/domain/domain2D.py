@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import core
 import shapely.geometry as s_geo
 from shapely.ops import triangulate
 
@@ -105,6 +106,14 @@ class Rectangle(Domain):
         return [(t*direction) for t in points]
 
     def _grid_sampling_inside(self, n):
+        points = self.grid_in_box(n)
+        # append random points if there are not enough points in the grid
+        if len(points) < n:
+            points = np.append(points, self._random_sampling_inside(n-len(points)),
+                               axis=0)
+        return points.astype(np.float32)
+
+    def grid_in_box(self, n):
         nx = int(np.sqrt(n*self.length_lr/self.length_td))
         ny = int(np.sqrt(n*self.length_td/self.length_lr))
         x = np.linspace(0, 1, nx+2)[1:-1]
@@ -114,11 +123,7 @@ class Rectangle(Domain):
             (self.corner_dr-self.corner_dl, self.corner_tl-self.corner_dl))
         points = [np.matmul(trans_matrix, p) for p in points]
         points = np.add(points, self.corner_dl)
-        # append random points if there are not enough points in the grid
-        if len(points) < n:
-            points = np.append(points, self._random_sampling_inside(n-len(points)),
-                               axis=0)
-        return points.astype(np.float32)
+        return points
 
     def _transform_to_rectangle(self, points):
         trans_matrix = np.column_stack(
@@ -370,8 +375,8 @@ class Triangle(Domain):
     def __init__(self, corner_1, corner_2, corner_3, tol=1e-06):
         self.corners = np.array([corner_1, corner_2, corner_3, corner_1])
         volume = self._compute_area()
-        self.side_lengths = self._compute_side_lengths()
-        self.normals = self._compute_normals()
+        self.side_lengths = self._compute_side_lengths(self.corners)
+        self.normals = self._compute_normals(self.corners, self.side_lengths)
         self.inverse_matrix = self._compute_inverse()
         super().__init__(dim=2, volume=volume,
                          surface=sum(self.side_lengths), tol=tol)
@@ -384,20 +389,20 @@ class Triangle(Domain):
             area = -area
         return area
 
-    def _compute_side_lengths(self):
+    def _compute_side_lengths(self, corners):
         # Function is also used by the Polygon2D class
-        side_length = np.zeros(len(self.corners)-1)
-        for i in range(len(self.corners)-1):
-            side_length[i] = np.linalg.norm(self.corners[i+1]-self.corners[i])
+        side_length = np.zeros(len(corners)-1)
+        for i in range(len(corners)-1):
+            side_length[i] = np.linalg.norm(corners[i+1]-corners[i])
         return side_length
 
-    def _compute_normals(self):
+    def _compute_normals(self, corners, side_lengths):
         # Function is also used by the Polygon2D class
-        normals = np.zeros((len(self.corners)-1, 2))
-        for i in range(len(self.corners)-1):
-            normals[i] = np.subtract(self.corners[i+1], self.corners[i])[::-1]
+        normals = np.zeros((len(corners)-1, 2))
+        for i in range(len(corners)-1):
+            normals[i] = np.subtract(corners[i+1], corners[i])[::-1]
             normals[i][1] *= -1
-            normals[i] /= self.side_lengths[i]
+            normals[i] /= side_lengths[i]
         return normals
 
     def _compute_inverse(self):
@@ -490,7 +495,7 @@ class Triangle(Domain):
         bounding_box = Rectangle([bounds[0], bounds[2]], [bounds[1], bounds[2]],
                                  [bounds[0], bounds[3]])
         scaled_n = int(bounding_box.volume/self.volume * n)
-        points = bounding_box._grid_sampling_inside(scaled_n)
+        points = bounding_box.grid_in_box(scaled_n)
         inside = self.is_inside(points)
         index = np.where(np.invert(inside))[0]
         points = np.delete(points, index, axis=0)
@@ -503,21 +508,23 @@ class Triangle(Domain):
 
     def _random_sampling_boundary(self, n):
         line_points = np.random.uniform(0, self.surface, n)
-        return self._distribute_line_to_boundary(line_points)
+        return self._distribute_line_to_boundary(line_points, self.corners,
+                                                 self.side_lengths)
 
     def _grid_sampling_boundary(self, n):
         line_points = np.linspace(0, self.surface, n+1)[:-1]
-        return self._distribute_line_to_boundary(line_points)
+        return self._distribute_line_to_boundary(line_points, self.corners,
+                                                 self.side_lengths)
 
-    def _distribute_line_to_boundary(self, line_points):
+    def _distribute_line_to_boundary(self, line_points, corners, side_lengths):
         points = np.empty((0, 2))
         for i in range(len(line_points)):
-            for k in range(len(self.corners)-1):
-                if line_points[i] < sum(self.side_lengths[:k+1]):
-                    norm = self.side_lengths[k]
-                    coord = line_points[i] - sum(self.side_lengths[:k])
-                    new_point = (self.corners[k] + coord/norm *
-                                 (self.corners[k+1]-self.corners[k]))
+            for k in range(len(corners)-1):
+                if line_points[i] < sum(side_lengths[:k+1]):
+                    norm = side_lengths[k]
+                    coord = line_points[i] - sum(side_lengths[:k])
+                    new_point = (corners[k] + coord/norm *
+                                 (corners[k+1]-corners[k]))
                     points = np.append(points, [new_point], axis=0)
                     break
         return points.astype(np.float32)
@@ -583,17 +590,28 @@ class Polygon2D(Domain):
             self.polygon = shapely_polygon
         else:
             raise ValueError('Needs either points to create a new'
-                             'polygon, or a existing shapely polygon.')
+                             + ' polygon, or a existing shapely polygon.')
         self.polygon = s_geo.polygon.orient(self.polygon)
         super().__init__(dim=2, tol=tol, volume=self.polygon.area,
                          surface=self.polygon.boundary.length)
-        self.corners = np.array(self.polygon.exterior.coords)
-        self.side_lengths = Triangle._compute_side_lengths(self)
-        self.normals = Triangle._compute_normals(self)
+        self._compute_normals()
 
     def _check_not_triangle(self, points):
         if len(points) == 3:
             raise ValueError('It is more efficient to use the triangle class!')
+
+    def _compute_normals(self):
+        # compute normals for outer boundary
+        corners = np.array(self.polygon.exterior.coords)
+        side_lengths = Triangle._compute_side_lengths(self, corners)      
+        self.exterior_normals = Triangle._compute_normals(self, corners, side_lengths) 
+        # compute normals for inner boundary
+        self.inner_normals = []
+        for inner in self.polygon.interiors:
+            corners = np.array(inner.coords)
+            side_lengths = Triangle._compute_side_lengths(self, corners)
+            normals = Triangle._compute_normals(self, corners, side_lengths)
+            self.inner_normals.append(normals) 
 
     def is_inside(self, points):
         '''Checks if the given points are inside the polygon.
@@ -644,12 +662,17 @@ class Polygon2D(Domain):
     def _random_sampling_inside(self, n):
         points = np.empty((0, self.dim))
         big_t, t_area = None, 0
+        # instead of using a bounding box it is more efficient to triangulate
+        # the polygon and sample in each triangle.
         for t in triangulate(self.polygon):
             new_points = self._sample_in_triangulation(t, n)
             points = np.append(points, new_points, axis=0)
+            # remember the biggest tirangle that was inside
             if t.within(self.polygon) and t.area > t_area:
                 big_t = [t][0]
                 t_area = t.area
+        # if not enough points are sampled, create some new points in the biggest 
+        # triangle
         if len(points) < n:
             points = np.append(points,
                                self._sample_in_triangulation(big_t, n-len(points)),
@@ -674,12 +697,59 @@ class Polygon2D(Domain):
         return Triangle._grid_sampling_with_bbox(self, n, bounds)
 
     def _random_sampling_boundary(self, n):
-        line_points = np.random.uniform(0, self.surface, n)
-        return Triangle._distribute_line_to_boundary(self, line_points)
+        # First greate exterior points
+        points = self._random_poly_exterior(n)
+        # Create points for inner sides:
+        for inner in self.polygon.interiors:
+            corners = np.array(inner.coords)
+            side_lengths = Triangle._compute_side_lengths(self, corners)
+            scaled_n = int(n * sum(side_lengths)/self.surface)
+            line_points = np.random.uniform(0, sum(side_lengths), scaled_n)  
+            new_points = Triangle._distribute_line_to_boundary(self, line_points,
+                                                               corners, side_lengths)
+            points = np.append(points, new_points, axis=0)   
+        # add missing points
+        if len(points) < n:
+            points = np.append(points,
+                               self._random_poly_exterior(n-len(points), scale=False),
+                               axis=0)          
+        return points
+
+    def _random_poly_exterior(self, n, scale=True):
+        corners = np.array(self.polygon.exterior.coords)
+        side_lengths = Triangle._compute_side_lengths(self, corners)
+        if scale:
+            n = int(n * sum(side_lengths)/self.surface)
+        line_points = np.random.uniform(0, sum(side_lengths), n)
+        return Triangle._distribute_line_to_boundary(self, line_points, corners, 
+                                                     side_lengths)
 
     def _grid_sampling_boundary(self, n):
-        line_points = np.linspace(0, self.surface, n+1)[:-1]
-        return Triangle._distribute_line_to_boundary(self, line_points)
+        # First greate exterior points
+        points = self._grid_poly_exterior(n)
+        # Create points for inner sides:
+        for inner in self.polygon.interiors:
+            corners = np.array(inner.coords)
+            side_lengths = Triangle._compute_side_lengths(self, corners)
+            scaled_n = int(n * sum(side_lengths)/self.surface)
+            line_points = np.linspace(0, sum(side_lengths), scaled_n+1)[:-1]  
+            new_points = Triangle._distribute_line_to_boundary(self, line_points,
+                                                               corners, side_lengths)
+            points = np.append(points, new_points, axis=0)   
+        # add possible missing points (random)
+        if len(points) < n:
+            points = np.append(points,
+                               self._random_poly_exterior(n-len(points), scale=False),
+                               axis=0)               
+        return points
+
+    def _grid_poly_exterior(self, n):
+        corners = np.array(self.polygon.exterior.coords)
+        side_lengths = Triangle._compute_side_lengths(self, corners)
+        scaled_n = int(n * sum(side_lengths)/self.surface)
+        line_points = np.linspace(0, sum(side_lengths), scaled_n+1)[:-1] 
+        return Triangle._distribute_line_to_boundary(self, line_points, corners, 
+                                                     side_lengths)
 
     def boundary_normal(self, points):
         '''Computes the boundary normal.
@@ -696,18 +766,25 @@ class Polygon2D(Domain):
             Every entry of the output contains the normal vector at the point
             specified in the input array.
         '''
-        index = self._where_on_boundary(points)
-        if (index == -1).any():
-            print('Warning: some points are not at the boundary!')
         normals = np.zeros((len(points), self.dim))
+        # first check the exterior boundary
+        index = self._where_on_boundary(points, self.polygon.exterior.coords[:])
         for i in range(len(points)):
-            normals[i] = self.normals[index[i]]
+            if index[i] >= 0: #if -1 the point is not on the boundary
+                normals[i] = self.exterior_normals[index[i]]
+        # now check all inner boundaries
+        k = 0
+        for inner in self.polygon.interiors:
+            index = self._where_on_boundary(points, inner.coords[:])    
+            for i in range(len(points)):
+                if index[i] >= 0: #if -1 the point is not on the boundary
+                    normals[i] = self.inner_normals[k][index[i]]
+            k = k + 1        
         return normals.astype(np.float32)
 
-    def _where_on_boundary(self, points):
+    def _where_on_boundary(self, points, coords):
         index = -1 * np.ones(len(points), dtype=int)
-        coords = self.polygon.exterior.coords
-        for i in range(len(self.corners)-1):
+        for i in range(len(coords)-1):
             line = s_geo.LineString([coords[i], coords[i+1]])
             for k in np.where(index < 0)[0]:
                 point = s_geo.Point(points[k])
@@ -724,6 +801,6 @@ class Polygon2D(Domain):
         # to show data/information in tensorboard
         dct = super().serialize()
         dct['name'] = 'Polygon2D'
-        for i in range(len(self.corners)-1):
-            dct['corner_' + str(i)] = [int(a) for a in list(self.corners[i])]
+        for i in range(len(self.polygon.exterior.coords)-1):
+            dct['corner_' + str(i)] = self.polygon.exterior.coords[i]
         return dct

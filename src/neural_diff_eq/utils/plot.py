@@ -334,9 +334,10 @@ class __HelperTriangle():
     '''
     def __init__(self, corner_1, corner_2, corner_3):
         self.corners = np.array([corner_1, corner_2, corner_3, corner_1])
-        self.side_lengths = Triangle._compute_side_lengths(self)
+        self.side_lengths = Triangle._compute_side_lengths(self, self.corners)
         self.surface = sum(self.side_lengths)
 
     def points_on_boundary(self, n):
         line_points = np.linspace(0, self.surface, n+1)[:-1]
-        return Triangle._distribute_line_to_boundary(self, line_points)
+        return Triangle._distribute_line_to_boundary(self, line_points,
+                                                     self.corners, self.side_lengths)
