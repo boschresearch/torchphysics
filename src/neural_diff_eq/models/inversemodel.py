@@ -29,11 +29,11 @@ class InverseModel(DiffEqModel):
                 param = torch.nn.Parameter(torch.zeros(v))
             elif isinstance(v, (list, np.array)):
                 param = torch.nn.Parameter(torch.FloatTensor(v))
-            else: 
+            else:
                 raise ValueError('Expected the parameters to be tensors, int, tuple,'
                                  + ' list or numpy.array. Found: ' + type(v))
             self.model.register_parameter(name=pname, param=param)
-            
+
     def get_parameters(self):
         return self.model._parameters
 

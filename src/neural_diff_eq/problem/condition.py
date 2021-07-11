@@ -4,6 +4,7 @@ They supply the necessary training data to the model.
 import abc
 import torch
 from . import datacreator as dc
+from inspect import signature
 
 from ..utils.differentialoperators import normal_derivative
 
@@ -50,7 +51,7 @@ class Condition(torch.nn.Module):
         self.data_plot_variables = data_plot_variables
 
         # variables are registered when the condition is added to a problem or variable
-        self.variables = None
+        self.setting = None
 
     @abc.abstractmethod
     def get_data(self):
@@ -62,7 +63,7 @@ class Condition(torch.nn.Module):
         return
 
     def is_registered(self):
-        return self.variables is not None
+        return self.setting is not None
 
     def serialize(self):
         dct = {}
@@ -113,27 +114,27 @@ class DiffEqCondition(Condition):
     def __init__(self, pde, norm, name='pde',
                  sampling_strategy='random', weight=1.0,
                  dataset_size=10000, track_gradients=True,
-                 data_plot_variables=False, inverse_problem=False):
+                 data_plot_variables=False):
         super().__init__(name, norm, weight,
                          track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
         self.pde = pde
-        self.inverse_problem = inverse_problem
-        self.datacreator = dc.InnerDataCreator(variables=self.variables,
-                                               dataset_size=dataset_size, 
+        self.datacreator = dc.InnerDataCreator(variables=None,
+                                               dataset_size=dataset_size,
                                                sampling_strategy=sampling_strategy)
 
     def forward(self, model, data):
         u = model(data)
-        if self.inverse_problem:
-            err = self.pde(u, data, model.get_parameters())
-        else: 
+        if self.pass_parameters:
+            err = self.pde(u, data, self.setting.parameters)
+        else:
             err = self.pde(u, data)
         return self.norm(err, torch.zeros_like(err))
 
     def get_data(self):
         if self.is_registered():
-            self.datacreator.variables = self.variables
+            self.datacreator.variables = self.setting.variables
+            self.pass_parameters = len(self.setting.parameters) > 0
             return self.datacreator.get_data()
         else:
             raise RuntimeError("""Conditions need to be registered in a
@@ -148,7 +149,7 @@ class DiffEqCondition(Condition):
 
     def get_data_plot_variables(self):
         if self.data_plot_variables is True:
-            return self.variables
+            return self.setting.variables
         elif self.data_plot_variables is False:
             return None
         else:
@@ -296,7 +297,7 @@ class DirichletCondition(BoundaryCondition):
                          track_gradients=False,
                          data_plot_variables=data_plot_variables)
         self.dirichlet_fun = dirichlet_fun
-        self.datacreator = dc.BoundaryDataCreator(variables=self.variables,
+        self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
                                                   boundary_sampling_strategy=
@@ -309,7 +310,7 @@ class DirichletCondition(BoundaryCondition):
 
     def get_data(self):
         if self.is_registered():
-            self.datacreator.variables = self.variables
+            self.datacreator.variables = self.setting.variables
             self.datacreator.boundary_variable = self.boundary_variable
             data = self.datacreator.get_data()
             return (data, self.dirichlet_fun(data))
@@ -371,7 +372,7 @@ class NeumannCondition(BoundaryCondition):
                          track_gradients=True,
                          data_plot_variables=data_plot_variables)
         self.neumann_fun = neumann_fun
-        self.datacreator = dc.BoundaryDataCreator(variables=self.variables,
+        self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
                                                   boundary_sampling_strategy=
@@ -386,10 +387,10 @@ class NeumannCondition(BoundaryCondition):
 
     def get_data(self):
         if self.is_registered():
-            self.datacreator.variables = self.variables
+            self.datacreator.variables = self.setting.variables
             self.datacreator.boundary_variable = self.boundary_variable
             data = self.datacreator.get_data()
-            normals = self.variables[self.boundary_variable] \
+            normals = self.setting.variables[self.boundary_variable] \
                       .domain.boundary_normal(data[self.boundary_variable])
             return (data, self.neumann_fun(data), normals)
         else:
@@ -440,13 +441,13 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         variable, if a list, tuple or dic is given as an input. Then the whole number
         of data points will be the product of the given numbers.
     data_fun : function handle
-        A method that represents the right-hand side of the boundary condition. As 
+        A method that represents the right-hand side of the boundary condition. As
         an input it takes the boundary points in the usual dictionary form.
-        If the right-hand side is independent of the model, it is more efficient to 
+        If the right-hand side is independent of the model, it is more efficient to
         compute the values only once and save them.
-        If the right-hand side dependents on the model outputs, or is zero, this 
+        If the right-hand side dependents on the model outputs, or is zero, this
         parameter should be None and the whole condition has to be implemented in
-        bound_condition_fun. 
+        bound_condition_fun.
     data_plot_variables : bool or tuple
         The variables which are used to log the used training data in a scatter plot.
         If False, no plots are created. If True, behaviour is defined in each condition.
@@ -461,7 +462,7 @@ class DiffEqBoundaryCondition(BoundaryCondition):
                          data_plot_variables=data_plot_variables)
         self.bound_condition_fun = bound_condition_fun
         self.data_fun = data_fun
-        self.datacreator = dc.BoundaryDataCreator(variables=self.variables,
+        self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
                                                   boundary_sampling_strategy=
@@ -471,23 +472,32 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         if self.data_fun is None:
             data, normals = data
             u = model(data)
-            err = self.bound_condition_fun(u, data, normals)
+            if self.pass_parameters:
+                err = self.bound_condition_fun(u, data, normals,
+                                               self.setting.parameters)
+            else:
+                err = self.bound_condition_fun(u, data, normals)
         else:
             data, target, normals = data
             u = model(data)
-            err = self.bound_condition_fun(u, data, normals, target)
+            if self.pass_parameters:
+                err = self.bound_condition_fun(u, data, normals, target,
+                                               self.setting.parameters)
+            else:
+                err = self.bound_condition_fun(u, data, normals, target)
         return self.norm(err, torch.zeros_like(err))
 
     def get_data(self):
         if self.is_registered():
-            self.datacreator.variables = self.variables
+            self.datacreator.variables = self.setting.variables
             self.datacreator.boundary_variable = self.boundary_variable
             data = self.datacreator.get_data()
-            normals = self.variables[self.boundary_variable] \
-                      .domain.boundary_normal(data[self.boundary_variable])
+            normals = self.setting.variables[self.boundary_variable] \
+                .domain.boundary_normal(data[self.boundary_variable])
+            self.pass_parameters = len(self.setting.parameters) > 0
             if self.data_fun is None:
                 return (data, normals)
-            else: 
+            else:
                 return (data, self.data_fun(data), normals)
         else:
             raise RuntimeError("""Conditions need to be registered in a

@@ -1,9 +1,11 @@
 from typing import Iterable, OrderedDict
 from pytorch_lightning import LightningDataModule as DataModule
 import torch
+import numpy as np
 
 from .problem.problem import Problem
-from .problem.variables.variable import Variable
+from .problem import Variable
+from .problem.parameters.parameter import ParameterSub
 
 
 class SimpleDataset(torch.utils.data.Dataset):
@@ -45,18 +47,16 @@ class Setting(Problem, DataModule):
         Conditions on the inner part of the domain that are used in training
     val_conditions : list or dict of conditions
         Conditions on the inner part of the domain that are tracked during validation
+    parameters : list or dict of Parameter objects
+        Parameters can be part of conditions and still be learned together with the
+        solution during training.
     n_iterations : int
         Number of iterations per epoch.
-    num_workers : int
-        Amount of CPU processes that preprocess the data for this problem. 0 disables
-        multiprocessing. Since the whole dataset should stay on the gpu, this
-        preprocessing does not happen during training but only before.
     """
     def __init__(self, variables={}, train_conditions={}, val_conditions={},
-                 n_iterations=1000, num_workers=0):
+                 parameters={}, n_iterations=1000):
         DataModule.__init__(self)
         self.n_iterations = n_iterations
-        self.num_workers = num_workers
 
         self.variables = OrderedDict()
         if isinstance(variables, (list, tuple)):
@@ -73,9 +73,21 @@ class Setting(Problem, DataModule):
         Problem.__init__(self,
                          train_conditions=train_conditions,
                          val_conditions=val_conditions)
+
+        self.parameters = OrderedDict()
+        if isinstance(parameters, (list, tuple)):
+            for param in parameters:
+                self.add_parameter(param)
+        elif isinstance(parameters, dict):
+            for param_name in parameters:
+                self.add_parameter(parameters[param_name])
+        elif isinstance(parameters, ParameterSub):
+            self.add_parameter(parameters)
+        else:
+            raise TypeError(f"""Got type {type(parameters)} but expected
+                             one of list, tuple, dict or ParameterSub.""")
         # run data preparation manually
         self.prepare_data()
-
 
     """Methods to load data with lightning"""
 
@@ -93,6 +105,7 @@ class Setting(Problem, DataModule):
             self.val_data[name] = val_conditions[name].get_data()
 
     def setup(self, stage=None):
+        print('setup: ', self.trainer.model.device)
         # Define steps that should be done on
         # every GPU, like splitting data, applying
         # transform etc.
@@ -116,30 +129,24 @@ class Setting(Problem, DataModule):
                                                   conditions[cn].track_gradients)
                 target = self._setup_target_data(target)
                 data[cn] = data_dic, target
-            else: # triple of inputs, targets and normals are given
+            else:  # triple of inputs, targets and normals are given
                 data_dic, target, normals = data[cn]
                 data_dic = self._setup_input_data(data_dic,
                                                   conditions[cn].track_gradients)
                 target = self._setup_target_data(target)
                 normals = self._setup_target_data(normals)
-                data[cn] = data_dic, target, normals                
+                data[cn] = data_dic, target, normals
         return data
 
     def _setup_target_data(self, target):
-        device = self.trainer.model.device
-        if isinstance(target, torch.Tensor):
-            target = target.to(device)
-        else:
-            target = torch.from_numpy(target).to(device)
+        if isinstance(target, np.ndarray):
+            target = torch.from_numpy(target)
         return target
 
     def _setup_input_data(self, data, track_gradients):
-        device = self.trainer.model.device
         for vn in data:
-            if isinstance(data[vn], torch.Tensor):
-                data[vn] = data[vn].to(device)
-            else:
-                data[vn] = torch.from_numpy(data[vn]).to(device)
+            if isinstance(data[vn], np.ndarray):
+                data[vn] = torch.from_numpy(data[vn])
 
             # enable gradient tracking if necessary
             if isinstance(track_gradients, bool):
@@ -156,7 +163,7 @@ class Setting(Problem, DataModule):
         dataloader = torch.utils.data.DataLoader(
             SimpleDataset(self.train_data, self.n_iterations),
             batch_size=None,
-            num_workers=self.num_workers
+            num_workers=0
         )
         return dataloader
 
@@ -165,7 +172,7 @@ class Setting(Problem, DataModule):
         dataloader = torch.utils.data.DataLoader(
             SimpleDataset(self.val_data, 1),
             batch_size=None,
-            num_workers=self.num_workers
+            num_workers=0
         )
         return dataloader
 
@@ -177,12 +184,16 @@ class Setting(Problem, DataModule):
         assert isinstance(variable, Variable), f"{variable} should be a Variable obj."
         self.variables[variable.name] = variable
         # register the variable in this setting
-        variable.context = self.variables
+        variable.setting = self
         # update its condition variables
         for cname in variable.train_conditions:
-            variable.train_conditions[cname].variables = self.variables
+            variable.train_conditions[cname].setting = self
         for cname in variable.val_conditions:
-            variable.val_conditions[cname].variables = self.variables
+            variable.val_conditions[cname].setting = self
+
+    def add_parameter(self, param):
+        assert isinstance(param, ParameterSub), f"{param} should be a ParameterSub obj."
+        self.parameters[param.get_name()] = param
 
     def add_train_condition(self, condition, boundary_var=None):
         """Adds and registers a condition that is used during training
@@ -190,7 +201,7 @@ class Setting(Problem, DataModule):
         if boundary_var is None:
             assert condition.name not in self.train_conditions, \
                 f"{condition.name} cannot be present twice."
-            condition.variables = self.variables
+            condition.setting = self
             self.train_conditions[condition.name] = condition
         else:
             self.variables[boundary_var].add_train_condition(condition)
@@ -201,7 +212,7 @@ class Setting(Problem, DataModule):
         if boundary_var is None:
             assert condition.name not in self.val_conditions, \
                 f"{condition.name} cannot be present twice."
-            condition.variables = self.variables
+            condition.setting = self
             self.val_conditions[condition.name] = condition
         else:
             self.variables[boundary_var].add_val_condition(condition)
@@ -245,7 +256,6 @@ class Setting(Problem, DataModule):
         dct = {}
         dct['name'] = 'Setting'
         dct['n_iterations'] = self.n_iterations
-        dct['num_workers'] = self.num_workers
         v_dict = {}
         for v_name in self.variables:
             v_dict[v_name] = self.variables[v_name].serialize()

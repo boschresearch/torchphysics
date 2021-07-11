@@ -34,7 +34,7 @@ def test_create_variable():
     vari = Variable(name='test', domain=None)
     assert vari.name == 'test'
     assert vari.domain is None
-    assert vari.context is None
+    assert vari.setting is None
     assert vari.train_conditions == {}
     assert vari.val_conditions == {}
     assert vari.order == 0
@@ -181,7 +181,7 @@ def test_empty_init():
     x.add_train_condition(c)
     setup = Setting()
     setup.add_variable(x)
-    assert setup.variables['x'].context == {'x': x}
+    assert setup.variables['x'].setting.variables == {'x': x}
     assert c.variables == {'x': x}
 
     d = BoundaryCondition(name='d',
@@ -191,8 +191,8 @@ def test_empty_init():
                  domain=None,
                  train_conditions=d)
     setup.add_variable(y)
-    assert x.context == {'x': x, 'y': y}
-    assert y.context == {'x': x, 'y': y}
+    assert x.setting.variables == {'x': x, 'y': y}
+    assert y.setting.variables == {'x': x, 'y': y}
     assert c.variables == {'x': x, 'y': y}
     assert c.boundary_variable == x.name
     assert d.boundary_variable == y.name
@@ -220,7 +220,7 @@ def test_full_init():
                   track_gradients=False)
     setup = Setting((x, y), val_conditions=e)
 
-    assert setup.variables['x'].context == {'x': x, 'y': y}
+    assert setup.variables['x'].setting.variables == {'x': x, 'y': y}
     assert setup.get_val_conditions() == {'e': e, 'x_c': c, 'y_d': d}
     assert c.variables == {'x': x, 'y': y}
     assert d.variables == {'x': x, 'y': y}
@@ -235,4 +235,4 @@ def test_full_init():
     assert f.variables == {'x': x, 'y': y}
     assert setup.get_val_conditions() == {'e': e, 'x_c': c, 'y_d': d, 'x_f': f}
     assert d.variables == {'x': x, 'y': y}
-    assert y.context == {'x': x, 'y': y}
+    assert y.setting.variables == {'x': x, 'y': y}

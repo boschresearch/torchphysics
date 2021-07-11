@@ -19,7 +19,7 @@ class Variable(Problem):
         Boundary conditions for this variable that are tracked during validation
     """
     def __init__(self, name, domain, train_conditions={}, val_conditions={}, order=0):
-        self.context = None  # other variables, are set by Setting object
+        self.setting = None  # other variables, are set by Setting object
         self.name = name
         self.domain = domain
         self.order = order
@@ -30,7 +30,7 @@ class Variable(Problem):
         assert isinstance(condition, BoundaryCondition), """Variables can only
             handle boundary conditions."""
         assert condition.name not in self.train_conditions
-        condition.variables = self.context
+        condition.setting = self.setting
         condition.boundary_variable = self.name
         self.train_conditions[condition.name] = condition
 
@@ -38,7 +38,7 @@ class Variable(Problem):
         assert isinstance(condition, BoundaryCondition), """Variables can only
             handle boundary conditions."""
         assert condition.name not in self.val_conditions
-        condition.variables = self.context
+        condition.setting = self.setting
         condition.boundary_variable = self.name
         self.val_conditions[condition.name] = condition
 

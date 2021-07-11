@@ -94,7 +94,8 @@ class PINNModule(pl.LightningModule):
 
     def on_train_start(self):
         # register the variables on which the model is trained
-        self.variable_dims = {k: v.domain.dim for (k, v) in self.trainer.datamodule.variables.items()}
+        self.variable_dims = {k: v.domain.dim for (
+            k, v) in self.trainer.datamodule.variables.items()}
         # log summary to tensorboard
         self.logger.experiment.add_text(
             tag='summary',
@@ -104,9 +105,11 @@ class PINNModule(pl.LightningModule):
         )
 
     def configure_optimizers(self):
-        optimizer = self.optimizer(self.model.parameters(),
-                                   lr=self.lr,
-                                   **self.optim_params)
+        optimizer = self.optimizer(
+            list(self.model.parameters()) +
+            list(self.trainer.datamodule.parameters.values()),
+            lr=self.lr,
+            **self.optim_params)
         if self.scheduler is None:
             return optimizer
         lr_scheduler = self.scheduler['class'](
@@ -120,7 +123,8 @@ class PINNModule(pl.LightningModule):
         return dataloader_dict
 
     def training_step(self, batch, batch_idx):
-        loss = torch.zeros(1, device=self.device, requires_grad=True) # maybe this slows down training a bit
+        # maybe this slows down training a bit
+        loss = torch.zeros(1, device=self.device, requires_grad=True)
         conditions = self.trainer.datamodule.get_train_conditions()
         for name in conditions:
             data = batch[name]

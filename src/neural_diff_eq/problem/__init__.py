@@ -2,3 +2,4 @@
 the pde, variables and their domains and boudary conditions"""
 
 from .variables import Variable
+from .parameters import Parameter
