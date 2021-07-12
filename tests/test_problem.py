@@ -182,7 +182,7 @@ def test_empty_init():
     setup = Setting()
     setup.add_variable(x)
     assert setup.variables['x'].setting.variables == {'x': x}
-    assert c.variables == {'x': x}
+    assert c.setting.variables == {'x': x}
 
     d = BoundaryCondition(name='d',
                           norm=None,
@@ -193,10 +193,10 @@ def test_empty_init():
     setup.add_variable(y)
     assert x.setting.variables == {'x': x, 'y': y}
     assert y.setting.variables == {'x': x, 'y': y}
-    assert c.variables == {'x': x, 'y': y}
+    assert c.setting.variables == {'x': x, 'y': y}
     assert c.boundary_variable == x.name
     assert d.boundary_variable == y.name
-    assert d.variables == {'x': x, 'y': y}
+    assert d.setting.variables == {'x': x, 'y': y}
     # test correct output of get_conditions
     assert setup.get_train_conditions() == {'x_c': c, 'y_d': d}
 
@@ -222,9 +222,9 @@ def test_full_init():
 
     assert setup.variables['x'].setting.variables == {'x': x, 'y': y}
     assert setup.get_val_conditions() == {'e': e, 'x_c': c, 'y_d': d}
-    assert c.variables == {'x': x, 'y': y}
-    assert d.variables == {'x': x, 'y': y}
-    assert e.variables == {'x': x, 'y': y}
+    assert c.setting.variables == {'x': x, 'y': y}
+    assert d.setting.variables == {'x': x, 'y': y}
+    assert e.setting.variables == {'x': x, 'y': y}
 
     f = BoundaryCondition(name='f',
                           norm=None,
@@ -232,7 +232,7 @@ def test_full_init():
 
     setup.add_val_condition(f, boundary_var='x')
 
-    assert f.variables == {'x': x, 'y': y}
+    assert f.setting.variables == {'x': x, 'y': y}
     assert setup.get_val_conditions() == {'e': e, 'x_c': c, 'y_d': d, 'x_f': f}
-    assert d.variables == {'x': x, 'y': y}
+    assert d.setting.variables == {'x': x, 'y': y}
     assert y.setting.variables == {'x': x, 'y': y}
