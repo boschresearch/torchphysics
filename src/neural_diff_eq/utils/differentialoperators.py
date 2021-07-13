@@ -97,7 +97,7 @@ def div(model_out, deriv_variable_input):
     Returns
     ----------
     torch.tensor
-        A Tensor, where every row contains the values the divergence
+        A Tensor, where every row contains the values of the divergence
         of the model w.r.t the row of the input variable.
     '''
     divergence = torch.zeros((deriv_variable_input.shape[0], 1),
@@ -135,7 +135,7 @@ def jac(model_out, deriv_variable_input):
 
 
 def rot(model_out, deriv_variable_input):
-    '''Computes the rotation of a 3-dimensional vector field (given by a
+    '''Computes the rotation/curl of a 3-dimensional vector field (given by a
     network output) with respect to the given input.
 
     Parameters
@@ -150,19 +150,21 @@ def rot(model_out, deriv_variable_input):
     Returns
     ----------
     torch.tensor
-        A Tensor of shape (b, 3), where every row contains a rotation vector for a
+        A Tensor of shape (b, 3), where every row contains a rotation/curl vector for a
         given batch element.
     '''
-    raise NotImplementedError
     """
     assert model_out.shape[1] == 3 and deriv_variable_input.shape[1] == 3, ""
         Rotation: the given in- and output should both be batches of
         3 dimensional data.
         ""
-    jacobian = jac(model_out, deriv_variable_input)
-    rotation = torch.te
-    return
     """
+    jacobian = jac(model_out, deriv_variable_input)
+    rotation = torch.zeros((len(deriv_variable_input), 3))
+    rotation[:, 0] = jacobian[:, 2, 1] - jacobian[:, 1, 2] 
+    rotation[:, 1] = jacobian[:, 0, 2] - jacobian[:, 2, 0] 
+    rotation[:, 2] = jacobian[:, 1, 0] - jacobian[:, 0, 1] 
+    return rotation
 
 
 def partial(model_out, *deriv_variable_inputs):
@@ -180,12 +182,14 @@ def partial(model_out, *deriv_variable_inputs):
     Returns
     ----------
     torch.tensor
-        A Tensor, where every row contains the values the divergence
-        of the model w.r.t the row of the input variable.
+        A Tensor, where every row contains the values of the computed partial 
+        derivative of the model w.r.t the row of the input variable.
     '''
-    du = model_out.sum()
+    du = model_out
     for inp in deriv_variable_inputs:
-        du = torch.autograd.grad(du,
+        du = torch.autograd.grad(du.sum(),
                                  inp,
-                                 create_graph=True)[0].sum()
+                                 create_graph=True)[0]
+        if du.grad_fn is None:
+            return torch.zeros_like(inp)
     return du
