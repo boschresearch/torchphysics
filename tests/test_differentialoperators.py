@@ -61,6 +61,36 @@ def test_laplacian_in_3D():
     assert np.all(l.detach().numpy() == [6, 6, 6])
 
 
+def test_laplacian_with_grad_input():
+    a = torch.tensor([[1.0, 1.0], [2.0, 0]], requires_grad=True)
+    b = torch.tensor([[1.0], [0.5]], requires_grad=True)
+    def function1(a, b):
+        return torch.sin(2*a[0]) + a[1]**2 + b[0]
+    output = torch.zeros(a.shape[0])
+    for i in range(a.shape[0]):
+        output[i] = function1(a[i], b[i])
+    g = grad(output, a)
+    l = laplacian(output, a, grad=g)
+    assert l.shape[0] == a.shape[0]
+    assert l.shape[1] == 1
+    assert np.allclose(l.detach().numpy(), [[-4*np.sin(2)+2], [-4*np.sin(4)+2]])
+
+
+def test_laplacian_with_grad_input_2():
+    def f(input):
+        out = torch.zeros((input.shape[0], 2))
+        out[:, :1] = input[:, :1]**2 + input[:, 2:]**2 + input[:, 1:2]
+        out[:, 1:] = torch.sin(input[:, 2:]*input[:, 1:2])
+        return out
+    x = torch.tensor([[1.0, 2], [1, 1], [3, 4], [3, 0]], requires_grad=True)
+    t = torch.tensor([[3.0], [0], [1], [2]], requires_grad=True)
+    inp = torch.cat((x, t), dim=1)
+    output = f(inp)
+    jacobi = jac(output, inp)
+    assert jacobi.shape == (4, 2, 3)
+    l_1 = laplacian(output, x, jacobi[:, 0, :2])
+    l_2 = laplacian(output[:, 0], x)
+    assert torch.equal(l_1, l_2)
 
 def test_laplacian_for_complexer_function_1():
     a = torch.tensor([[1.0, 1.0, 1.0], [2.0, 1.0, 0], [0, 0, 0], [1.0, 0, 4.0]],

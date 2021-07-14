@@ -3,16 +3,19 @@
 import torch
 
 
-def laplacian(model_out, deriv_variable_input):
+def laplacian(model_out, deriv_variable_input, grad=None):
     '''Computes the laplacian of a network with respect to the given variable
 
     Parameters
     ----------
     model_out : torch.tensor
-        The output tensor of the neural network
+        The (scalar) output tensor of the neural network
     deriv_variable_input : torch.tensor
         The input tensor of the variable in which respect the derivatives have to
         be computed
+    grad : torch.tensor
+        If the gradient has already been computed somewhere else, it is more
+        efficient to use it again.
 
     Returns
     ----------
@@ -22,14 +25,15 @@ def laplacian(model_out, deriv_variable_input):
     '''
     laplacian = torch.zeros((deriv_variable_input.shape[0], 1),
                             device=deriv_variable_input.device)
-    Du = torch.autograd.grad(model_out.sum(), deriv_variable_input,
-                             create_graph=True)[0]
+    if grad is None:
+        grad = torch.autograd.grad(model_out.sum(), deriv_variable_input,
+                                   create_graph=True)[0]
     # We have to check if the model is linear w.r.t. the variable, or else we get an err
     # when we compute the second derivative. If it is linear we can just return zeros
-    if Du.grad_fn is None:
+    if grad.grad_fn is None:
         return laplacian
     for i in range(deriv_variable_input.shape[1]):
-        D2u = torch.autograd.grad(Du.narrow(1, i, 1).sum(),
+        D2u = torch.autograd.grad(grad.narrow(1, i, 1).sum(),
                                   deriv_variable_input, create_graph=True)[0]
         laplacian += D2u.narrow(1, i, 1)
     return laplacian
