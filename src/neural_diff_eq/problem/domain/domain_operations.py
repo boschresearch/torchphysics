@@ -197,11 +197,11 @@ class Cut(Domain_operation):
                                             operation_is_cut=True)
 
     def grid_for_plots(self, n):
-        base_n = int(np.ceil(self.base.volume/self.volume * n))
-        points = self.base.grid_for_plots(base_n)
-        inside_cut = self.cut.is_inside(points)
-        index = np.where(np.invert(inside_cut))[0]
-        return points[index]
+        points_inside = self._grid_sampling_inside(int(np.ceil(3/4*n)))
+        # add some points at the boundary to better show the domain
+        points_boundary = self._grid_sampling_boundary(int(n/4))
+        points = np.append(points_inside, points_boundary, axis = 0)
+        return points
   
     def _random_sampling_inside(self, n):
         points = np.empty((0,self.dim))
@@ -307,13 +307,10 @@ class Union(Domain_operation):
         return super()._get_boundary_normal(self.domain_1, self.domain_2, points)
 
     def grid_for_plots(self, n):
-        n_1 = int(np.ceil(self.domain_1.volume/self.volume * n))
-        points = self.domain_1.grid_for_plots(n_1)
-        in_2 = self.domain_2.is_inside(points)
-        index = np.where(np.invert(in_2))[0]
-        points = points[index]
-        n_2 = n - len(points)
-        points = np.append(points, self.domain_2.grid_for_plots(n_2), axis=0)
+        points_inside = self._grid_sampling_inside(int(np.ceil(3/4*n)))
+        # add some points at the boundary to better show the domain
+        points_boundary = self._grid_sampling_boundary(int(n/4))
+        points = np.append(points_inside, points_boundary, axis = 0)
         return points
 
     def sample_boundary(self, n, type='random'):
@@ -454,3 +451,10 @@ class Intersection(Domain_operation):
         dct['domain 1'] = dct_1
         dct['domain 2'] = dct_2
         return dct
+
+    def grid_for_plots(self, n):
+        points_inside = self._grid_sampling_inside(int(np.ceil(3/4*n)))
+        # add some points at the boundary to better show the domain
+        points_boundary = self._grid_sampling_boundary(int(n/4))
+        points = np.append(points_inside, points_boundary, axis = 0)
+        return points

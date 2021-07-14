@@ -7,7 +7,7 @@ import scipy.spatial
 import numpy as np
 import torch
 import numbers
-from matplotlib import cm
+from matplotlib import cm, colors
 
 from neural_diff_eq.problem.domain.domain2D import Triangle
 
@@ -36,27 +36,37 @@ class Plotter():
     log_interval : int
         Plots will be saved every log_interval steps if the plotter is used in
         training of a model.
+    plot_output_entries : int or list, optional
+        Specifies what outputs of the model should be plotted. 
+        If for example the output of the model is 3 dimensional, the first two outputs
+        are some kind of vector field and the last output is a temperatur.
+        Then for example set plot_output_entries = 2 to plot the temperatur over 
+        the other variables, or set plot_output_entries = [0, 1] to create a
+        plot of the vector field. Inputs like [0, 2] are also possible.
+        If no entry is given, the method will try to use all outputs of the model.
     '''
 
     def __init__(self, plot_variables, points, angle=[30, 30],
                  dic_for_other_variables=None, all_variables=None,
-                 log_interval=None):
+                 log_interval=None, plot_output_entries=[-1]):
         self.plot_variables = plot_variables
         self.points = points
         self.angle = angle
         self.dic_for_other_variables = dic_for_other_variables
         self.all_variables = all_variables
         self.log_interval = log_interval
+        self.plot_output_entries = plot_output_entries
 
     def plot(self, model, device='cpu'):
         return _plot(model, self.plot_variables, self.points, angle=self.angle,
                      dic_for_other_variables=self.dic_for_other_variables,
                      all_variables=self.all_variables,
-                     device=device)
+                     device=device, plot_output_entries=self.plot_output_entries)
 
 
 def _plot(model, plot_variables, points, angle=[30, 30],
-          dic_for_other_variables=None, all_variables=None, device='cpu'):
+          dic_for_other_variables=None, all_variables=None, device='cpu', 
+          plot_output_entries=[-1]):
     '''Main function for plotting
 
     Parameters
@@ -82,34 +92,71 @@ def _plot(model, plot_variables, points, angle=[30, 30],
          dic_for_other_variables(item_2), ...)
     device : str or torch device
         The device of the model.
+    plot_output_entries : int or list, optional
+        Specifies what outputs of the model should be plotted. 
+        If for example the output of the model is 3 dimensional, the first two outputs
+        are some kind of vector field and the last output is a temperatur.
+        Then for example set plot_output_entries = 2 to plot the temperatur over 
+        the other variables, or set plot_output_entries = [0, 1] to create a
+        plot of the vector field. Inputs like [0, 2] are also possible.
+        If no entry is given, the method will try to use all outputs of the model.
 
     Returns
     -------
     plt.figure
         The figure handle of the created plot
     '''
+    # set everything to list to easier handel different cases
     if not isinstance(plot_variables, list):
         plot_variables = [plot_variables]
+    if not isinstance(plot_output_entries, list):
+        plot_output_entries = [plot_output_entries]
+    # set/decide the number of outputs which have to be plotted.
+    if plot_output_entries[0] == -1:
+        plot_output_entries = np.arange(0, model.output_dim, dtype=int)
+    # If only one output should be plotted we create a line/surface plot
+    if len(plot_output_entries) == 1:
+        return _plot_for_one_output(model, plot_variables, points, angle,
+                                    dic_for_other_variables, all_variables, device, 
+                                    plot_output_entries[0])
+    # If two outputs should be used, create a quiver or curve plot
+    if len(plot_output_entries) == 2:
+        return _plot_for_two_outputs(model, plot_variables, points, angle,
+                                     dic_for_other_variables, all_variables, device, 
+                                     plot_output_entries)
+    else:
+        raise NotImplementedError('Plotting for a ' + model.output_dim +
+                                  ' dimensional output is not implemented!' + 
+                                  ' Please specify the output for the plot.')
+
+
+def _plot_for_one_output(model, plot_variables, points, angle,
+                         dic_for_other_variables, all_variables, device, 
+                         plot_output_entry):
+    '''Handles plots if only one output of the model should be plotted.
+    '''
     # surface plots:
     if len(plot_variables) == 1 and plot_variables[0].domain.dim == 2:
         return _plot2D(model, plot_variables[0], points, angle,
-                       dic_for_other_variables, all_variables, device)
+                       dic_for_other_variables, all_variables, device, 
+                       plot_output_entry)
     # line plots:                       
     elif len(plot_variables) == 1 and plot_variables[0].domain.dim == 1:
         return _plot1D(model, plot_variables[0], points,
-                       dic_for_other_variables, all_variables, device)
+                       dic_for_other_variables, all_variables, device, 
+                       plot_output_entry)
     # surface plots for two different variables:
     elif (len(plot_variables) == 2 and
           plot_variables[0].domain.dim + plot_variables[0].domain.dim == 2):
         return _plot2D_2_variables(model, plot_variables[0], plot_variables[1],
                                    points, angle, dic_for_other_variables,
-                                   all_variables, device)
+                                   all_variables, device, plot_output_entry)
     else:
         raise NotImplementedError
 
 
 def _plot2D(model, plot_variable, points, angle,
-            dic_for_other_variables, all_variables, device):
+            dic_for_other_variables, all_variables, device, plot_output_entry):
     '''Handels surface plots w.r.t. a two dimensional variable.
     Inputs are the same as _plot().
     '''
@@ -119,7 +166,7 @@ def _plot2D(model, plot_variable, points, angle,
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
                                   all_variables, device)
     # Evaluate the model
-    output = model.forward(input_dic).data.cpu().numpy()
+    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entry]
     # For complex domains it is best to triangulate them for the plotting
     triangulation = _triangulation_of_domain(plot_variable, domain_points)
     # Create the plot
@@ -142,7 +189,7 @@ def _plot2D(model, plot_variable, points, angle,
 
 
 def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables,
-            device):
+            device, plot_output_entry):
     '''Handels line plots w.r.t. a one dimensional variable.
     Inputs are the same as _plot().
     '''
@@ -151,7 +198,7 @@ def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
                                   all_variables, device)
     # Evaluate the model
-    output = model.forward(input_dic).data.cpu().numpy()
+    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entry]
     # Create the plot
     fig = plt.figure()
     ax = fig.add_subplot()
@@ -168,27 +215,30 @@ def _plot1D(model, plot_variable, points, dic_for_other_variables, all_variables
 
 
 def _plot2D_2_variables(model, variable_1, variable_2, points, angle,
-                        dic_for_other_variables, all_variables, device):
-    '''Handels surface plots if the inputs are two intervals
+                        dic_for_other_variables, all_variables, device, 
+                        plot_output_entry):
+    '''Handels surface plots, if the inputs are two intervals
     '''
     # Create the input dic.
     points = int(np.ceil(np.sqrt(points)))
     domain_1 = variable_1.domain.grid_for_plots(points)
     domain_2 = variable_2.domain.grid_for_plots(points)
     axis_1, axis_2 = np.meshgrid(domain_1, domain_2)
-    input_dic = {variable_1.name: torch.FloatTensor(np.ravel(axis_1), device=device).reshape(-1, 1),
-                 variable_2.name: torch.FloatTensor(np.ravel(axis_2), device=device).reshape(-1, 1)}
+    input_dic = {variable_1.name: torch.FloatTensor(np.ravel(axis_1),
+                                                    device=device).reshape(-1, 1),
+                 variable_2.name: torch.FloatTensor(np.ravel(axis_2),
+                                                    device=device).reshape(-1, 1)}
     input_dic = _create_input_dic(input_dic, points**2, dic_for_other_variables,
                                   all_variables, device)
     # Evaluate model
-    output = model.forward(input_dic).data.cpu().numpy()
+    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entry]
     # Create the plot (we dont need a triangulation, since the plot over two intervalls
     # will be a rectangle)
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     ax.view_init(angle[0], angle[1])
     surf = ax.plot_surface(axis_1, axis_2, output.reshape(axis_1.shape),
-                           cmap=cm.coolwarm, linewidth=0, antialiased=False)
+                           cmap=cm.jet, linewidth=0, antialiased=False)
     fig.colorbar(surf, shrink=0.4, aspect=5, pad=0.1)
     if dic_for_other_variables is not None:
         info_string = _create_info_text(dic_for_other_variables)
@@ -197,6 +247,93 @@ def _plot2D_2_variables(model, variable_1, variable_2, points, angle,
 
     ax.set_xlabel(variable_1.name)
     ax.set_ylabel(variable_2.name)
+    #plt.show()
+    return fig
+
+
+def _plot_for_two_outputs(model, plot_variables, points, angle,
+                          dic_for_other_variables, all_variables, device, 
+                          plot_output_entries):
+    '''Handles plots if two outputs of the model should be plotted.
+    '''
+    # plot a curve in 3D
+    if len(plot_variables) == 1 and plot_variables[0].domain.dim == 1:
+        return _curve3D(model, plot_variables[0], points, angle,
+                        dic_for_other_variables, all_variables, device, 
+                        plot_output_entries)
+    # plot vector field/quiver in 2D
+    if len(plot_variables) == 1 and plot_variables[0].domain.dim == 2:
+        return _quiver2D(model, plot_variables[0], points,
+                         dic_for_other_variables, all_variables, device, 
+                         plot_output_entries)
+    else:
+        raise NotImplementedError
+
+
+def _curve3D(model, plot_variable, points, angle, dic_for_other_variables,
+             all_variables, device, plot_output_entries):
+    '''Handles curve plots where the output is 2D and the domain is 1D.
+    '''
+    # First create the input dic. for the model
+    domain_points, input_dic = _create_domain(plot_variable, points, device)
+    input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
+                                  all_variables, device)    
+    # Evaluate the model
+    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entries]
+    # Create the plot
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.view_init(angle[0], angle[1])
+    # Since we can't set the domain-axis in the center 
+    # (https://stackoverflow.com/questions/48442713/move-spines-in-matplotlib-3d-plot)
+    # we plot a helper line to better show the structure of the curve
+    domain_points = domain_points.flatten()
+    ax.plot(domain_points, np.zeros_like(domain_points), np.zeros_like(domain_points),
+            color='black') 
+    # Now plot the curve
+    ax.plot(domain_points, output[:, 0], output[:, 1])
+    # add a text box for the values of the other variables
+    if dic_for_other_variables is not None:
+        info_string = _create_info_text(dic_for_other_variables)
+        ax.text2D(1.2, 0.1, info_string, bbox={'facecolor': 'w', 'pad': 5},
+                  transform=ax.transAxes, ha="center")
+
+    ax.set_xlabel(plot_variable.name)
+    return fig
+
+
+def _quiver2D(model, plot_variable, points, dic_for_other_variables,
+              all_variables, device, plot_output_entries):
+    '''Handles quiver/vector field plots w.r.t. a two dimensional variable.
+    Inputs are the same as _plot().
+    '''
+    # First create the input dic. for the model
+    domain_points, input_dic = _create_domain(plot_variable, points, device)
+    points = len(domain_points)
+    input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
+                                  all_variables, device)
+    # Evaluate the model
+    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entries]
+    # for the colors
+    color = np.linalg.norm(output, axis=1)
+    norm = colors.Normalize()
+    norm.autoscale(color)
+    # Create the plot
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.grid()
+    ax.quiver(domain_points[:, 0], domain_points[:, 1], output[:, 0], output[:, 1], 
+              color=cm.jet(norm(color)))
+    sm = cm.ScalarMappable(cmap=cm.jet, norm=norm)
+    plt.colorbar(sm)
+    # add a text box for the values of the other variables
+    if dic_for_other_variables is not None:
+        info_string = _create_info_text(dic_for_other_variables)
+        ax.text(1.25, 0.5, info_string, bbox={'facecolor': 'w', 'pad': 5},
+                transform=ax.transAxes)
+
+    ax.set_xlabel(plot_variable.name + '_1')
+    ax.set_ylabel(plot_variable.name + '_2')
     #plt.show()
     return fig
 
@@ -210,6 +347,7 @@ def _create_domain(plot_variable, points, device):
 def _create_input_dic(input_dic, points, dic_for_other_variables, all_variables,
                       device):
     '''Creates the input dictonary for the model
+    
     Parameters
     ----------
     input_dic : dic
@@ -320,7 +458,9 @@ def _check_triangle_inside(triangle, domain):
     boundary_points = triangle.points_on_boundary(10)
     inside = domain.is_inside(boundary_points)
     boundary = domain.is_on_boundary(boundary_points)
-    return all(np.logical_or(inside, boundary))
+    return np.logical_or(inside, boundary).sum() >= 7 # only check that some points are
+                                                      # correct, because of numeric 
+                                                      # errors
 
 class __HelperTriangle():
     '''A helper class for triangulation of the domain.

@@ -196,6 +196,36 @@ def test_scatter():
     assert fig.axes[0].get_zlabel() == 't'
 
 
+def test_2D_quiver():
+    R = Variable(name='x', domain=Rectangle([0, 0], [1, 0], [0, 2]))
+    plotter = plt.Plotter(plot_variables=R, points=20,
+                          dic_for_other_variables={'t': 2})
+    model = SimpleFCN(input_dim=3, width=5, depth=1, output_dim=2)
+    fig = plotter.plot(model=model)  
+    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert fig.axes[0].get_xlabel() == 'x_1'
+    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert fig.axes[0].get_ylabel() == 'x_2'
+    # test without other variables
+    plotter = plt.Plotter(plot_variables=R, points=10, plot_output_entries=[0,1])
+    model = SimpleFCN(input_dim=2, width=5, depth=1, output_dim=2)
+    fig = plotter.plot(model=model) 
+
+
+def test_3D_curve():
+    I = Variable(name='i', domain=Interval(-1, 2))
+    plotter = plt.Plotter(plot_variables=I, points=20,
+                          dic_for_other_variables={'t': 2})
+    model = SimpleFCN(input_dim=2, width=5, depth=1, output_dim=2)
+    fig = plotter.plot(model=model)  
+    assert fig.axes[0].get_xlim() == (-1.15, 2.15)
+    assert fig.axes[0].get_xlabel() == 'i'
+    # test without other variables
+    plotter = plt.Plotter(plot_variables=I, points=10, plot_output_entries=-1)
+    model = SimpleFCN(input_dim=1, width=5, depth=1, output_dim=2)
+    fig = plotter.plot(model=model) 
+
+
 # Test animation
 
 def test_get_min_max_ani():
@@ -212,12 +242,10 @@ def test_errors_by_ani():
     model = SimpleFCN(input_dim=2, width=5, depth=1)
     with pytest.raises(ValueError):
         _, _ = ani.animation(model, plot_variables=I1, domain_points=10,
-                             animation_variable=R,
-                             frame_number = 1)  
+                             animation_variable=R, frame_number = 1)  
     with pytest.raises(NotImplementedError):
         _, _ = ani.animation(model, plot_variables=[I1, R], domain_points=10,
-                             animation_variable=I2,
-                             frame_number = 1) 
+                             animation_variable=I2, frame_number = 1) 
 
 
 def test_ani_1D():
@@ -231,9 +259,8 @@ def test_ani_1D():
     # with extra input 
     model = SimpleFCN(input_dim=4, width=5, depth=1)      
     _, animation = ani.animation(model, plot_variables=I1, domain_points=10,
-                                   animation_variable=I2,
-                                   frame_number=1, 
-                                   dic_for_other_variables={'D': [1, 2]})
+                                 animation_variable=I2, frame_number=1, 
+                                 dic_for_other_variables={'D': [1, 2]})
     animation.save('test.gif')
     os.remove('test.gif')
                             
@@ -243,15 +270,56 @@ def test_ani_2D():
     R = Variable(name='R', domain=Rectangle([0, 0], [1, 0], [0, 1]))
     I2 = Variable(name='t', domain=Interval(0, 2))
     model = SimpleFCN(input_dim=3, width=5, depth=1)      
-    _, animation = ani.animation(model, plot_variables=R, domain_points=10,
+    fig, animation = ani.animation(model, plot_variables=R, domain_points=10,
                                    animation_variable=I2,
-                                   frame_number=1)
+                                   frame_number=1, plot_output_entries=0)
     assert isinstance(animation, matplotani.FuncAnimation)
+    assert fig.axes[0].get_xlim() == (0.0, 1.0)
+    assert fig.axes[0].get_xlabel() == 'R_1'
+    assert fig.axes[0].get_ylim() == (0.0, 1.0)
+    assert fig.axes[0].get_ylabel() == 'R_2'
     animation.save('test.gif')
     os.remove('test.gif')
     # with extra input 
     model = SimpleFCN(input_dim=5, width=5, depth=1)      
     _, animation = ani.animation(model, plot_variables=R, domain_points=10,
+                                 animation_variable=I2, frame_number=4, 
+                                 dic_for_other_variables={'D': [1, 2]})
+
+
+def test_ani_quiver_2D():
+    R = Variable(name='R', domain=Rectangle([0, 0], [1, 0], [0, 2]))
+    I2 = Variable(name='t', domain=Interval(0, 2))
+    model = SimpleFCN(input_dim=3, width=5, depth=1, output_dim=3)      
+    fig, animation = ani.animation(model, plot_variables=R, domain_points=10,
                                    animation_variable=I2,
-                                   frame_number=4, 
-                                   dic_for_other_variables={'D': [1, 2]})
+                                   frame_number=1, plot_output_entries=[0, 2])
+    assert isinstance(animation, matplotani.FuncAnimation)
+    assert fig.axes[0].get_xlim() == (0.0, 1.0)
+    assert fig.axes[0].get_xlabel() == 'R_1'
+    assert fig.axes[0].get_ylim() == (0.0, 2.0)
+    assert fig.axes[0].get_ylabel() == 'R_2'
+    animation.save('test.gif')
+    os.remove('test.gif')
+    # with extra input 
+    model = SimpleFCN(input_dim=5, width=5, depth=1, output_dim=2)      
+    _, animation = ani.animation(model, plot_variables=R, domain_points=10,
+                                 animation_variable=I2, frame_number=4, 
+                                 dic_for_other_variables={'D': [1, 2]})
+
+
+def test_ani_curve_3D():
+    I = Variable(name='t', domain=Interval(0, 2))
+    model = SimpleFCN(input_dim=1, width=5, depth=1, output_dim=2)      
+    fig, animation = ani.animation(model, plot_variables=None, domain_points=0,
+                                   animation_variable=I, frame_number=2)
+    assert isinstance(animation, matplotani.FuncAnimation)
+    assert fig.axes[0].get_xlim() == (0.0, 2.0)
+    assert fig.axes[0].get_xlabel() == 't'
+    animation.save('test.gif')
+    os.remove('test.gif')
+    # with extra input 
+    model = SimpleFCN(input_dim=3, width=5, depth=1, output_dim=2)      
+    _, animation = ani.animation(model, plot_variables=None, domain_points=0,
+                                 animation_variable=I, frame_number=2, 
+                                 dic_for_other_variables={'D': [1, 2]})
