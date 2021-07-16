@@ -93,10 +93,10 @@ def _plot(model, plot_variables, points, angle=[30, 30],
     device : str or torch device
         The device of the model.
     plot_output_entries : int or list, optional
-        Specifies what outputs of the model should be plotted. 
+        Specifies what outputs of the model should be plotted.
         If for example the output of the model is 3 dimensional, the first two outputs
-        are some kind of vector field and the last output is a temperatur.
-        Then for example set plot_output_entries = 2 to plot the temperatur over 
+        are some kind of vector field and the last output is a temperature.
+        Then set for example plot_output_entries = 2 to plot the temperature over
         the other variables, or set plot_output_entries = [0, 1] to create a
         plot of the vector field. Inputs like [0, 2] are also possible.
         If no entry is given, the method will try to use all outputs of the model.
