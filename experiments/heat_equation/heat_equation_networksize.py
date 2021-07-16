@@ -16,7 +16,7 @@ from neural_diff_eq.problem.condition import (DirichletCondition,
                                               DataCondition)
 from neural_diff_eq.models import SimpleFCN
 from neural_diff_eq import PINNModule
-from neural_diff_eq.utils import laplacian, gradient
+from neural_diff_eq.utils import laplacian, grad
 from neural_diff_eq.utils.fdm import FDM, create_validation_data
 
 w, h = 50, 50
@@ -64,7 +64,7 @@ t.add_train_condition(DirichletCondition(dirichlet_fun=t_dirichlet_fun,
                                          boundary_sampling_strategy='lower_bound_only'))
 
 def pde(u, input):
-    return gradient(u, input['t']) - D*laplacian(u, input['x'])
+    return grad(u, input['t']) - D*laplacian(u, input['x'])
 
 
 train_cond = DiffEqCondition(pde=pde,

@@ -97,12 +97,13 @@ class PINNModule(pl.LightningModule):
         self.variable_dims = {k: v.domain.dim for (
             k, v) in self.trainer.datamodule.variables.items()}
         # log summary to tensorboard
-        self.logger.experiment.add_text(
-            tag='summary',
-            text_string=json.dumps(
-                self.serialize(),
-                indent='&emsp; &emsp;').replace('\n', '  \n')
-        )
+        if self.logger is not None:
+            self.logger.experiment.add_text(
+                tag='summary',
+                text_string=json.dumps(
+                    self.serialize(),
+                    indent='&emsp; &emsp;').replace('\n', '  \n')
+            )
 
     def configure_optimizers(self):
         optimizer = self.optimizer(
@@ -154,7 +155,7 @@ class PINNModule(pl.LightningModule):
         self.log('loss/val', loss)
 
     def log_condition_data_plot(self, name, condition, data):
-        if self.global_step % 10 == 0:
+        if self.global_step % 10 == 0 and self.logger is not None:
             if condition.get_data_plot_variables() is not None:
                 fig = _scatter(plot_variables=condition.get_data_plot_variables(),
                                data=data)
@@ -163,7 +164,8 @@ class PINNModule(pl.LightningModule):
                                                   global_step=self.global_step)
 
     def log_plot(self):
-        if self.global_step % self.log_plotter.log_interval == 0:
+        if self.global_step % self.log_plotter.log_interval == 0 \
+             and self.logger is not None:
             fig = self.log_plotter.plot(model=self.model,
                                         device=self.device)
             self.logger.experiment.add_figure(tag='plot',
