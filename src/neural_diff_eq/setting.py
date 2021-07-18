@@ -74,7 +74,7 @@ class Setting(Problem, DataModule):
                          train_conditions=train_conditions,
                          val_conditions=val_conditions)
 
-        self.parameters = OrderedDict()
+        self.parameters = torch.nn.ParameterDict()
         if isinstance(parameters, (list, tuple)):
             for param in parameters:
                 self.add_parameter(param)
@@ -105,7 +105,6 @@ class Setting(Problem, DataModule):
             self.val_data[name] = val_conditions[name].get_data()
 
     def setup(self, stage=None):
-        print('setup: ', self.trainer.model.device)
         # Define steps that should be done on
         # every GPU, like splitting data, applying
         # transform etc.
@@ -268,4 +267,8 @@ class Setting(Problem, DataModule):
         for c_name in self.val_conditions:
             v_c_dict[c_name] = self.val_conditions[c_name].serialize()
         dct['val_conditions'] = v_c_dict
+        p_dict = {}
+        for p_name in self.parameters:
+            p_dict[p_name] = list(self.parameters[p_name].shape)
+        dct['parameters'] = p_dict
         return dct

@@ -52,6 +52,11 @@ class PINNModule(pl.LightningModule):
         self.log_plotter = log_plotter
         self.variable_dims = None
 
+    def to(self, device):
+        if self.trainer is not None:
+            self.trainer.datamodule.parameters.to(device)
+        return super().to(device)
+
     def serialize(self):
         dct = {}
         dct['name'] = 'PINNModule'
@@ -139,6 +144,8 @@ class PINNModule(pl.LightningModule):
         self.log('loss/train', loss)
         if self.log_plotter is not None:
             self.log_plot()
+        for pname, p in self.trainer.datamodule.parameters.items():
+            self.log(pname, p.detach())
         return loss
 
     def validation_step(self, batch, batch_idx):
