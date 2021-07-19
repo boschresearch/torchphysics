@@ -118,7 +118,28 @@ class Interval(Domain):
         return dct
 
     def boundary_normal(self, points):
+        """ Computes the boundary normal.
+
+        Parameters
+        ----------
+        points : list of lists
+            A list containing all points where the normal vector has to be computed,e.g.
+            [[x1,y1],[x2,y2],...].
+
+        Returns
+        ----------
+        np.array
+            Every entry of the output contains the normal vector at the point,
+            specified in the input array.
+        """
         return np.where(np.isclose(points, self.low_bound, atol=self.tol), -1, 1)
 
     def _compute_bounds(self):
+        """computes bounds of the domain
+
+        Returns
+        -------
+        np.array:
+            The bounds in the form: [self.low_bound, self.up_bound]
+        """
         return [self.low_bound, self.up_bound]

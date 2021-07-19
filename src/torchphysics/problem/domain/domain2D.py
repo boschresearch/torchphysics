@@ -114,6 +114,9 @@ class Rectangle(Domain):
         return points.astype(np.float32)
 
     def grid_in_box(self, n):
+        """ Samples grid points inside the rectangle.
+        (Used by other classes) 
+        """
         nx = int(np.sqrt(n*self.length_lr/self.length_td))
         ny = int(np.sqrt(n*self.length_td/self.length_lr))
         x = np.linspace(0, 1, nx+2)[1:-1]
@@ -204,15 +207,20 @@ class Rectangle(Domain):
         return normal_vectors
 
     def grid_for_plots(self, n):
-        nx = int(np.ceil(np.sqrt(n)*self.length_lr/self.length_td))
-        ny = int(np.ceil(np.sqrt(n)*self.length_td/self.length_lr))
-        x = np.linspace(0, 1, nx)
-        y = np.linspace(0, 1, ny)
+        """Creates a grid of points for plotting. (grid at boundary + inside)
+        """
+        #nx = int(np.ceil(np.sqrt(n)*self.length_lr/self.length_td))
+        #ny = int(np.ceil(np.sqrt(n)*self.length_td/self.length_lr))
+        #x = np.linspace(0, 1, int(np.sqrt(nx))+1)
+        #y = np.linspace(0, 1, int(np.sqrt(ny))+1)
+        x = np.linspace(0, 1, int(np.sqrt(n))+1)
+        y = np.linspace(0, 1, int(np.sqrt(n))+1)
         points = np.array(np.meshgrid(x, y)).T.reshape(-1, 2)
         return self._transform_to_rectangle(points).astype(np.float32)
 
     def serialize(self):
-        # For showing data/information in tensorbaord
+        """to show data/information in tensorboard
+        """
         dct = super().serialize()
         dct['name'] = 'Rectangle'
         dct['corner_dl'] = [int(a) for a in list(self.corner_dl)]
@@ -221,6 +229,13 @@ class Rectangle(Domain):
         return dct
 
     def _compute_bounds(self):
+        """computes bounds of the domain
+
+        Returns
+        -------
+        np.array:
+            The bounds in the form: [min_x, max_x, min_y, max_y]
+        """
         corners = np.array([self.corner_dl, self.corner_dr, self.corner_tl,
                             self.corner_tl-self.corner_dl+self.corner_dr])
         min_x = np.min(corners[:, :1])
@@ -339,14 +354,17 @@ class Circle(Domain):
         return normal_vectors
 
     def grid_for_plots(self, n):
-        points_inside = self._grid_sampling_inside(n)
+        """Creates a grid of points for plotting. (grid at boundary + inside)
+        """
+        points_inside = self._grid_sampling_inside(int(np.ceil(3*n/4)))
         # add some points at the boundary to better show the form of the circle
         points_boundary = self._grid_sampling_boundary(int(np.ceil(n/4)))
         points = np.append(points_inside, points_boundary, axis=0)
         return points.astype(np.float32)
 
     def serialize(self):
-        # to show data/information in tensorboard
+        """to show data/information in tensorboard
+        """
         dct = super().serialize()
         dct['name'] = 'Circle'
         dct['center'] = [int(a) for a in list(self.center)]
@@ -354,6 +372,13 @@ class Circle(Domain):
         return dct
 
     def _compute_bounds(self):
+        """computes bounds of the domain
+
+        Returns
+        -------
+        np.array:
+            The bounds in the form: [min_x, max_x, min_y, max_y]
+        """
         min_x = self.center[0] - self.radius
         max_x = self.center[0] + self.radius
         min_y = self.center[1] - self.radius
@@ -482,9 +507,22 @@ class Triangle(Domain):
 
     def _grid_sampling_inside(self, n):
         bounds = self._compute_bounds()
-        return self._grid_sampling_with_bbox(n, bounds)
+        points = self._grid_sampling_with_bbox(n, bounds)
+        if len(points) < n:
+            points = np.append(points, self._random_sampling_inside(n-len(points)),
+                               axis=0)
+        if len(points) > n:
+            points = self._cut_points(points, n)
+        return points
 
     def _compute_bounds(self):
+        """computes bounds of the domain
+
+        Returns
+        -------
+        np.array:
+            The bounds in the form: [min_x, max_x, min_y, max_y]
+        """
         min_x = np.min(self.corners[:, :1])
         max_x = np.max(self.corners[:, :1])
         min_y = np.min(self.corners[:, 1:])
@@ -499,11 +537,6 @@ class Triangle(Domain):
         inside = self.is_inside(points)
         index = np.where(np.invert(inside))[0]
         points = np.delete(points, index, axis=0)
-        if len(points) < n:
-            points = np.append(points, self._random_sampling_inside(n-len(points)),
-                               axis=0)
-        if len(points) > n:
-            points = self._cut_points(points, n)
         return points.astype(np.float32)
 
     def _random_sampling_boundary(self, n):
@@ -553,13 +586,17 @@ class Triangle(Domain):
         return normals.astype(np.float32)
 
     def grid_for_plots(self, n):
-        points_inside = self._grid_sampling_inside(n)
-        # add some points at the boundary to better show the form of the circle
+        """Creates a grid of points for plotting. (grid at boundary + inside)
+        """
+        bounds = self._compute_bounds()
+        points_inside = self._grid_sampling_with_bbox(int(np.ceil(3*n/4)), bounds)
+        # add some points at the boundary to better show the form of the triangle
         points_boundary = self._grid_sampling_boundary(int(np.ceil(n/4)))
         return np.append(points_inside, points_boundary, axis=0).astype(np.float32)
 
     def serialize(self):
-        # to show data/information in tensorboard
+        """to show data/information in tensorboard
+        """
         dct = super().serialize()
         dct['name'] = 'Triangle'
         dct['corner_1'] = [int(a) for a in list(self.corners[0])]
@@ -657,7 +694,14 @@ class Polygon2D(Domain):
         return on_bound.reshape(-1, 1)
 
     def grid_for_plots(self, n):
-        return Triangle.grid_for_plots(self, n)
+        """Creates a grid of points for plotting. (grid at boundary + inside)
+        """
+        bounds = self._compute_bounds()
+        points_inside = Triangle._grid_sampling_with_bbox(self, int(np.ceil(3*n/4)),
+                                                          bounds)
+        # add some points at the boundary to better show the form of the triangle
+        points_boundary = self._grid_sampling_boundary(int(np.ceil(n/4)))
+        return np.append(points_inside, points_boundary, axis=0).astype(np.float32)
 
     def _random_sampling_inside(self, n):
         points = np.empty((0, self.dim))
@@ -694,7 +738,13 @@ class Polygon2D(Domain):
 
     def _grid_sampling_inside(self, n):
         bounds = self._compute_bounds()
-        return Triangle._grid_sampling_with_bbox(self, n, bounds)
+        points = Triangle._grid_sampling_with_bbox(self, n, bounds)
+        if len(points) < n:
+            points = np.append(points, self._random_sampling_inside(n-len(points)),
+                               axis=0)
+        if len(points) > n:
+            points = self._cut_points(points, n)
+        return points
 
     def _random_sampling_boundary(self, n):
         # First greate exterior points
@@ -794,11 +844,19 @@ class Polygon2D(Domain):
         return index
 
     def _compute_bounds(self):
+        """computes bounds of the domain
+
+        Returns
+        -------
+        np.array:
+            The bounds in the form: [min_x, max_x, min_y, max_y]
+        """
         bounds = self.polygon.bounds
         return [bounds[0], bounds[2], bounds[1], bounds[3]]
 
     def serialize(self):
-        # to show data/information in tensorboard
+        """to show data/information in tensorboard
+        """
         dct = super().serialize()
         dct['name'] = 'Polygon2D'
         for i in range(len(self.polygon.exterior.coords)-1):
