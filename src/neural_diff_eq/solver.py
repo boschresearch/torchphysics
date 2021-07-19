@@ -145,7 +145,8 @@ class PINNModule(pl.LightningModule):
         if self.log_plotter is not None:
             self.log_plot()
         for pname, p in self.trainer.datamodule.parameters.items():
-            self.log(pname, p.detach())
+            if p.shape == [1]:
+                self.log(pname, p.detach())
         return loss
 
     def validation_step(self, batch, batch_idx):
