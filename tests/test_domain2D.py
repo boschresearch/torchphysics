@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import shapely.geometry as s_geo
-from neural_diff_eq.problem.domain.domain2D import (Rectangle, Circle,
+from torchphysics.problem.domain.domain2D import (Rectangle, Circle,
                                                     Triangle, Polygon2D)
 
 # Tests for rectangle

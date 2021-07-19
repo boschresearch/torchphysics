@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
-from neural_diff_eq.problem.domain.domain1D import Interval
-from neural_diff_eq.problem.domain.domain import Domain
+from torchphysics.problem.domain.domain1D import Interval
+from torchphysics.problem.domain.domain import Domain
 
 
 def test_none_by_domain():

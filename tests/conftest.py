@@ -1,5 +1,5 @@
 """
-    Dummy conftest.py for neural_diff_eq.
+    Dummy conftest.py for torchphysics.
 
     If you don't know what this is for, just leave it empty.
     Read more about conftest.py under:

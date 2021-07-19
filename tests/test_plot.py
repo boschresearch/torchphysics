@@ -4,12 +4,12 @@ import os
 import numpy as np
 from matplotlib import animation as matplotani
 
-import neural_diff_eq.utils.plot as plt
-import neural_diff_eq.utils.animation as ani  
-from neural_diff_eq.problem.variables import Variable
-from neural_diff_eq.problem.domain.domain1D import Interval
-from neural_diff_eq.problem.domain.domain2D import (Rectangle, Polygon2D) 
-from neural_diff_eq.models.fcn import SimpleFCN
+import torchphysics.utils.plot as plt
+import torchphysics.utils.animation as ani  
+from torchphysics.problem.variables import Variable
+from torchphysics.problem.domain.domain1D import Interval
+from torchphysics.problem.domain.domain2D import (Rectangle, Polygon2D) 
+from torchphysics.models.fcn import SimpleFCN
 
 
 def test_order_dic():

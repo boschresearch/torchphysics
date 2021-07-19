@@ -1,5 +1,5 @@
 ==============
-neural-diff-eq
+torchphysics
 ==============
 
 

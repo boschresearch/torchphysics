@@ -1,6 +1,6 @@
 import torch
 import pytest
-import neural_diff_eq.models as models
+import torchphysics.models as models
 
 
 def test_prepare_input():

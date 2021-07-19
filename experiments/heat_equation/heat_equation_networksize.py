@@ -5,19 +5,19 @@ import torch
 import numpy as np
 import pytorch_lightning as pl
 from timeit import default_timer as timer
-import neural_diff_eq
+import torchphysics
 
-from neural_diff_eq.problem import (Variable,
+from torchphysics.problem import (Variable,
                                     Setting)
-from neural_diff_eq.problem.domain import (Rectangle,
+from torchphysics.problem.domain import (Rectangle,
                                            Interval)
-from neural_diff_eq.problem.condition import (DirichletCondition,
+from torchphysics.problem.condition import (DirichletCondition,
                                               DiffEqCondition,
                                               DataCondition)
-from neural_diff_eq.models import SimpleFCN
-from neural_diff_eq import PINNModule
-from neural_diff_eq.utils import laplacian, grad
-from neural_diff_eq.utils.fdm import FDM, create_validation_data
+from torchphysics.models import SimpleFCN
+from torchphysics import PINNModule
+from torchphysics.utils import laplacian, grad
+from torchphysics.utils.fdm import FDM, create_validation_data
 
 w, h = 50, 50
 t0, tend = 0, 1

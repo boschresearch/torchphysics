@@ -1,9 +1,9 @@
 import pytest
-from neural_diff_eq.problem import Variable
-from neural_diff_eq.problem import problem
-from neural_diff_eq.problem.condition import BoundaryCondition, Condition
-from neural_diff_eq.setting import Setting
-from neural_diff_eq.problem.domain.domain import Domain
+from torchphysics.problem import Variable
+from torchphysics.problem import problem
+from torchphysics.problem.condition import BoundaryCondition, Condition
+from torchphysics.setting import Setting
+from torchphysics.problem.domain.domain import Domain
 
 
 # Test Problem

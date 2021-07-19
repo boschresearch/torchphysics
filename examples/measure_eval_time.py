@@ -5,7 +5,7 @@ import os
 
 import torch
 import time
-from neural_diff_eq.models import SimpleFCN
+from torchphysics.models import SimpleFCN
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 

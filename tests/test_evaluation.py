@@ -1,9 +1,9 @@
 import torch
 import numpy as np
-from neural_diff_eq.problem.variables import variable
-from neural_diff_eq.problem.domain.domain1D import Interval
-from neural_diff_eq.problem.domain.domain2D import Rectangle
-import neural_diff_eq.utils.evaluation as eval
+from torchphysics.problem.variables import variable
+from torchphysics.problem.domain.domain1D import Interval
+from torchphysics.problem.domain.domain2D import Rectangle
+import torchphysics.utils.evaluation as eval
 
 
 def helper_function(input):

@@ -9,7 +9,7 @@ import torch
 import numbers
 from matplotlib import cm, colors
 
-from neural_diff_eq.problem.domain.domain2D import Triangle
+from torchphysics.problem.domain.domain2D import Triangle
 
 
 class Plotter():

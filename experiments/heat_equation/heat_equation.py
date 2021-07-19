@@ -8,15 +8,15 @@ import torch
 import numpy as np
 import pytorch_lightning as pl
 
-from neural_diff_eq.problem import (Variable,
+from torchphysics.problem import (Variable,
                                     Setting)
-from neural_diff_eq.problem.domain import (Rectangle,
+from torchphysics.problem.domain import (Rectangle,
                                            Interval)
-from neural_diff_eq.problem.condition import (DirichletCondition,
+from torchphysics.problem.condition import (DirichletCondition,
                                               DiffEqCondition)
-from neural_diff_eq.models import SimpleFCN
-from neural_diff_eq import PINNModule
-from neural_diff_eq.utils import laplacian, grad
+from torchphysics.models import SimpleFCN
+from torchphysics import PINNModule
+from torchphysics.utils import laplacian, grad
 
 import time
 

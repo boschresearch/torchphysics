@@ -1,8 +1,8 @@
 ==============
-neural-diff-eq
+torchphysics
 ==============
 
-This is the documentation of **neural-diff-eq**.
+This is the documentation of **torchphysics**.
 
 .. note::
 

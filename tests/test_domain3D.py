@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import os
 
-from neural_diff_eq.problem.domain.domain3D import Polygon3D
+from torchphysics.problem.domain.domain3D import Polygon3D
 
 
 def _create_simple_polygon():

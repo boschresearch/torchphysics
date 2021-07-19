@@ -1,12 +1,12 @@
 import torch
 import numpy as np
 import pytest
-from neural_diff_eq.problem import condition as condi
-from neural_diff_eq.problem import datacreator as dc
-from neural_diff_eq.problem.domain.domain1D import Interval
-from neural_diff_eq.problem.domain.domain2D import Rectangle
-from neural_diff_eq.setting import Setting
-from neural_diff_eq.problem.variables.variable import Variable
+from torchphysics.problem import condition as condi
+from torchphysics.problem import datacreator as dc
+from torchphysics.problem.domain.domain1D import Interval
+from torchphysics.problem.domain.domain2D import Rectangle
+from torchphysics.setting import Setting
+from torchphysics.problem.variables.variable import Variable
 
 # Helper functions for testing
 def model_function(input):

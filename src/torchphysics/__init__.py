@@ -10,7 +10,7 @@ else:
 
 try:
     # Change here if project is renamed and does not equal the package name
-    dist_name = "neural-diff-eq"
+    dist_name = "torchphysics"
     __version__ = version(dist_name)
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
