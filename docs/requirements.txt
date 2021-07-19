@@ -2,4 +2,4 @@
 # To build the module reference correctly, make sure every external package
 # under `install_requires` in `setup.cfg` is also listed here!
 sphinx>=3.2.1
-# sphinx_rtd_theme
+sphinx_rtd_theme
