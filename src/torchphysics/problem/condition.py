@@ -494,7 +494,7 @@ class DiffEqBoundaryCondition(BoundaryCondition):
             data = self.datacreator.get_data()
             normals = self.setting.variables[self.boundary_variable] \
                 .domain.boundary_normal(data[self.boundary_variable])
-            self.pass_parameters = self.pass_parameters = 'params' in signature(self.pde)
+            self.pass_parameters = self.pass_parameters = 'params' in signature(self.bound_condition_fun)
 
             if self.data_fun is None:
                 return (data, normals)
