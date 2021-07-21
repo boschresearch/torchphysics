@@ -134,7 +134,7 @@ class DiffEqCondition(Condition):
     def get_data(self):
         if self.is_registered():
             self.datacreator.variables = self.setting.variables
-            self.pass_parameters = len(self.setting.parameters) > 0
+            self.pass_parameters = 'params' in signature(self.pde)
             return self.datacreator.get_data()
         else:
             raise RuntimeError("""Conditions need to be registered in a
@@ -494,7 +494,8 @@ class DiffEqBoundaryCondition(BoundaryCondition):
             data = self.datacreator.get_data()
             normals = self.setting.variables[self.boundary_variable] \
                 .domain.boundary_normal(data[self.boundary_variable])
-            self.pass_parameters = len(self.setting.parameters) > 0
+            self.pass_parameters = self.pass_parameters = 'params' in signature(self.pde)
+
             if self.data_fun is None:
                 return (data, normals)
             else:
