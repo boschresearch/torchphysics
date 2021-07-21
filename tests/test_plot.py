@@ -295,9 +295,9 @@ def test_ani_quiver_2D():
                                    animation_variable=I2,
                                    frame_number=1, plot_output_entries=[0, 2])
     assert isinstance(animation, matplotani.FuncAnimation)
-    assert fig.axes[0].get_xlim() == (0.0, 1.0)
+    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
     assert fig.axes[0].get_xlabel() == 'R_1'
-    assert fig.axes[0].get_ylim() == (0.0, 2.0)
+    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
     assert fig.axes[0].get_ylabel() == 'R_2'
     animation.save('test.gif')
     os.remove('test.gif')
