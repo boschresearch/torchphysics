@@ -134,7 +134,7 @@ class DiffEqCondition(Condition):
     def get_data(self):
         if self.is_registered():
             self.datacreator.variables = self.setting.variables
-            self.pass_parameters = 'params' in signature(self.pde)
+            self.pass_parameters = 'params' in signature(self.pde).parameters
             return self.datacreator.get_data()
         else:
             raise RuntimeError("""Conditions need to be registered in a
@@ -300,8 +300,7 @@ class DirichletCondition(BoundaryCondition):
         self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
-                                                  boundary_sampling_strategy=
-                                                  boundary_sampling_strategy)
+                                                  boundary_sampling_strategy=boundary_sampling_strategy)
 
     def forward(self, model, data):
         data, target = data
@@ -375,8 +374,7 @@ class NeumannCondition(BoundaryCondition):
         self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
-                                                  boundary_sampling_strategy=
-                                                  boundary_sampling_strategy)
+                                                  boundary_sampling_strategy=boundary_sampling_strategy)
 
     def forward(self, model, data):
         data, target, normals = data
@@ -391,7 +389,7 @@ class NeumannCondition(BoundaryCondition):
             self.datacreator.boundary_variable = self.boundary_variable
             data = self.datacreator.get_data()
             normals = self.setting.variables[self.boundary_variable] \
-                      .domain.boundary_normal(data[self.boundary_variable])
+                .domain.boundary_normal(data[self.boundary_variable])
             return (data, self.neumann_fun(data), normals)
         else:
             raise RuntimeError("""Conditions need to be registered in a
@@ -413,8 +411,8 @@ class DiffEqBoundaryCondition(BoundaryCondition):
     Parameters
     ----------
     bound_condition_fun : function handle
-        A method that takes the output and input (in the usual dictionary form) of a
-        model, the boundary normals and additional data (given through data_fun, and 
+                A method that takes the output and input (in the usual dictionary form) of a
+                model, the boundary normals and additional data (given through data_fun, and 
         only when needed) as an input. The method then computes and returns 
         the desired boundary condition.
     name : str
@@ -465,8 +463,7 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
-                                                  boundary_sampling_strategy=
-                                                  boundary_sampling_strategy)
+                                                  boundary_sampling_strategy=boundary_sampling_strategy)
 
     def forward(self, model, data):
         if self.data_fun is None:
@@ -494,7 +491,8 @@ class DiffEqBoundaryCondition(BoundaryCondition):
             data = self.datacreator.get_data()
             normals = self.setting.variables[self.boundary_variable] \
                 .domain.boundary_normal(data[self.boundary_variable])
-            self.pass_parameters = self.pass_parameters = 'params' in signature(self.bound_condition_fun)
+            self.pass_parameters = self.pass_parameters = 'params' in signature(
+                self.bound_condition_fun).parameters
 
             if self.data_fun is None:
                 return (data, normals)
