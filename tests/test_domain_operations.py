@@ -255,6 +255,13 @@ def test_cut_many_times():
     assert C.is_on_boundary(i).all()
 
 
+def test_cut_bounds():
+    R, C = _create_domains()
+    C = Cut(R, C)
+    bounds = C._compute_bounds()
+    assert np.allclose(bounds, [0, 1, 0, 1])
+
+
 def test_serialize_cut():
     R, C = _create_domains()
     C = Cut(R, C)
@@ -501,6 +508,13 @@ def test_serialize_union():
     assert dct['name'] == '((Rectangle + Circle) - Circle)'
 
 
+def test_union_bounds():
+    R, C = _create_domains()
+    U = Union(R, C)
+    bounds = U._compute_bounds()
+    assert np.allclose(bounds, [-0.5, 1, -0.5, 1])
+
+
 # Test intersection
 
 def test_intersection():
@@ -644,3 +658,11 @@ def test_grid_for_plots_intersection():
     inside = U.is_inside(points)
     on_bound = U.is_on_boundary(points)
     assert np.logical_or(inside, on_bound).all()  
+
+
+def test_intersection_bounds():
+    R, C = _create_domains()
+    I = Intersection(R, C)
+    bounds = I._compute_bounds()
+    assert np.allclose(bounds, [0, 0.5, 0, 0.5])
+

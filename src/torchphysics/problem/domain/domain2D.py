@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import core
+import matplotlib.patches as patches
 import shapely.geometry as s_geo
 from shapely.ops import triangulate
 
@@ -209,15 +209,29 @@ class Rectangle(Domain):
     def grid_for_plots(self, n):
         """Creates a grid of points for plotting. (grid at boundary + inside)
         """
-        #nx = int(np.ceil(np.sqrt(n)*self.length_lr/self.length_td))
-        #ny = int(np.ceil(np.sqrt(n)*self.length_td/self.length_lr))
-        #x = np.linspace(0, 1, int(np.sqrt(nx))+1)
-        #y = np.linspace(0, 1, int(np.sqrt(ny))+1)
+        #nx = int(np.ceil(np.sqrt(n*self.length_lr/self.length_td)))
+        #ny = int(np.ceil(np.sqrt(n*self.length_td/self.length_lr)))
+        #x = np.linspace(0, 1, nx)
+        #y = np.linspace(0, 1, ny)
         x = np.linspace(0, 1, int(np.sqrt(n))+1)
         y = np.linspace(0, 1, int(np.sqrt(n))+1)
         points = np.array(np.meshgrid(x, y)).T.reshape(-1, 2)
         return self._transform_to_rectangle(points).astype(np.float32)
 
+    def outline(self):
+        """Creates a outline of the domain.
+
+        Returns
+        -------
+        matplotlib.patches
+            A matplotlib.patches, that contains the form of this rectangle. 
+        """
+        rect = patches.Rectangle((self.corner_dl), self.length_lr, self.length_td, 
+                                 angle=np.rad2deg(np.arccos(-self.normal_lr[0])+np.pi),
+                                 facecolor='white', edgecolor='black',
+                                 linewidth=2, linestyle='--')
+        return rect
+                            
     def serialize(self):
         """to show data/information in tensorboard
         """
@@ -309,12 +323,7 @@ class Circle(Domain):
         return np.add(self.center, points).astype(np.float32)
 
     def _grid_sampling_inside(self, n):
-        scaled_n = 2*int(np.sqrt(n/np.pi))
-        axis = np.linspace(-self.radius, self.radius, scaled_n+2)[1:-1]
-        points = np.array(np.meshgrid(axis, axis)).T.reshape(-1, 2)
-        points = np.add(points, self.center)
-        inside = np.nonzero(self.is_inside(points))[0]
-        points = points[inside]
+        points = self._point_grid_in_circle(n)
         # append random points if there are not enough points in the grid
         if len(points) < n:
             points = np.append(points, self._random_sampling_inside(n-len(points)),
@@ -322,6 +331,27 @@ class Circle(Domain):
         if len(points) > n:
             points = super()._cut_points(points, n)
         return points.astype(np.float32)
+
+    def _point_grid_in_circle(self, n):
+        scaled_n = 2*int(np.sqrt(n/np.pi))
+        axis = np.linspace(-self.radius, self.radius, scaled_n+2)[1:-1]
+        points = np.array(np.meshgrid(axis, axis)).T.reshape(-1, 2)
+        points = np.add(points, self.center)
+        inside = np.nonzero(self.is_inside(points))[0]
+        return points[inside]
+
+    def outline(self):
+        """Creates a outline of the domain.
+
+        Returns
+        -------
+        matplotlib.patches
+            A matplotlib.patches, that contains the form of this circle
+        """
+        cirl = patches.Circle((self.center), self.radius,
+                              facecolor='white', edgecolor='black',
+                              linewidth=2, linestyle='--')
+        return cirl
 
     def _random_sampling_boundary(self, n):
         phi = 2 * np.pi * np.random.uniform(0, 1, n).reshape(-1, 1)
@@ -356,9 +386,9 @@ class Circle(Domain):
     def grid_for_plots(self, n):
         """Creates a grid of points for plotting. (grid at boundary + inside)
         """
-        points_inside = self._grid_sampling_inside(int(np.ceil(3*n/4)))
+        points_inside = self._point_grid_in_circle(int(np.ceil(3*n/4)))
         # add some points at the boundary to better show the form of the circle
-        points_boundary = self._grid_sampling_boundary(int(np.ceil(n/4)))
+        points_boundary = self._grid_sampling_boundary(int(n/4))
         points = np.append(points_inside, points_boundary, axis=0)
         return points.astype(np.float32)
 
@@ -589,10 +619,28 @@ class Triangle(Domain):
         """Creates a grid of points for plotting. (grid at boundary + inside)
         """
         bounds = self._compute_bounds()
-        points_inside = self._grid_sampling_with_bbox(int(np.ceil(3*n/4)), bounds)
+        bounding_box = Rectangle([bounds[0], bounds[2]], [bounds[1], bounds[2]],
+                                 [bounds[0], bounds[3]])
+        scaled_n = int(3/4*bounding_box.volume/self.volume * n)
+        points = bounding_box.grid_for_plots(scaled_n)
+        inside = self.is_inside(points)
+        index = np.where(np.invert(inside))[0]
+        points = np.delete(points, index, axis=0)
         # add some points at the boundary to better show the form of the triangle
         points_boundary = self._grid_sampling_boundary(int(np.ceil(n/4)))
-        return np.append(points_inside, points_boundary, axis=0).astype(np.float32)
+        return np.append(points, points_boundary, axis=0).astype(np.float32)
+
+    def outline(self):
+        """Creates a outline of the domain.
+
+        Returns
+        -------
+        matplotlib.patches
+            A matplotlib.patches, that contains the form of this triangle
+        """
+        tri = patches.Polygon(self.corners, facecolor='white', edgecolor='black',
+                              linewidth=2, linestyle='--')
+        return tri
 
     def serialize(self):
         """to show data/information in tensorboard
@@ -603,6 +651,7 @@ class Triangle(Domain):
         dct['corner_2'] = [int(a) for a in list(self.corners[1])]
         dct['corner_3'] = [int(a) for a in list(self.corners[2])]
         return dct
+
 
 class Polygon2D(Domain):
     '''Class for polygons in 2D.
@@ -697,11 +746,29 @@ class Polygon2D(Domain):
         """Creates a grid of points for plotting. (grid at boundary + inside)
         """
         bounds = self._compute_bounds()
-        points_inside = Triangle._grid_sampling_with_bbox(self, int(np.ceil(3*n/4)),
-                                                          bounds)
+        bounding_box = Rectangle([bounds[0], bounds[2]], [bounds[1], bounds[2]],
+                                 [bounds[0], bounds[3]])
+        scaled_n = int(3/4*bounding_box.volume/self.volume * n)
+        points = bounding_box.grid_for_plots(scaled_n)
+        inside = self.is_inside(points)
+        index = np.where(np.invert(inside))[0]
+        points = np.delete(points, index, axis=0)
         # add some points at the boundary to better show the form of the triangle
         points_boundary = self._grid_sampling_boundary(int(np.ceil(n/4)))
-        return np.append(points_inside, points_boundary, axis=0).astype(np.float32)
+        return np.append(points, points_boundary, axis=0).astype(np.float32)
+
+    def outline(self):
+        """Creates a outline of the domain.
+
+        Returns
+        -------
+        matplotlib.patches
+            A matplotlib.patches, that contains the form of this polygon
+        """
+        cords = [np.array(self.polygon.exterior.coords)] 
+        for i in self.polygon.interiors:
+            cords.append(np.array(i.coords))
+        return cords 
 
     def _random_sampling_inside(self, n):
         points = np.empty((0, self.dim))

@@ -1,7 +1,10 @@
+from matplotlib.patches import Polygon
 import numpy as np
 import abc
 from .domain import Domain
 from .domain1D import Interval
+from .domain2D import Rectangle, Circle, Triangle, Polygon2D
+import sys
 
 
 class Domain_operation(Domain):
@@ -126,6 +129,36 @@ class Domain_operation(Domain):
         normals[index_both] *= 1/np.sqrt(2) # point at both -> scale vector
         return normals.astype(np.float32)
 
+    def construct_shapely(self, domain):
+        """Construct the given domain as an shapely polygon,
+        to show the outline. 
+
+        Paramters
+        ---------
+        domain : Domain
+            The input domain, for which a shapely object will be constructed.
+
+        Returns 
+        -------
+        shapely.geometry.polygon
+            The domain as a polygon
+        """
+        import shapely.geometry as s_geos
+        if isinstance(domain, Domain_operation):
+            return domain._change_to_shapely()
+        elif isinstance(domain, Rectangle):
+            return s_geos.Polygon([domain.corner_dl, domain.corner_dr, 
+                                  domain.corner_dr+(domain.corner_tl-domain.corner_dl), 
+                                  domain.corner_tl, domain.corner_dl])
+        elif isinstance(domain, Circle):
+            return s_geos.Point(domain.center).buffer(domain.radius)
+        elif isinstance(domain, Triangle):
+            return s_geos.Polygon(domain.corners) 
+        elif isinstance(domain, Polygon):
+            return domain.polygon
+        else:
+            raise NotImplementedError
+
     @abc.abstractmethod
     def _approximate_volume(self, n):
         return
@@ -197,11 +230,18 @@ class Cut(Domain_operation):
                                             operation_is_cut=True)
 
     def grid_for_plots(self, n):
-        points_inside = self._grid_sampling_inside(int(np.ceil(3/4*n)))
+        scaled_n = int(7/8*self.base.volume/self.volume * n)
+        points = self.base.grid_for_plots(scaled_n)
+        inside = self.cut.is_inside(points)
+        index = np.where(inside)[0]
+        points = np.delete(points, index, axis=0)
         # add some points at the boundary to better show the domain
-        points_boundary = self._grid_sampling_boundary(int(n/4))
-        points = np.append(points_inside, points_boundary, axis = 0)
-        return points
+        points_boundary = self.cut._grid_sampling_boundary(int(np.ceil(n/8)))
+        inside = self.base.is_inside(points_boundary)
+        bound = self.base.is_on_boundary(points_boundary)
+        index = np.where(np.logical_or(np.invert(inside), bound))[0]
+        points_boundary = np.delete(points_boundary, index, axis=0)
+        return np.append(points, points_boundary, axis = 0)
   
     def _random_sampling_inside(self, n):
         points = np.empty((0,self.dim))
@@ -240,6 +280,41 @@ class Cut(Domain_operation):
         dct['base'] = dct_1
         dct['cut'] = dct_2
         return dct
+
+    def _compute_bounds(self):
+        """computes bounds of the domain
+
+        Returns
+        -------
+        np.array:
+            The bounds in the form: [min_x, max_x, min_y, max_y]
+        """
+        return self.base._compute_bounds()
+
+    def outline(self):
+        """Creates a outline of the domain.
+
+        Returns
+        -------
+        shapely.geometry.polygon
+            A polygon, that contains the form of this domain.
+        """
+        if 'shapely' in sys.modules:
+            domain = self._change_to_shapely()
+            cords = [np.array(domain.exterior.coords)] 
+            for i in domain.interiors:
+                cords.append(np.array(i.coords))
+            return cords 
+        else:
+            print("shapely is not installed, can't show complex domain!")
+            return self.base.outline()
+
+    def _change_to_shapely(self):
+        """Impleemnts the specific operation (cut)
+        """
+        base = self.construct_shapely(self.base)
+        cut = self.construct_shapely(self.cut)
+        return base - cut
 
 
 class Union(Domain_operation):
@@ -307,11 +382,17 @@ class Union(Domain_operation):
         return super()._get_boundary_normal(self.domain_1, self.domain_2, points)
 
     def grid_for_plots(self, n):
-        points_inside = self._grid_sampling_inside(int(np.ceil(3/4*n)))
-        # add some points at the boundary to better show the domain
-        points_boundary = self._grid_sampling_boundary(int(n/4))
-        points = np.append(points_inside, points_boundary, axis = 0)
-        return points
+        # create gird in first domain:
+        scaled_n = int(n*self.domain_1.volume/self.volume)
+        points = self.domain_1.grid_for_plots(scaled_n)
+        inside = self.domain_2.is_inside(points)
+        index = np.where(inside)[0]
+        points = np.delete(points, index, axis=0)
+        # create points on second domain:
+        scaled_n = n - len(points)
+        new_points = self.domain_2.grid_for_plots(scaled_n)
+        points = np.append(points, new_points, axis=0)
+        return points.astype(np.float32)
 
     def sample_boundary(self, n, type='random'):
         # check if we have intervals, for them we have special strategies
@@ -356,6 +437,45 @@ class Union(Domain_operation):
         dct['domain 1'] = dct_1
         dct['domain 2'] = dct_2
         return dct
+
+    def _compute_bounds(self):
+        """computes bounds of the domain
+
+        Returns
+        -------
+        np.array:
+            The bounds in the form: [min_x, max_x, min_y, max_y]
+        """
+        b_1 = self.domain_1._compute_bounds()
+        b_2 = self.domain_2._compute_bounds()
+        return [np.min([b_1[0], b_2[0]]), np.max([b_1[1], b_2[1]]), 
+                np.min([b_1[2], b_2[2]]), np.max([b_1[3], b_2[3]])]
+
+    def outline(self):
+        """Creates a outline of the domain.
+
+        Returns
+        -------
+        shapely.geometry.polygon
+            A polygon, that contains the form of this domain.
+        """
+        if 'shapely' in sys.modules:
+            domain = self._change_to_shapely()
+            cords = [np.array(domain.exterior.coords)] 
+            for i in domain.interiors:
+                cords.append(np.array(i.coords))
+            return cords 
+        else:
+            print("shapely is not installed, can't show complex domain!")
+            return self.base.outline()
+
+    def _change_to_shapely(self):
+        from shapely.ops import unary_union
+        """Impleemnts the specific operation (union)
+        """
+        domain_1 = self.construct_shapely(self.domain_1)
+        domain_2 = self.construct_shapely(self.domain_2)
+        return unary_union([domain_1, domain_2])
 
 
 class Intersection(Domain_operation):
@@ -453,8 +573,50 @@ class Intersection(Domain_operation):
         return dct
 
     def grid_for_plots(self, n):
-        points_inside = self._grid_sampling_inside(int(np.ceil(3/4*n)))
-        # add some points at the boundary to better show the domain
-        points_boundary = self._grid_sampling_boundary(int(n/4))
-        points = np.append(points_inside, points_boundary, axis = 0)
-        return points
+        # create gird in first domain:
+        scaled_n = int(3/4*n*self.domain_1.volume/self.volume)
+        points = self.domain_1.grid_for_plots(scaled_n)
+        inside = self.domain_2.is_inside(points)
+        index = np.where(np.invert(inside))[0]
+        points = np.delete(points, index, axis=0)
+        # create points on boundary
+        points_boundary = self._grid_sampling_boundary(int(np.ceil(n/4)))
+        return np.append(points, points_boundary, axis=0).astype(np.float32)
+
+    def _compute_bounds(self):
+        """computes bounds of the domain
+
+        Returns
+        -------
+        np.array:
+            The bounds in the form: [min_x, max_x, min_y, max_y]
+        """
+        b_1 = self.domain_1._compute_bounds()
+        b_2 = self.domain_2._compute_bounds()
+        return [np.max([b_1[0], b_2[0]]), np.min([b_1[1], b_2[1]]), 
+                np.max([b_1[2], b_2[2]]), np.min([b_1[3], b_2[3]])]
+
+    def outline(self):
+        """Creates a outline of the domain.
+
+        Returns
+        -------
+        shapely.geometry.polygon
+            A polygon, that contains the form of this domain.
+        """
+        if 'shapely' in sys.modules:
+            domain = self._change_to_shapely()
+            cords = [np.array(domain.exterior.coords)] 
+            for i in domain.interiors:
+                cords.append(np.array(i.coords))
+            return cords 
+        else:
+            print("shapely is not installed, can't show complex domain!")
+            return self.base.outline()
+
+    def _change_to_shapely(self):
+        """Impleemnts the specific operation (intersection)
+        """
+        domain_1 = self.construct_shapely(self.domain_1)
+        domain_2 = self.construct_shapely(self.domain_2)
+        return domain_1 & domain_2
