@@ -4,6 +4,7 @@ neural networks
 import matplotlib.pyplot as plt
 from matplotlib import cm, colors
 from matplotlib import animation as anim
+import matplotlib.patches as patches
 import numpy as np
 import torch
 from . import plot 
@@ -302,25 +303,36 @@ def _animation_quiver_2D(model, plot_variable, points,
                               animation_variable.name, input_dic, plot_output_entries)
     # for the colors
     color = np.linalg.norm(outputs, axis=-1)
-    scale_x = (np.max(domain_points[:, 0]) - np.min(domain_points[:, 0]))
-    scale_y = (np.max(domain_points[:, 1]) - np.min(domain_points[:, 1]))
-    scale = np.min([scale_x, scale_y])
+    outputs[:, :, 0] /= color
+    outputs[:, :, 1] /= color
     norm = colors.Normalize()
     norm.autoscale(color)
+    # scale the border
+    bounds = plot_variable.domain._compute_bounds()
+    scale_x = 0.05*(bounds[1] - bounds[0])
+    scale_y = 0.05*(bounds[3] - bounds[2])
     # Create the plot
     fig = plt.figure()
     ax = fig.add_subplot()
     ax.grid()
-    ax.set_xlim((np.min(domain_points[:, 0]), np.max(domain_points[:, 0])))
-    ax.set_ylim((np.min(domain_points[:, 1]), np.max(domain_points[:, 1])))
+    ax.set_xlim((bounds[0]-scale_x, bounds[1]+scale_x))
+    ax.set_ylim((bounds[2]-scale_y, bounds[3]+scale_y))
     ax.set_xlabel(plot_variable.name + '_1')
     ax.set_ylabel(plot_variable.name + '_2')
     text_box = ax.text(1.25, 0.5, '', bbox={'facecolor': 'w', 'pad': 5},
                        transform=ax.transAxes)
+    # outline the domain
+    poly = plot_variable.domain.outline()
+    if isinstance(poly, (patches.Rectangle, patches.Circle, patches.Polygon)):
+        ax.add_patch(poly)
+    else: # domain operations are used:
+        for p in poly:
+            ax.plot(p[:, 0], p[:, 1], color='k', linewidth=2, linestyle='--')
+    # add arrwos
     quiver = ax.quiver(domain_points[:, 0], domain_points[:, 1], 
                        outputs[:, 0, 0], outputs[:, 0, 1],
-                       color=cm.jet(norm(color[:, 0])), 
-                       scale=20*scale)
+                       color=cm.jet(norm(color[:, 0])),
+                       units='xy', zorder=10)
     sm = cm.ScalarMappable(cmap=cm.jet, norm=norm)
     plt.colorbar(sm)
     # create the animation

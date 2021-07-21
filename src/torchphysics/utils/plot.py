@@ -3,6 +3,7 @@ neural networks
 '''
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
+import matplotlib.patches as patches
 import scipy.spatial
 import numpy as np
 import torch
@@ -317,13 +318,30 @@ def _quiver2D(model, plot_variable, points, dic_for_other_variables,
     # for the colors
     color = np.linalg.norm(output, axis=1)
     norm = colors.Normalize()
+    output[:, 0] /= color
+    output[:, 1] /= color
     norm.autoscale(color)
     # Create the plot
     fig = plt.figure()
     ax = fig.add_subplot()
     ax.grid()
+    # scale the border
+    bounds = plot_variable.domain._compute_bounds()
+    scale_x = 0.05*(bounds[1] - bounds[0])
+    scale_y = 0.05*(bounds[3] - bounds[2])
+    ax.set_xlim((bounds[0]-scale_x, bounds[1]+scale_x))
+    ax.set_ylim((bounds[2]-scale_y, bounds[3]+scale_y))
+    # outline the domain
+    poly = plot_variable.domain.outline()
+    if isinstance(poly, (patches.Rectangle, patches.Circle, patches.Polygon)):
+        ax.add_patch(poly)
+    else: # domain operations are used:
+        for p in poly:
+            ax.plot(p[:, 0], p[:, 1], color='k', linewidth=2, linestyle='--')
+    # create arrows
     ax.quiver(domain_points[:, 0], domain_points[:, 1], output[:, 0], output[:, 1], 
-              color=cm.jet(norm(color)))
+              color=cm.jet(norm(color)),
+              units='xy', zorder=10)
     sm = cm.ScalarMappable(cmap=cm.jet, norm=norm)
     plt.colorbar(sm)
     # add a text box for the values of the other variables
@@ -331,7 +349,7 @@ def _quiver2D(model, plot_variable, points, dic_for_other_variables,
         info_string = _create_info_text(dic_for_other_variables)
         ax.text(1.25, 0.5, info_string, bbox={'facecolor': 'w', 'pad': 5},
                 transform=ax.transAxes)
-
+                
     ax.set_xlabel(plot_variable.name + '_1')
     ax.set_ylabel(plot_variable.name + '_2')
     #plt.show()
@@ -461,6 +479,7 @@ def _check_triangle_inside(triangle, domain):
     return np.logical_or(inside, boundary).sum() >= 7 # only check that some points are
                                                       # correct, because of numeric 
                                                       # errors
+
 
 class __HelperTriangle():
     '''A helper class for triangulation of the domain.
