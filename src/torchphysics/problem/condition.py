@@ -2,10 +2,12 @@
 They supply the necessary training data to the model.
 """
 import abc
-import torch
-from . import datacreator as dc
 from inspect import signature
 
+import torch
+import numpy as np
+
+from . import datacreator as dc
 from ..utils.differentialoperators import normal_derivative
 
 
@@ -289,7 +291,7 @@ class DirichletCondition(BoundaryCondition):
         If False, no plots are created. If True, behaviour is defined in each condition.
     """
 
-    def __init__(self, dirichlet_fun, name, norm,
+    def __init__(self, dirichlet_fun, name, norm, whole_batch=True,
                  sampling_strategy='random', boundary_sampling_strategy='random',
                  weight=1.0, dataset_size=10000,
                  data_plot_variables=True):
@@ -297,6 +299,7 @@ class DirichletCondition(BoundaryCondition):
                          track_gradients=False,
                          data_plot_variables=data_plot_variables)
         self.dirichlet_fun = dirichlet_fun
+        self.whole_batch = whole_batch
         self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
@@ -312,7 +315,10 @@ class DirichletCondition(BoundaryCondition):
             self.datacreator.variables = self.setting.variables
             self.datacreator.boundary_variable = self.boundary_variable
             data = self.datacreator.get_data()
-            return (data, self.dirichlet_fun(data))
+            if self.whole_batch:
+                return (data, self.dirichlet_fun(data))
+            else:
+                return (data, apply_to_batch(self.dirichlet_fun, data))
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -411,8 +417,8 @@ class DiffEqBoundaryCondition(BoundaryCondition):
     Parameters
     ----------
     bound_condition_fun : function handle
-                A method that takes the output and input (in the usual dictionary form) of a
-                model, the boundary normals and additional data (given through data_fun, and 
+                                A method that takes the output and input (in the usual dictionary form) of a
+                                model, the boundary normals and additional data (given through data_fun, and 
         only when needed) as an input. The method then computes and returns 
         the desired boundary condition.
     name : str
@@ -511,3 +517,13 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         dct['sampling_strategy'] = self.datacreator.sampling_strategy
         dct['boundary_sampling_strategy'] = self.datacreator.boundary_sampling_strategy
         return dct
+
+
+def apply_to_batch(fun, batch):
+    k = list(batch.keys())
+    batch_size = np.shape(batch[k[0]])[0]
+    out_len = len(fun({v: batch[v][0, :] for v in batch}))
+    out = np.zeros((batch_size, out_len))
+    for i in range(batch_size):
+        out[i, :] = fun({v: batch[v][i, :] for v in batch})
+    return out.astype(np.float32)

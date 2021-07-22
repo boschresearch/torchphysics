@@ -197,3 +197,28 @@ def partial(model_out, *deriv_variable_inputs):
         if du.grad_fn is None:
             return torch.zeros_like(inp)
     return du
+
+
+def convective(deriv_out, deriv_variable_input, convective_field):
+    '''Computes the convective term :math:`(v \\cdot \\nabla)u` that appears e.g. in
+    material derivatives. Note: This is not the whole material derivative.
+
+    Parameters
+    ----------
+    deriv_out : torch.tensor
+        The vector or scalar field :math:`u` that is convected and should be
+        differentiated.
+    deriv_variable_input : torch.tensor
+        The spatial variable in which respect deriv_out should be differentiated.
+    convective_field: torch.tensor
+        The flow vector field :math:`v`. Should have the same dimension as
+        deriv_variable_input.
+
+    Returns
+    ----------
+    torch.tensor
+        A vector or scalar (+batch-dimension) Tensor, that contains the convective
+        derivative.
+    '''
+    jac_x = jac(deriv_out, deriv_variable_input)
+    return torch.bmm(jac_x, convective_field.unsqueeze(dim=2)).squeeze(dim=2)

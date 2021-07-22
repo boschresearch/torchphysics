@@ -3,4 +3,5 @@ from .differentialoperators import (laplacian,
                                     grad,
                                     div,
                                     jac,
-                                    partial)
+                                    partial,
+                                    convective)
