@@ -4,4 +4,7 @@ from .differentialoperators import (laplacian,
                                     div,
                                     jac,
                                     partial,
-                                    convective)
+                                    convective,
+                                    normal_derivative)
+
+from .helper import apply_to_batch, apply_user_fun

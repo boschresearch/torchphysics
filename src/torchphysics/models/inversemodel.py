@@ -1,5 +1,5 @@
 '''Contains a Wrapper for all newtworks to use them in inverse problems
-'''
+
 import torch
 import numpy as np
 from . import DiffEqModel
@@ -44,3 +44,4 @@ class InverseModel(DiffEqModel):
         dct = self.model.serialize()
         #dct['parameters'] = self.model._parameters
         return dct
+'''

@@ -23,15 +23,15 @@ class BlockFCN(DiffEqModel):
     def __init__(self, input_dim, blocks=3, width=100, output_dim=1):
         super().__init__()
 
-        self.input_dim = input_dim
+        self._input_dim = input_dim
         self.blocks = blocks
         self.width = width
-        self.output_dim = output_dim
+        self._output_dim = output_dim
 
         # build model
         self.layers = nn.ModuleList()
 
-        self.layers.append(nn.Linear(self.input_dim, self.width))
+        self.layers.append(nn.Linear(self._input_dim, self.width))
         torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=1.4142)
 
         self.layers.append(nn.LeakyReLU())
@@ -44,16 +44,16 @@ class BlockFCN(DiffEqModel):
             torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=5/3)
             self.layers.append(nn.Tanh())
 
-        self.layers.append(nn.Linear(self.width, self.output_dim))
+        self.layers.append(nn.Linear(self.width, self._output_dim))
         torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=1)
 
     def serialize(self):
         dct = {}
         dct['name'] = 'BlockFCN'
-        dct['input_dim'] = self.input_dim
+        dct['input_dim'] = self._input_dim
         dct['blocks'] = self.blocks
         dct['width'] = self.width
-        dct['output_dim'] = self.output_dim
+        dct['output_dim'] = self._output_dim
         return dct
 
     def forward(self, input_dict):
@@ -83,6 +83,14 @@ class BlockFCN(DiffEqModel):
         for layer in self.layers:
             x = layer(x)
         return x
+
+    @property
+    def output_dim(self):
+        return self._output_dim
+
+    @property
+    def input_dim(self):
+        return self._input_dim
 
 
 class SimpleFCN(DiffEqModel):
@@ -103,15 +111,15 @@ class SimpleFCN(DiffEqModel):
     def __init__(self, input_dim, depth=3, width=20, output_dim=1):
         super().__init__()
 
-        self.input_dim = input_dim
+        self._input_dim = input_dim
         self.depth = depth
         self.width = width
-        self.output_dim = output_dim
+        self._output_dim = output_dim
 
         # build model
         self.layers = nn.ModuleList()
 
-        self.layers.append(nn.Linear(self.input_dim, self.width))
+        self.layers.append(nn.Linear(self._input_dim, self.width))
         torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=5.0/3.0)
         self.layers.append(nn.Tanh())
 
@@ -120,16 +128,16 @@ class SimpleFCN(DiffEqModel):
             torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=5.0/3.0)
             self.layers.append(nn.Tanh())
 
-        self.layers.append(nn.Linear(self.width, self.output_dim))
+        self.layers.append(nn.Linear(self.width, self._output_dim))
         torch.nn.init.xavier_normal_(self.layers[-1].weight, gain=1)
 
     def serialize(self):
         dct = {}
         dct['name'] = 'SimpleFCN'
-        dct['input_dim'] = self.input_dim
+        dct['input_dim'] = self._input_dim
         dct['depth'] = self.depth
         dct['width'] = self.width
-        dct['output_dim'] = self.output_dim
+        dct['output_dim'] = self._output_dim
         return dct
 
     def forward(self, input_dict):
@@ -159,3 +167,11 @@ class SimpleFCN(DiffEqModel):
         for layer in self.layers:
             x = layer(x)
         return x
+
+    @property
+    def output_dim(self):
+        return self._output_dim
+
+    @property
+    def input_dim(self):
+        return self._input_dim

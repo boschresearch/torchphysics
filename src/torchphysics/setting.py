@@ -111,50 +111,27 @@ class Setting(Problem, DataModule):
         if stage == 'fit' or stage is None:
             self.train_data = self._setup_stage(
                 self.get_train_conditions(), self.train_data)
-        if stage == 'validate' or stage is None:
+            self.val_data = self._setup_stage(
+                self.get_val_conditions(), self.val_data)
+        if stage == 'validate':
             self.val_data = self._setup_stage(
                 self.get_val_conditions(), self.val_data)
 
     def _setup_stage(self, conditions, data):
         for cn in data:
-            if isinstance(data[cn], dict):
-                # only input data is given
-                data[cn] = self._setup_input_data(data[cn],
-                                                  conditions[cn].track_gradients)
-            elif len(data[cn]) == 2:
-                # pairs of inputs and targets are given
-                data_dic, target = data[cn]
-                data_dic = self._setup_input_data(data_dic,
-                                                  conditions[cn].track_gradients)
-                target = self._setup_target_data(target)
-                data[cn] = data_dic, target
-            else:  # triple of inputs, targets and normals are given
-                data_dic, target, normals = data[cn]
-                data_dic = self._setup_input_data(data_dic,
-                                                  conditions[cn].track_gradients)
-                target = self._setup_target_data(target)
-                normals = self._setup_target_data(normals)
-                data[cn] = data_dic, target, normals
-        return data
-
-    def _setup_target_data(self, target):
-        if isinstance(target, np.ndarray):
-            target = torch.from_numpy(target)
-        return target
-
-    def _setup_input_data(self, data, track_gradients):
-        for vn in data:
-            if isinstance(data[vn], np.ndarray):
-                data[vn] = torch.from_numpy(data[vn])
-
-            # enable gradient tracking if necessary
-            if isinstance(track_gradients, bool):
-                data[vn].requires_grad = track_gradients
-            elif isinstance(track_gradients, Iterable):
-                data[vn].requires_grad = vn in track_gradients
-            else:
-                raise TypeError(
-                    f'track_gradients of {vn} should be either bool or iterable.')
+            for arg in data[cn]:
+                # create torch tensor if necessary
+                if isinstance(data[cn][arg], np.ndarray):
+                    data[cn][arg] = torch.from_numpy(data[cn][arg])
+                # enable gradient tracking if necessary
+                if arg in self.variables:
+                    if isinstance(conditions[cn].track_gradients, bool):
+                        data[cn][arg].requires_grad = conditions[cn].track_gradients
+                    elif isinstance(conditions[cn].track_gradients, Iterable):
+                        data[cn][arg].requires_grad = arg in conditions[cn].track_gradients
+                    else:
+                        raise TypeError(
+                            f'track_gradients of {arg} should be either bool or iterable.')
         return data
 
     def train_dataloader(self):

@@ -76,31 +76,17 @@ class PINNModule(pl.LightningModule):
         Run the model on a given input batch, without tracking gradients.
         """
         assert isinstance(inputs, Dict), "Please pass a dict of variables and data."
-        # check whether the input has the expected variables and shape
-        if self.variable_dims is None:
-            print("""The correct input variables for the model have not been
-                     set yet. This can lead to unexpected behaiour. Please train
-                     the model or set the module.variable_dims property.""")
-        try:
-            ordered_inputs = {}
-            for k in self.variable_dims:
-                if inputs[k].shape[1] != self.variable_dims[k]:
-                    print(f"""The input {k} has the wrong dimension. This can
-                              lead to unexpected behaviour.""")
-                ordered_inputs[k] = inputs[k]
-            if len(ordered_inputs) < len(inputs):
-                raise KeyError
-        except KeyError:
-            print(f"""The model was trained on Variables with different names.
-                      This can lead to unexpected behaviour.
-                      Please use Variables {self.variable_dims}.""")
+        return self.model.forward(inputs)
 
-        return self.model.forward(ordered_inputs)
+    @property
+    def output_dim(self):
+        return self.model.output_dim
+
+    @property
+    def input_dim(self):
+        return self.model.input_dim
 
     def on_train_start(self):
-        # register the variables on which the model is trained
-        self.variable_dims = {k: v.domain.dim for (
-            k, v) in self.trainer.datamodule.variables.items()}
         # log summary to tensorboard
         if self.logger is not None:
             self.logger.experiment.add_text(
@@ -121,12 +107,6 @@ class PINNModule(pl.LightningModule):
         lr_scheduler = self.scheduler['class'](
             optimizer, **self.scheduler['args'])
         return [optimizer], [lr_scheduler]
-
-    def _get_dataloader(self, conditions):
-        dataloader_dict = {}
-        for name in conditions:
-            dataloader_dict[name] = conditions[name].get_dataloader()
-        return dataloader_dict
 
     def training_step(self, batch, batch_idx):
         # maybe this slows down training a bit

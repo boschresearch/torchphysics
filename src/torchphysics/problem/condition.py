@@ -2,13 +2,12 @@
 They supply the necessary training data to the model.
 """
 import abc
-from inspect import signature
 
 import torch
-import numpy as np
 
 from . import datacreator as dc
-from ..utils.differentialoperators import normal_derivative
+from ..utils import (normal_derivative,
+                     apply_user_fun)
 
 
 class Condition(torch.nn.Module):
@@ -113,7 +112,7 @@ class DiffEqCondition(Condition):
         If False, no plots are created. If True, behaviour is defined in each condition.
     """
 
-    def __init__(self, pde, norm, name='pde',
+    def __init__(self, pde, norm, name='pde', data_fun=None,
                  sampling_strategy='random', weight=1.0,
                  dataset_size=10000, track_gradients=True,
                  data_plot_variables=False):
@@ -126,17 +125,16 @@ class DiffEqCondition(Condition):
                                                sampling_strategy=sampling_strategy)
 
     def forward(self, model, data):
-        u = model(data)
-        if self.pass_parameters:
-            err = self.pde(u, data, self.setting.parameters)
-        else:
-            err = self.pde(u, data)
+        u = model({v: data[v] for v in self.setting.variables})
+        err = apply_user_fun(self.pde,
+                             {'u': u,
+                              **data,
+                              **self.setting.parameters})
         return self.norm(err, torch.zeros_like(err))
 
     def get_data(self):
         if self.is_registered():
             self.datacreator.variables = self.setting.variables
-            self.pass_parameters = 'params' in signature(self.pde).parameters
             return self.datacreator.get_data()
         else:
             raise RuntimeError("""Conditions need to be registered in a
@@ -190,13 +188,13 @@ class DataCondition(Condition):
         self.data_u = data_u
 
     def forward(self, model, data):
-        data, target = data
-        u = model(data)
-        return self.norm(u, target)
+        u = model({v: data[v] for v in self.setting.variables})
+        return self.norm(u, data['target'])
 
     def get_data(self):
         if self.is_registered():
-            return (self.data_x, self.data_u)
+            return {**self.data_x,
+                    'target': self.data_u}
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -300,25 +298,26 @@ class DirichletCondition(BoundaryCondition):
                          data_plot_variables=data_plot_variables)
         self.dirichlet_fun = dirichlet_fun
         self.whole_batch = whole_batch
+        self.dataset_size = dataset_size
         self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
                                                   boundary_sampling_strategy=boundary_sampling_strategy)
 
     def forward(self, model, data):
-        data, target = data
-        u = model(data)
-        return self.norm(u, target)
+        u = model({v: data[v] for v in self.setting.variables})
+        return self.norm(u, data['target'])
 
     def get_data(self):
         if self.is_registered():
             self.datacreator.variables = self.setting.variables
             self.datacreator.boundary_variable = self.boundary_variable
             data = self.datacreator.get_data()
-            if self.whole_batch:
-                return (data, self.dirichlet_fun(data))
-            else:
-                return (data, apply_to_batch(self.dirichlet_fun, data))
+            return {**data,
+                    'target': apply_user_fun(self.dirichlet_fun,
+                                             data,
+                                             whole_batch=self.whole_batch,
+                                             batch_size=self.dataset_size)}
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -369,7 +368,7 @@ class NeumannCondition(BoundaryCondition):
         If False, no plots are created. If True, behaviour is defined in each condition.
     """
 
-    def __init__(self, neumann_fun, name, norm,
+    def __init__(self, neumann_fun, name, norm, whole_batch=True,
                  sampling_strategy='random', boundary_sampling_strategy='random',
                  weight=1.0, dataset_size=10000,
                  data_plot_variables=True):
@@ -377,17 +376,18 @@ class NeumannCondition(BoundaryCondition):
                          track_gradients=True,
                          data_plot_variables=data_plot_variables)
         self.neumann_fun = neumann_fun
+        self.whole_batch = whole_batch
+        self.dataset_size = dataset_size
         self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
                                                   boundary_sampling_strategy=boundary_sampling_strategy)
 
     def forward(self, model, data):
-        data, target, normals = data
-        u = model(data)
+        u = model({v: data[v] for v in self.setting.variables})
         normal_derivatives = normal_derivative(u, data[self.boundary_variable],
-                                               normals)
-        return self.norm(normal_derivatives, target)
+                                               data['normal'])
+        return self.norm(normal_derivatives, data['target'])
 
     def get_data(self):
         if self.is_registered():
@@ -396,7 +396,12 @@ class NeumannCondition(BoundaryCondition):
             data = self.datacreator.get_data()
             normals = self.setting.variables[self.boundary_variable] \
                 .domain.boundary_normal(data[self.boundary_variable])
-            return (data, self.neumann_fun(data), normals)
+            return {**data,
+                    'target': apply_user_fun(self.neumann_fun,
+                                             data,
+                                             whole_batch=self.whole_batch,
+                                             batch_size=self.dataset_size),
+                    'normal': normals}
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -417,8 +422,8 @@ class DiffEqBoundaryCondition(BoundaryCondition):
     Parameters
     ----------
     bound_condition_fun : function handle
-                                A method that takes the output and input (in the usual dictionary form) of a
-                                model, the boundary normals and additional data (given through data_fun, and 
+        A method that takes the output and input (in the usual dictionary form) of a
+        model, the boundary normals and additional data (given through data_fun, and
         only when needed) as an input. The method then computes and returns 
         the desired boundary condition.
     name : str
@@ -459,35 +464,26 @@ class DiffEqBoundaryCondition(BoundaryCondition):
 
     def __init__(self, bound_condition_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
-                 weight=1.0, dataset_size=10000, data_fun=None,
+                 weight=1.0, dataset_size=10000, data_fun=None, data_fun_whole_batch=True,
                  data_plot_variables=True):
         super().__init__(name, norm, weight=weight,
                          track_gradients=True,
                          data_plot_variables=data_plot_variables)
         self.bound_condition_fun = bound_condition_fun
         self.data_fun = data_fun
+        self.data_fun_whole_batch = data_fun_whole_batch
+        self.dataset_size = dataset_size
         self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
                                                   boundary_sampling_strategy=boundary_sampling_strategy)
 
     def forward(self, model, data):
-        if self.data_fun is None:
-            data, normals = data
-            u = model(data)
-            if self.pass_parameters:
-                err = self.bound_condition_fun(u, data, normals,
-                                               self.setting.parameters)
-            else:
-                err = self.bound_condition_fun(u, data, normals)
-        else:
-            data, target, normals = data
-            u = model(data)
-            if self.pass_parameters:
-                err = self.bound_condition_fun(u, data, normals, target,
-                                               self.setting.parameters)
-            else:
-                err = self.bound_condition_fun(u, data, normals, target)
+        u = model({v: data[v] for v in self.setting.variables})
+        err = apply_user_fun(self.bound_condition_fun,
+                             {'u': u,
+                              **data,
+                              **self.setting.parameters})
         return self.norm(err, torch.zeros_like(err))
 
     def get_data(self):
@@ -495,15 +491,20 @@ class DiffEqBoundaryCondition(BoundaryCondition):
             self.datacreator.variables = self.setting.variables
             self.datacreator.boundary_variable = self.boundary_variable
             data = self.datacreator.get_data()
+
             normals = self.setting.variables[self.boundary_variable] \
                 .domain.boundary_normal(data[self.boundary_variable])
-            self.pass_parameters = self.pass_parameters = 'params' in signature(
-                self.bound_condition_fun).parameters
 
             if self.data_fun is None:
-                return (data, normals)
+                return {**data,
+                        'normals': normals}
             else:
-                return (data, self.data_fun(data), normals)
+                return {**data,
+                        'target': apply_user_fun(self.data_fun,
+                                                 {**data, 'normals': normals},
+                                                 whole_batch=self.data_fun_whole_batch,
+                                                 batch_size=self.dataset_size),
+                        'normals': normals}
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -517,13 +518,3 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         dct['sampling_strategy'] = self.datacreator.sampling_strategy
         dct['boundary_sampling_strategy'] = self.datacreator.boundary_sampling_strategy
         return dct
-
-
-def apply_to_batch(fun, batch):
-    k = list(batch.keys())
-    batch_size = np.shape(batch[k[0]])[0]
-    out_len = len(fun({v: batch[v][0, :] for v in batch}))
-    out = np.zeros((batch_size, out_len))
-    for i in range(batch_size):
-        out[i, :] = fun({v: batch[v][i, :] for v in batch})
-    return out.astype(np.float32)
