@@ -829,7 +829,7 @@ def test_forward_diffEqBoundary_condition_with_MSE():
     data = {'x': torch.FloatTensor([[1, 1], [1, 0]]),
             'data': torch.FloatTensor([[1, 1], [1, 0]])}
     normals = [[1, 0], [1, 0]]
-    data_comb = {**data, 'normal': normal}
+    data_comb = {**data, 'normal': normals}
     cond = create_arbitrary()
     x = Variable(name='x', domain=None)
     setting = Setting(variables={'x': x})
