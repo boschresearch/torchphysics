@@ -88,7 +88,7 @@ def test_forward_diffeqcondition_with_MSE():
 
 def test_forward_diffeqcondition_with_L1Loss():
     inp = {'x': torch.FloatTensor([[1, 1], [1, 0]]),
-            'data': torch.FloatTensor([[1, 1], [1, 0]])}
+           'data': torch.FloatTensor([[1, 1], [1, 0]])}
     cond = condi.DiffEqCondition(pde=condition_function,
                                  norm=torch.nn.L1Loss(reduction='sum'))
     x = Variable(name='x', domain=None)
@@ -97,7 +97,7 @@ def test_forward_diffeqcondition_with_L1Loss():
     out = cond.forward(model_function, inp)
     assert out == 0
     inp = {'x': torch.FloatTensor([[1, 1], [1, 0]]),
-            'out': torch.FloatTensor([[0, 1], [1, 0]])}
+           'data': torch.FloatTensor([[0, 1], [1, 0]])}
     out = cond.forward(model_function, inp)
     assert out == 1
 
@@ -299,7 +299,8 @@ def test_get_data_datacondition():
 
 def test_forward_datacondition():
     cond = create_data_condition()
-    setting = Setting(variables={})
+    x = Variable(name='x', domain=None)
+    setting = Setting(variables={'x': x})
     cond.setting = setting
     data = cond.get_data()
     out = cond.forward(model_function, data)
@@ -823,12 +824,12 @@ def test_get_data_with_target_diffEqBoundary_condition():
 
 
 def test_forward_diffEqBoundary_condition_with_MSE():
-    def condition_function(model, data, normals):
+    def condition_function(model, data, normal):
         return model - data['out']
     data = {'x': torch.FloatTensor([[1, 1], [1, 0]]),
             'data': torch.FloatTensor([[1, 1], [1, 0]])}
     normals = [[1, 0], [1, 0]]
-    data_comb = {**data, 'normal': normals}
+    data_comb = {**data, 'normal': normal}
     cond = create_arbitrary()
     x = Variable(name='x', domain=None)
     setting = Setting(variables={'x': x})

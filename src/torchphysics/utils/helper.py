@@ -72,3 +72,4 @@ def apply_user_fun(f, args, whole_batch=True, batch_size=None):
         except KeyError:
             print(f"""The user-defined function '{f.__name__}' expects arguments {str(signature(f))}.
                       However, only {args.keys()} are given in the library.""")
+        raise KeyError
