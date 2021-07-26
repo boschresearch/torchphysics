@@ -120,6 +120,7 @@ class DiffEqCondition(Condition):
                          track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
         self.pde = pde
+        self.data_fun = data_fun
         self.datacreator = dc.InnerDataCreator(variables=None,
                                                dataset_size=dataset_size,
                                                sampling_strategy=sampling_strategy)
@@ -135,7 +136,15 @@ class DiffEqCondition(Condition):
     def get_data(self):
         if self.is_registered():
             self.datacreator.variables = self.setting.variables
-            return self.datacreator.get_data()
+            inp_data = self.datacreator.get_data()
+            if self.data_fun is None:
+                return inp_data
+            else:
+                return {**inp_data,
+                        'data': apply_user_fun(self.data_fun,
+                                               inp_data,
+                                               whole_batch=self.data_fun_whole_batch,
+                                               batch_size=self.dataset_size)}
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -490,21 +499,21 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         if self.is_registered():
             self.datacreator.variables = self.setting.variables
             self.datacreator.boundary_variable = self.boundary_variable
-            data = self.datacreator.get_data()
+            inp_data = self.datacreator.get_data()
 
             normals = self.setting.variables[self.boundary_variable] \
-                .domain.boundary_normal(data[self.boundary_variable])
+                .domain.boundary_normal(inp_data[self.boundary_variable])
 
             if self.data_fun is None:
-                return {**data,
-                        'normals': normals}
+                return {**inp_data,
+                        'normal': normals}
             else:
-                return {**data,
-                        'target': apply_user_fun(self.data_fun,
-                                                 {**data, 'normals': normals},
-                                                 whole_batch=self.data_fun_whole_batch,
-                                                 batch_size=self.dataset_size),
-                        'normals': normals}
+                return {**inp_data,
+                        'data': apply_user_fun(self.data_fun,
+                                               {**inp_data, 'normal': normals},
+                                               whole_batch=self.data_fun_whole_batch,
+                                               batch_size=self.dataset_size),
+                        'normal': normals}
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
