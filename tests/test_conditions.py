@@ -11,7 +11,7 @@ from torchphysics.problem.variables.variable import Variable
 # Helper functions for testing
 
 
-def model_function(**input):
+def model_function(input):
     return input['x']
 
 
@@ -75,6 +75,9 @@ def test_forward_diffeqcondition_with_MSE():
            'data': torch.FloatTensor([[1, 1], [1, 0]])}
     cond = condi.DiffEqCondition(pde=condition_function,
                                  norm=torch.nn.MSELoss())
+    x = Variable(name='x', domain=None)
+    setting = Setting(variables={'x': x})
+    cond.setting = setting
     out = cond.forward(model_function, inp)
     assert out == 0
     inp = {'x': torch.FloatTensor([[1, 1], [1, 0]]),
@@ -88,6 +91,9 @@ def test_forward_diffeqcondition_with_L1Loss():
             'data': torch.FloatTensor([[1, 1], [1, 0]])}
     cond = condi.DiffEqCondition(pde=condition_function,
                                  norm=torch.nn.L1Loss(reduction='sum'))
+    x = Variable(name='x', domain=None)
+    setting = Setting(variables={'x': x})
+    cond.setting = setting
     out = cond.forward(model_function, inp)
     assert out == 0
     inp = {'x': torch.FloatTensor([[1, 1], [1, 0]]),
@@ -809,11 +815,11 @@ def test_get_data_with_target_diffEqBoundary_condition():
     cond.data_fun = dirichlet_fun
     inp = cond.get_data()
     assert np.shape(inp['x']) == (5, 1)
-    assert np.shape(inp['target']) == (5, 1)
+    assert np.shape(inp['data']) == (5, 1)
     assert np.shape(inp['t']) == (5, 1)
     assert np.equal(inp['normal'], [[-1], [-1], [-1], [-1], [-1]]).all()
     assert not x.domain.is_inside(inp['t']).all()
-    assert np.equal(inp['x'], inp['target']).all()
+    assert np.equal(inp['x'], inp['data']).all()
 
 
 def test_forward_diffEqBoundary_condition_with_MSE():
