@@ -4,6 +4,7 @@ They supply the necessary training data to the model.
 import abc
 
 import torch
+import numpy as np
 
 from . import datacreator as dc
 from ..utils import (normal_derivative,
@@ -127,10 +128,10 @@ class DiffEqCondition(Condition):
 
     def forward(self, model, data):
         u = model({v: data[v] for v in self.setting.variables})
-        err = apply_user_fun(self.pde,
-                             {'u': u,
-                              **data,
-                              **self.setting.parameters})
+        _, err = apply_user_fun(self.pde,
+                                {'u': u,
+                                 **data,
+                                 **self.setting.parameters})
         return self.norm(err, torch.zeros_like(err))
 
     def get_data(self):
@@ -308,6 +309,7 @@ class DirichletCondition(BoundaryCondition):
         self.dirichlet_fun = dirichlet_fun
         self.whole_batch = whole_batch
         self.dataset_size = dataset_size
+        self.dataset_len = get_data_len(dataset_size)
         self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
@@ -321,12 +323,13 @@ class DirichletCondition(BoundaryCondition):
         if self.is_registered():
             self.datacreator.variables = self.setting.variables
             self.datacreator.boundary_variable = self.boundary_variable
-            data = self.datacreator.get_data()
-            return {**data,
-                    'target': apply_user_fun(self.dirichlet_fun,
-                                             data,
-                                             whole_batch=self.whole_batch,
-                                             batch_size=self.dataset_size)}
+            inp_data = self.datacreator.get_data()
+            inp_data, target = apply_user_fun(self.dirichlet_fun,
+                                              inp_data,
+                                              whole_batch=self.whole_batch,
+                                              batch_size=self.dataset_len)
+            return {**inp_data,
+                    'target': target}
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -387,6 +390,7 @@ class NeumannCondition(BoundaryCondition):
         self.neumann_fun = neumann_fun
         self.whole_batch = whole_batch
         self.dataset_size = dataset_size
+        self.dataset_len = get_data_len(dataset_size)
         self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
@@ -402,14 +406,15 @@ class NeumannCondition(BoundaryCondition):
         if self.is_registered():
             self.datacreator.variables = self.setting.variables
             self.datacreator.boundary_variable = self.boundary_variable
-            data = self.datacreator.get_data()
+            inp_data = self.datacreator.get_data()
             normals = self.setting.variables[self.boundary_variable] \
-                .domain.boundary_normal(data[self.boundary_variable])
-            return {**data,
-                    'target': apply_user_fun(self.neumann_fun,
-                                             data,
-                                             whole_batch=self.whole_batch,
-                                             batch_size=self.dataset_size),
+                .domain.boundary_normal(inp_data[self.boundary_variable])
+            inp_data, target = apply_user_fun(self.neumann_fun,
+                                              inp_data,
+                                              whole_batch=self.whole_batch,
+                                              batch_size=self.dataset_len)
+            return {**inp_data,
+                    'target': target,
                     'normal': normals}
         else:
             raise RuntimeError("""Conditions need to be registered in a
@@ -482,6 +487,7 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         self.data_fun = data_fun
         self.data_fun_whole_batch = data_fun_whole_batch
         self.dataset_size = dataset_size
+        self.dataset_len = get_data_len(dataset_size)
         self.datacreator = dc.BoundaryDataCreator(variables=None,
                                                   dataset_size=dataset_size,
                                                   sampling_strategy=sampling_strategy,
@@ -489,10 +495,10 @@ class DiffEqBoundaryCondition(BoundaryCondition):
 
     def forward(self, model, data):
         u = model({v: data[v] for v in self.setting.variables})
-        err = apply_user_fun(self.bound_condition_fun,
-                             {'u': u,
-                              **data,
-                              **self.setting.parameters})
+        _, err = apply_user_fun(self.bound_condition_fun,
+                                {'u': u,
+                                 **data,
+                                 **self.setting.parameters})
         return self.norm(err, torch.zeros_like(err))
 
     def get_data(self):
@@ -508,11 +514,12 @@ class DiffEqBoundaryCondition(BoundaryCondition):
                 return {**inp_data,
                         'normal': normals}
             else:
+                inp_data, data = apply_user_fun(self.data_fun,
+                                                {**inp_data, 'normal': normals},
+                                                whole_batch=self.data_fun_whole_batch,
+                                                batch_size=self.dataset_len)
                 return {**inp_data,
-                        'data': apply_user_fun(self.data_fun,
-                                               {**inp_data, 'normal': normals},
-                                               whole_batch=self.data_fun_whole_batch,
-                                               batch_size=self.dataset_size),
+                        'data': data,
                         'normal': normals}
         else:
             raise RuntimeError("""Conditions need to be registered in a
@@ -527,3 +534,15 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         dct['sampling_strategy'] = self.datacreator.sampling_strategy
         dct['boundary_sampling_strategy'] = self.datacreator.boundary_sampling_strategy
         return dct
+
+
+def get_data_len(size):
+    if isinstance(size, int):
+        return size
+    elif isinstance(size, (tuple, list)):
+        return np.prod(size)
+    elif isinstance(size, dict):
+        return np.prod(list(size.values()))
+    else:
+        raise ValueError(f"""'dataset_size should be one of int,
+                             tuple, list or dict. Got {type(size)}.""")

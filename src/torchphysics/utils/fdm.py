@@ -73,7 +73,7 @@ def _set_initial_condition(u, domain, time, initial_condition):
             u0[i, j] = apply_user_fun(initial_condition,
                                       dic,
                                       whole_batch=False,
-                                      batch_size=1)
+                                      batch_size=1)[1]
     return u0
 
 

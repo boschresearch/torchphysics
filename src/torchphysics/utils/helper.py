@@ -6,6 +6,13 @@ from inspect import signature
 
 import numpy as np
 
+# TODO: These methods should be reimplemented in a clearer way.
+# It would be better to seperate all performed steps into single
+# methods that are called by summarizing methods.
+# E.g. a function that only prepares the inputs for some other function.
+# And then a function that prepares everything for a data function.
+# This is too confusing by now.
+
 
 def apply_to_batch(f, batch_size, **batch):
     """
@@ -46,8 +53,21 @@ def apply_to_batch(f, batch_size, **batch):
                 pass_dict[v] = batch[v][i]
             else:
                 pass_dict[v] = batch[v]
-        out[i, :] = f(**pass_dict)
-    return out.astype(np.float32)
+        o = f(**pass_dict)
+        if o is None:
+            out[i, :] = np.nan
+        else:
+            out[i, :] = o
+    # remove data that evaluated to NaN
+    keep = ~(np.isnan(out).any(axis=tuple(range(1, out_len))))
+    if np.any(~keep):
+        print(f"""Warning: {np.sum(~keep)} values will be removed from the data because
+                  the given data_fun evaluated to None or NaN. Please make sure this is
+                  the desired behaviour.""")
+    for v in batch:
+        batch[v] = batch[v][keep]
+    out = out[keep]
+    return batch, out.astype(np.float32)
 
 
 def apply_user_fun(f, args, whole_batch=True, batch_size=None):
@@ -58,7 +78,7 @@ def apply_user_fun(f, args, whole_batch=True, batch_size=None):
     # first case: the user function can take arbitrary args:
     if '**' in str(signature(f)):
         if whole_batch:
-            return f(**args)
+            return args, f(**args)
         else:
             return apply_to_batch(f, batch_size=batch_size, **args)
     # second case: we only pass the args needed by the user function
@@ -66,7 +86,7 @@ def apply_user_fun(f, args, whole_batch=True, batch_size=None):
         try:
             inp = {k: args[k] for k in dict(signature(f).parameters)}
             if whole_batch:
-                return f(**inp)
+                return args, f(**inp)
             else:
                 return apply_to_batch(f, batch_size=batch_size, **inp)
         except KeyError:

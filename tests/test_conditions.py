@@ -824,8 +824,8 @@ def test_get_data_with_target_diffEqBoundary_condition():
 
 
 def test_forward_diffEqBoundary_condition_with_MSE():
-    def condition_function(model, data, normal):
-        return model - data['out']
+    def condition_function(u, data, normal):
+        return u - data['out']
     data = {'x': torch.FloatTensor([[1, 1], [1, 0]]),
             'data': torch.FloatTensor([[1, 1], [1, 0]])}
     normals = [[1, 0], [1, 0]]
