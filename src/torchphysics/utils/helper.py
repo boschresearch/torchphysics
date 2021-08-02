@@ -2,6 +2,7 @@
 Collection of useful helper functions.
 """
 from typing import Iterable
+import inspect
 from inspect import signature
 
 import numpy as np
@@ -14,6 +15,13 @@ import numpy as np
 # This is too confusing by now.
 
 
+def is_batch(arg, batch_size):
+    # NOTE: this is not 100% safe, since in theory, some arguments
+    #       could consist of batch_size elements
+    #       but for now, we'll keep the length as criterion
+    return isinstance(arg, np.ndarray) and len(arg) == batch_size
+
+
 def apply_to_batch(f, batch_size, **batch):
     """
     Applies a given function that is defined point-wise to a dictionary,
@@ -24,13 +32,10 @@ def apply_to_batch(f, batch_size, **batch):
     """
     assert batch_size is not None, "batch_size should be specified!"
 
-    def is_batch(arg):
-        return isinstance(arg, np.ndarray) and len(batch[v]) == batch_size
-
     # prepare output array
     pass_dict = {}
     for v in batch:
-        if is_batch(batch[v]):
+        if is_batch(batch[v], batch_size):
             pass_dict[v] = batch[v][0]
         else:
             pass_dict[v] = batch[v]
@@ -46,10 +51,7 @@ def apply_to_batch(f, batch_size, **batch):
     for i in range(batch_size):
         pass_dict = {}
         for v in batch:
-            if is_batch(batch[v]):
-                # NOTE: this is not 100% safe, since in theory, some arguments
-                #       could consist of batch_size elements
-                #       but for now, we'll keep the length as criterion
+            if is_batch(batch[v], batch_size):
                 pass_dict[v] = batch[v][i]
             else:
                 pass_dict[v] = batch[v]
@@ -58,23 +60,15 @@ def apply_to_batch(f, batch_size, **batch):
             out[i, :] = np.nan
         else:
             out[i, :] = o
-    # remove data that evaluated to NaN
-    keep = ~(np.isnan(out).any(axis=tuple(range(1, out_len))))
-    if np.any(~keep):
-        print(f"""Warning: {np.sum(~keep)} values will be removed from the data because
-                  the given data_fun evaluated to None or NaN. Please make sure this is
-                  the desired behaviour.""")
-    for v in batch:
-        batch[v] = batch[v][keep]
-    out = out[keep]
-    return batch, out.astype(np.float32)
+    return out.astype(np.float32)
 
 
+"""
 def apply_user_fun(f, args, whole_batch=True, batch_size=None):
-    """
+    ""
     helper method that passes only the required arguments to
     a user-defined function
-    """
+    ""
     # first case: the user function can take arbitrary args:
     if '**' in str(signature(f)):
         if whole_batch:
@@ -90,6 +84,26 @@ def apply_user_fun(f, args, whole_batch=True, batch_size=None):
             else:
                 return apply_to_batch(f, batch_size=batch_size, **inp)
         except KeyError:
-            print(f"""The user-defined function '{f.__name__}' expects arguments {str(signature(f))}.
-                      However, only {args.keys()} are given in the library.""")
+            print(f"The user-defined function '{f.__name__}' expects arguments {str(signature(f))}.
+                      However, only {args.keys()} are given in the library.")
         raise KeyError
+"""
+
+
+def prepare_user_fun_input(fun, args):
+    # first case: the user function can take arbitrary args:
+    if '**' in str(signature(fun)):
+        return args
+    # second case: we only pass the args needed by the user function
+    else:
+        inp = {}
+        for k in dict(signature(fun).parameters):
+            try:
+                inp[k] = args[k]
+            except KeyError:
+                if dict(signature(fun).parameters)[k].default == inspect._empty:
+                    print(f"""The user-defined function '{fun.__name__}' expects arguments
+                              {str(signature(fun))}.
+                              However, only {args.keys()} are given in the library.""")
+                    raise KeyError
+        return inp

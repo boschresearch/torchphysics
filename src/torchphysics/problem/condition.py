@@ -8,7 +8,9 @@ import numpy as np
 
 from . import datacreator as dc
 from ..utils import (normal_derivative,
-                     apply_user_fun)
+                     prepare_user_fun_input,
+                     apply_to_batch,
+                     is_batch)
 
 
 class Condition(torch.nn.Module):
@@ -100,7 +102,7 @@ class DiffEqCondition(Condition):
         training loss. Defaults to 1.
     dataset_size : int, list, tuple or dic
         Amount of samples in the used dataset. The dataset is generated once at the
-        beginning of the training. 
+        beginning of the training.
         If an int is given, the methode will use at least as many data points as the
         number. The number of desired points can also be uniquely picked for each
         variable, if a list, tuple or dic is given as an input. Then the whole number
@@ -128,10 +130,11 @@ class DiffEqCondition(Condition):
 
     def forward(self, model, data):
         u = model({v: data[v] for v in self.setting.variables})
-        _, err = apply_user_fun(self.pde,
-                                {'u': u,
-                                 **data,
-                                 **self.setting.parameters})
+        inp = prepare_user_fun_input(self.pde,
+                                     {'u': u,
+                                      **data,
+                                      **self.setting.parameters})
+        err = self.pde(**inp)
         return self.norm(err, torch.zeros_like(err))
 
     def get_data(self):
@@ -141,11 +144,12 @@ class DiffEqCondition(Condition):
             if self.data_fun is None:
                 return inp_data
             else:
+                inp_data, data = apply_data_fun(self.data_fun,
+                                                inp_data,
+                                                whole_batch=self.data_fun_whole_batch,
+                                                batch_size=self.dataset_len)
                 return {**inp_data,
-                        'data': apply_user_fun(self.data_fun,
-                                               inp_data,
-                                               whole_batch=self.data_fun_whole_batch,
-                                               batch_size=self.dataset_size)}
+                        'data': data}
         else:
             raise RuntimeError("""Conditions need to be registered in a
                                   Variable or Problem.""")
@@ -289,7 +293,7 @@ class DirichletCondition(BoundaryCondition):
         training loss. Defaults to 1.
     dataset_size : int, list, tuple or dic
         Amount of samples in the used dataset. The dataset is generated once at the
-        beginning of the training. 
+        beginning of the training.
         If an int is given, the methode will use at least as many data points as the
         number. The number of desired points can also be uniquely picked for each
         variable, if a list, tuple or dic is given as an input. Then the whole number
@@ -324,7 +328,7 @@ class DirichletCondition(BoundaryCondition):
             self.datacreator.variables = self.setting.variables
             self.datacreator.boundary_variable = self.boundary_variable
             inp_data = self.datacreator.get_data()
-            inp_data, target = apply_user_fun(self.dirichlet_fun,
+            inp_data, target = apply_data_fun(self.dirichlet_fun,
                                               inp_data,
                                               whole_batch=self.whole_batch,
                                               batch_size=self.dataset_len)
@@ -370,7 +374,7 @@ class NeumannCondition(BoundaryCondition):
         training loss. Defaults to 1.
     dataset_size : int, list, tuple or dic
         Amount of samples in the used dataset. The dataset is generated once at the
-        beginning of the training. 
+        beginning of the training.
         If an int is given, the methode will use at least as many data points as the
         number. The number of desired points can also be uniquely picked for each
         variable, if a list, tuple or dic is given as an input. Then the whole number
@@ -409,7 +413,7 @@ class NeumannCondition(BoundaryCondition):
             inp_data = self.datacreator.get_data()
             normals = self.setting.variables[self.boundary_variable] \
                 .domain.boundary_normal(inp_data[self.boundary_variable])
-            inp_data, target = apply_user_fun(self.neumann_fun,
+            inp_data, target = apply_data_fun(self.neumann_fun,
                                               inp_data,
                                               whole_batch=self.whole_batch,
                                               batch_size=self.dataset_len)
@@ -436,8 +440,9 @@ class DiffEqBoundaryCondition(BoundaryCondition):
     Parameters
     ----------
     bound_condition_fun : function handle
-        A method that takes the output and input (in the usual dictionary form) of a
-        model, the boundary normals and additional data (given through data_fun, and
+        A method that takes the output and input (in the usual dictionary form)
+        of a model, the boundary normals and additional data (given through
+        data_fun, and
         only when needed) as an input. The method then computes and returns 
         the desired boundary condition.
     name : str
@@ -458,7 +463,7 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         training loss. Defaults to 1.
     dataset_size : int, list, tuple or dic
         Amount of samples in the used dataset. The dataset is generated once at the
-        beginning of the training. 
+        beginning of the training.
         If an int is given, the methode will use at least as many data points as the
         number. The number of desired points can also be uniquely picked for each
         variable, if a list, tuple or dic is given as an input. Then the whole number
@@ -478,8 +483,8 @@ class DiffEqBoundaryCondition(BoundaryCondition):
 
     def __init__(self, bound_condition_fun, name, norm,
                  sampling_strategy='random', boundary_sampling_strategy='random',
-                 weight=1.0, dataset_size=10000, data_fun=None, data_fun_whole_batch=True,
-                 data_plot_variables=True):
+                 weight=1.0, dataset_size=10000, data_fun=None,
+                 data_fun_whole_batch=True, data_plot_variables=True):
         super().__init__(name, norm, weight=weight,
                          track_gradients=True,
                          data_plot_variables=data_plot_variables)
@@ -495,10 +500,11 @@ class DiffEqBoundaryCondition(BoundaryCondition):
 
     def forward(self, model, data):
         u = model({v: data[v] for v in self.setting.variables})
-        _, err = apply_user_fun(self.bound_condition_fun,
-                                {'u': u,
-                                 **data,
-                                 **self.setting.parameters})
+        inp = prepare_user_fun_input(self.bound_condition_fun,
+                                     {'u': u,
+                                      **data,
+                                      **self.setting.parameters})
+        err = self.bound_condition_fun(**inp)
         return self.norm(err, torch.zeros_like(err))
 
     def get_data(self):
@@ -514,7 +520,7 @@ class DiffEqBoundaryCondition(BoundaryCondition):
                 return {**inp_data,
                         'normal': normals}
             else:
-                inp_data, data = apply_user_fun(self.data_fun,
+                inp_data, data = apply_data_fun(self.data_fun,
                                                 {**inp_data, 'normal': normals},
                                                 whole_batch=self.data_fun_whole_batch,
                                                 batch_size=self.dataset_len)
@@ -534,6 +540,36 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         dct['sampling_strategy'] = self.datacreator.sampling_strategy
         dct['boundary_sampling_strategy'] = self.datacreator.boundary_sampling_strategy
         return dct
+
+
+def apply_data_fun(f, args, whole_batch=True, batch_size=None):
+    # typical steps to apply a user-defined data function:
+    # 1) filter the input arguments required by the given function
+    inp = prepare_user_fun_input(f, args)
+    # 2) if the function is defined entry-wise, we wrap it in a for loop
+    if whole_batch:
+        out = f(**inp)
+    else:
+        out = apply_to_batch(f, batch_size=batch_size, **inp)
+    # 3) data points that evaluated to None or NaN should not be used
+    if whole_batch:
+        batch_size = len(out)
+    args, out = remove_nan(args, out, batch_size)
+    return args, out
+
+
+def remove_nan(inp, out, batch_size):
+    # remove input and output data where the operation evaluated to NaN
+    keep = ~(np.isnan(out).any(axis=tuple(range(1, len(np.shape(out))))))
+    if np.any(~keep):
+        print(f"""Warning: {np.sum(~keep)} values will be removed from the data because
+                  the given data_fun evaluated to None or NaN. Please make sure this is
+                  the desired behaviour.""")
+    for v in inp:
+        if is_batch(inp[v], batch_size):
+            inp[v] = inp[v][keep]
+    out = out[keep]
+    return inp, out
 
 
 def get_data_len(size):

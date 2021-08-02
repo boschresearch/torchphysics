@@ -4,7 +4,7 @@ Right now really bad and pretty specific for the heat equation example
 '''
 import numpy as np
 
-from .helper import apply_user_fun
+from .helper import prepare_user_fun_input, apply_to_batch
 
 
 def FDM(domain_dic, step_width_dic, time_interval, variable_list, initial_condition):
@@ -70,10 +70,10 @@ def _set_initial_condition(u, domain, time, initial_condition):
     for i in range(len(domain[0])):
         for j in range(len(domain[1])):
             dic['x'] = np.array([domain[0][i], domain[1][j]]).reshape(-1, 2)
-            u0[i, j] = apply_user_fun(initial_condition,
-                                      dic,
-                                      whole_batch=False,
-                                      batch_size=1)[1]
+            input_args = prepare_user_fun_input(initial_condition, dic)
+            u0[i, j] = apply_to_batch(initial_condition,
+                                      batch_size=1,
+                                      **input_args)
     return u0
 
 

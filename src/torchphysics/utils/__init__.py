@@ -7,4 +7,4 @@ from .differentialoperators import (laplacian,
                                     convective,
                                     normal_derivative)
 
-from .helper import apply_to_batch, apply_user_fun
+from .helper import apply_to_batch, prepare_user_fun_input, is_batch
