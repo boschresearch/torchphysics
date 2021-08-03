@@ -7,6 +7,7 @@ from matplotlib import animation as matplotani
 import torchphysics.utils.plot as plt
 import torchphysics.utils.animation as ani  
 from torchphysics.problem.variables import Variable
+from torchphysics.problem.domain.domain_operations import Cut
 from torchphysics.problem.domain.domain1D import Interval
 from torchphysics.problem.domain.domain2D import (Rectangle, Polygon2D) 
 from torchphysics.models.fcn import SimpleFCN
@@ -74,19 +75,7 @@ def test_create_input_dic():
                                    all_variables={'x': 1, 't': 1},
                                    device='cpu')
     assert output['x'] == 3
-    assert torch.equal(output['t'], 3*torch.ones((20, 1)))
-
-
-def test_triangle_in_domain():
-    domain = Rectangle([0, 0], [1, 0], [0, 1])
-    t = plt.__HelperTriangle([0.5, 0.5], [0.7, 0.7], [0.4, 0.6])
-    assert plt._check_triangle_inside(t, domain)
-    t = plt.__HelperTriangle([0.5, 0.5], [0.7, 0.7], [1.4, 0.6])
-    assert not plt._check_triangle_inside(t, domain)    
-    domain = Polygon2D(corners=[[0, 0], [0.25, 0], [0.25, 0.5], [0.75, 0.5],
-                                [0.75, 0], [1, 0], [1, 1], [0, 1]])
-    t = plt.__HelperTriangle([0.25, 0.25], [0.7, 0.7], [0.5, 0.6]) 
-    assert not plt._check_triangle_inside(t, domain)                            
+    assert torch.equal(output['t'], 3*torch.ones((20, 1)))                         
 
 
 def test_triangulation_on_rect():
@@ -212,6 +201,19 @@ def test_2D_quiver():
     fig = plotter.plot(model=model) 
 
 
+def test_quiver_2D_for_complex_domain():
+    C = Cut(Rectangle([0, 0], [1, 0], [0, 2]), Rectangle([0,0], [0.5, 0], [0, 0.5]))
+    R = Variable(name='R', domain=C)
+    model = SimpleFCN(input_dim=4, width=5, depth=1, output_dim=3)      
+    fig = plt.quiver2D(model, plot_variable=R, angle=[0],
+                       points=10, all_variables=None, device='cpu',
+                       plot_output_entry=[0,1], dic_for_other_variables={'D':[0,1]})
+    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert fig.axes[0].get_xlabel() == 'R_1'
+    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert fig.axes[0].get_ylabel() == 'R_2'
+
+
 def test_3D_curve():
     I = Variable(name='i', domain=Interval(-1, 2))
     plotter = plt.Plotter(plot_variables=I, points=20,
@@ -224,6 +226,37 @@ def test_3D_curve():
     plotter = plt.Plotter(plot_variables=I, points=10, plot_output_entries=-1)
     model = SimpleFCN(input_dim=1, width=5, depth=1, output_dim=2)
     fig = plotter.plot(model=model) 
+
+
+def test_contour_2D():
+    R = Variable(name='R', domain=Rectangle([0, 0], [1, 0], [0, 2]))
+    model = SimpleFCN(input_dim=2, width=5, depth=1, output_dim=4)      
+    fig = plt.contour_2D(model, plot_variable=R, angle=0,
+                         points=10, all_variables=None,
+                         device='cpu', plot_output_entry=[0], 
+                         dic_for_other_variables=None)
+    assert fig.axes[0].get_xlim() == (-0.0, 1.0)
+    assert fig.axes[0].get_xlabel() == 'R_1'
+    assert fig.axes[0].get_ylim() == (-0, 2)
+    assert fig.axes[0].get_ylabel() == 'R_2'
+    # with extra input 
+    model = SimpleFCN(input_dim=4, width=5, depth=1, output_dim=2)      
+    fig = plt.contour_2D(model, plot_variable=R, angle=0,
+                         points=10, all_variables=None, device='cpu',
+                         plot_output_entry=[0,1], dic_for_other_variables={'D':[0,1]})
+
+
+def test_contour_2D_for_complex_domain():
+    C = Cut(Rectangle([0, 0], [1, 0], [0, 2]), Rectangle([0,0], [0.5, 0], [0, 0.5]))
+    R = Variable(name='R', domain=C)
+    model = SimpleFCN(input_dim=4, width=5, depth=1, output_dim=3)      
+    fig = plt._plot(model, plot_variables=R, plot_type='contour_surface',
+                    points=10, plot_output_entries=[0,1],
+                    dic_for_other_variables={'D':[0,1]})
+    assert fig.axes[0].get_xlim() == (-0.0, 1.0)
+    assert fig.axes[0].get_xlabel() == 'R_1'
+    assert fig.axes[0].get_ylim() == (-0, 2)
+    assert fig.axes[0].get_ylabel() == 'R_2'
 
 
 # Test animation
@@ -306,6 +339,68 @@ def test_ani_quiver_2D():
     _, animation = ani.animation(model, plot_variables=R, domain_points=10,
                                  animation_variable=I2, frame_number=4, 
                                  dic_for_other_variables={'D': [1, 2]})
+
+
+def test_ani_quiver_2D_for_complex_domain():
+    C = Cut(Rectangle([0, 0], [1, 0], [0, 2]), Rectangle([0,0], [0.5, 0], [0, 0.5]))
+    R = Variable(name='R', domain=C)
+    I2 = Variable(name='t', domain=Interval(0, 2))
+    model = SimpleFCN(input_dim=3, width=5, depth=1, output_dim=3)      
+    fig, animation = ani.animation(model, plot_variables=R, domain_points=10,
+                                   animation_variable=I2,
+                                   frame_number=1, plot_output_entries=[0, 2])
+    assert isinstance(animation, matplotani.FuncAnimation)
+    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert fig.axes[0].get_xlabel() == 'R_1'
+    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert fig.axes[0].get_ylabel() == 'R_2'
+
+
+def test_ani_contour_2D():
+    R = Variable(name='R', domain=Rectangle([0, 0], [1, 0], [0, 2]))
+    I2 = Variable(name='t', domain=Interval(0, 2))
+    model = SimpleFCN(input_dim=3, width=5, depth=1, output_dim=4)      
+    fig, animation = ani.animation(model, plot_variables=R,
+                                   domain_points=10,
+                                   animation_variable=I2, ani_speed=5,
+                                   frame_number=2, device='cpu',
+                                   plot_output_entries=[0,1], 
+                                   ani_type='contour_surface')
+    assert isinstance(animation, matplotani.FuncAnimation)
+    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert fig.axes[0].get_xlabel() == 'R_1'
+    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert fig.axes[0].get_ylabel() == 'R_2'
+    animation.save('test.gif')
+    os.remove('test.gif')
+    # with extra input 
+    model = SimpleFCN(input_dim=5, width=5, depth=1, output_dim=2)      
+    fig, animation = ani.animation_contour_2D(model, plot_variable=R,
+                                              points=10, all_variables=None,
+                                              animation_variable=I2,
+                                              ani_speed=5, angle=0,
+                                              frame_number=1, device='cpu',
+                                              plot_output_entry=[0,1], 
+                                              dic_for_other_variables={'D':[0,1]})
+
+
+def test_ani_contour_2D_for_complex_domain():
+    C = Cut(Rectangle([0, 0], [1, 0], [0, 2]), Rectangle([0,0], [0.5, 0], [0, 0.5]))
+    R = Variable(name='R', domain=C)
+    I2 = Variable(name='t', domain=Interval(0, 2))
+    model = SimpleFCN(input_dim=3, width=5, depth=1, output_dim=3)      
+    fig, animation = ani.animation_contour_2D(model, plot_variable=R,
+                                              points=10, all_variables=None,
+                                              animation_variable=I2,
+                                              ani_speed=1, angle=0,
+                                              frame_number=1, device='cpu',
+                                              plot_output_entry=[0], 
+                                              dic_for_other_variables=None)
+    assert isinstance(animation, matplotani.FuncAnimation)
+    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert fig.axes[0].get_xlabel() == 'R_1'
+    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert fig.axes[0].get_ylabel() == 'R_2'
 
 
 def test_ani_curve_3D():
