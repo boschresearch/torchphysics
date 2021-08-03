@@ -228,7 +228,7 @@ class Rectangle(Domain):
         """
         rect = patches.Rectangle((self.corner_dl), self.length_lr, self.length_td, 
                                  angle=np.rad2deg(np.arccos(-self.normal_lr[0])+np.pi),
-                                 facecolor='white', edgecolor='black',
+                                 facecolor='none', edgecolor='black',
                                  linewidth=2, linestyle='--')
         return rect
                             
@@ -349,7 +349,7 @@ class Circle(Domain):
             A matplotlib.patches, that contains the form of this circle
         """
         cirl = patches.Circle((self.center), self.radius,
-                              facecolor='white', edgecolor='black',
+                              facecolor='none', edgecolor='black',
                               linewidth=2, linestyle='--')
         return cirl
 
@@ -638,7 +638,7 @@ class Triangle(Domain):
         matplotlib.patches
             A matplotlib.patches, that contains the form of this triangle
         """
-        tri = patches.Polygon(self.corners, facecolor='white', edgecolor='black',
+        tri = patches.Polygon(self.corners, facecolor='none', edgecolor='black',
                               linewidth=2, linestyle='--')
         return tri
 
@@ -762,8 +762,9 @@ class Polygon2D(Domain):
 
         Returns
         -------
-        matplotlib.patches
-            A matplotlib.patches, that contains the form of this polygon
+        list of lists
+            A list, that contains the form of this polygon. The first entry is the
+            outer boundary, the later entries the inner boundaries.
         """
         cords = [np.array(self.polygon.exterior.coords)] 
         for i in self.polygon.interiors:
