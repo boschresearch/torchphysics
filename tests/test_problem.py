@@ -1,5 +1,7 @@
 import pytest
-from torchphysics.problem import Variable
+import torch
+import numpy
+from torchphysics.problem import Variable, Parameter
 from torchphysics.problem import problem
 from torchphysics.problem.condition import BoundaryCondition, Condition
 from torchphysics.setting import Setting
@@ -169,6 +171,59 @@ def test_serialize_variable():
     assert dct['domain'] == d.serialize()
     assert dct['train_conditions']['test cond'] == condi.serialize()
     assert dct['val_conditions']['test cond'] == condi.serialize()
+
+
+# Test Parameter
+def test_parameter_creation_with_tensor():
+    inital = torch.tensor(2.0)
+    P = Parameter(inital, 'test')
+    assert P._name == 'test'
+    assert P.item() == 2
+    assert P.requires_grad
+
+
+def test_parameter_creation_with_numpy():
+    inital = numpy.array([2.0, 0])
+    P = Parameter(inital, 'test2')
+    assert P._name == 'test2'
+    assert P[0].item() == 2
+    assert P[1].item() == 0
+    assert P.requires_grad
+
+
+def test_parameter_creation_with_list():
+    inital = [1.0, 1.0]
+    P = Parameter(inital, 'test3')
+    assert P._name == 'test3'
+    assert P[0].item() == 1
+    assert P[1].item() == 1
+    assert P.requires_grad
+
+
+def test_parameter_creation_with_number():
+    inital = 1.0
+    P = Parameter(inital, 'test4')
+    assert P._name == 'test4'
+    assert P.item() == 1
+    assert P.requires_grad
+    inital = 6
+    P = Parameter(inital, 'test5')
+    assert P._name == 'test5'
+    assert P.item() == 6
+    assert P.requires_grad
+
+
+def test_parameter_creation_with_normal_distri():
+    inital = 'normal'
+    P = Parameter(inital, 'test6')
+    assert P.get_name() == 'test6'
+    assert P.requires_grad
+
+
+def test_parameter_creation_with_wrong_type():
+    inital = None
+    with pytest.raises(ValueError):
+        _ = Parameter(inital, 'Error')
 
 
 # Test Setting
