@@ -8,7 +8,7 @@ def Parameter(init, name, shape=(1,)):
         data = init
     elif isinstance(init, np.ndarray):
         data = torch.from_numpy(init)
-    elif isinstance(init, Sequence):
+    elif isinstance(init, (tuple, list)):
         data = torch.Tensor(init)
     elif isinstance(init, float):
         data = torch.Tensor((init,))
