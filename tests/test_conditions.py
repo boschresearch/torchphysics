@@ -12,14 +12,14 @@ from torchphysics.problem.variables.variable import Variable
 
 
 def model_function(input):
-    return input['x']
+    return {'u': input['x']}
 
 
 def condition_function(u, data):
     return u - data
 
 
-# Test parent class
+# Test parent class 
 def test_create_condition():
     cond = condi.Condition(name='test', norm=torch.nn.MSELoss(), weight=2,
                            track_gradients=True, data_plot_variables=True)
@@ -251,8 +251,8 @@ def test_get_data_plot_varibales_diffeqcondition():
 def create_data_condition():
     return condi.DataCondition(name='test',
                                norm=torch.nn.MSELoss(),
-                               data_x={'x': torch.ones(5)},
-                               data_u=torch.tensor([1, 2, 1, 1, 0]))
+                               data_inp={'x': torch.ones(5)},
+                               data_out=torch.tensor([1, 2, 1, 1, 0]))
 
 
 def test_create_datacondition():
