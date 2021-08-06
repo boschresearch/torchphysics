@@ -12,7 +12,7 @@ from . import plot
 from ..problem.domain.domain1D import Interval
 
 
-def animation(model, plot_variables, domain_points,
+def animation(model, solution_name, plot_variables, domain_points,
               animation_variable, frame_number, device='cpu', 
               ani_speed=50, angle=[30, 30], dic_for_other_variables=None,
               all_variables=None, plot_output_entries=[-1], 
@@ -86,7 +86,7 @@ def animation(model, plot_variables, domain_points,
                  'contour_surface': animation_contour_2D}
     ani_fun = ani_types.get(ani_type)
     if ani_fun is not None:
-        return ani_fun(model=model, plot_variable=plot_variables,
+        return ani_fun(model=model, solution_name=solution_name, plot_variable=plot_variables,
                        points=domain_points, angle=angle, ani_speed=ani_speed,
                        dic_for_other_variables=dic_for_other_variables,
                        all_variables=all_variables, frame_number=frame_number,
@@ -97,13 +97,13 @@ def animation(model, plot_variables, domain_points,
         plot_variables = [plot_variables]
     # If only one output should be used we create a line/surface animation
     if len(plot_output_entries) == 1:
-        return _animation_for_one_output(model, plot_variables, domain_points,
+        return _animation_for_one_output(model, solution_name, plot_variables, domain_points,
                                          animation_variable, frame_number, device, 
                                          ani_speed, angle, dic_for_other_variables,
                                          all_variables, plot_output_entries)
     # If two outputs should be used we create a curve/quiver animation
     if len(plot_output_entries) == 2:
-        return _animation_for_two_outputs(model, plot_variables, domain_points,
+        return _animation_for_two_outputs(model, solution_name, plot_variables, domain_points,
                                           animation_variable, frame_number, device, 
                                           ani_speed, angle, dic_for_other_variables,
                                           all_variables, plot_output_entries)
@@ -113,7 +113,7 @@ def animation(model, plot_variables, domain_points,
                                   ' Please specify the output to animate.')
 
 
-def _animation_for_one_output(model, plot_variables, domain_points,
+def _animation_for_one_output(model, solution_name, plot_variables, domain_points,
                               animation_variable, frame_number, device, 
                               ani_speed, angle, dic_for_other_variables,
                               all_variables, plot_output_entry):
@@ -122,21 +122,21 @@ def _animation_for_one_output(model, plot_variables, domain_points,
     '''
     # 2D animation (surface plot)
     if len(plot_variables) == 1 and plot_variables[0].domain.dim == 2:
-        return animation_surface2D(model, plot_variables[0], domain_points, 
+        return animation_surface2D(model, solution_name, plot_variables[0], domain_points, 
                                    animation_variable, frame_number, device, ani_speed,
                                    angle, dic_for_other_variables, all_variables,
                                    plot_output_entry)
     # 1D animation (line plot):    
     elif len(plot_variables) == 1 and plot_variables[0].domain.dim == 1:
-        return animation_line(model, plot_variables[0], domain_points, 
-                             animation_variable, frame_number, device, ani_speed,
-                             angle, dic_for_other_variables, all_variables,
-                             plot_output_entry)
+        return animation_line(model, solution_name, plot_variables[0], domain_points, 
+                              animation_variable, frame_number, device, ani_speed,
+                              angle, dic_for_other_variables, all_variables,
+                              plot_output_entry)
     else:
         raise NotImplementedError
 
 
-def animation_line(model, plot_variable, points, animation_variable, frame_number,
+def animation_line(model, solution_name, plot_variable, points, animation_variable, frame_number,
                    device, ani_speed, angle, dic_for_other_variables,
                    all_variables, plot_output_entry):
     '''Handels 1D animations, inputs are the same as animation().
@@ -147,12 +147,12 @@ def animation_line(model, plot_variable, points, animation_variable, frame_numbe
                                            device)[0]
 
     input_dic[animation_variable.name] = animation_points[0][0]* \
-                                         torch.ones((points, 1), device=device)
+                                          torch.ones((points, 1), device=device)
     input_dic = plot._create_input_dic(input_dic, points, dic_for_other_variables, 
                                        all_variables, device)
    
     # evaluate the model and get max and min values over all points
-    outputs = _evaluate_model(model, points, animation_points, 
+    outputs = _evaluate_model(model, solution_name, points, animation_points, 
                               animation_variable.name, input_dic, plot_output_entry)
     output_max, output_min = _get_max_min(outputs)
     # construct the figure handle and axis for the animation
@@ -162,7 +162,7 @@ def animation_line(model, plot_variable, points, animation_variable, frame_numbe
     ax.set_xlabel(plot_variable.name)
     ax.grid()
     line, = ax.plot([], [], lw=2)
-    text_box = ax.text(0.05,0.95, '', bbox={'facecolor':'w', 'pad':5}, 
+    text_box = ax.text(0.05,0.95, '', bbox={'facecolor': 'w', 'pad': 5}, 
                        transform=ax.transAxes, va='top', ha='left')   
     # create the animation
     if dic_for_other_variables is None:
@@ -180,7 +180,7 @@ def animation_line(model, plot_variable, points, animation_variable, frame_numbe
     return fig, ani
 
 
-def animation_surface2D(model, plot_variable, points, animation_variable,
+def animation_surface2D(model, solution_name, plot_variable, points, animation_variable,
                         frame_number, device, ani_speed, angle,
                         dic_for_other_variables, all_variables, plot_output_entry):
     '''Handels 2D animations, inputs are the same as animation().
@@ -196,7 +196,7 @@ def animation_surface2D(model, plot_variable, points, animation_variable,
                                        all_variables, device)
     
     # evaluate the model and get max and min values over all points
-    outputs = _evaluate_model(model, points, animation_points, 
+    outputs = _evaluate_model(model, solution_name, points, animation_points, 
                               animation_variable.name, input_dic, plot_output_entry)
     output_max, output_min = _get_max_min(outputs)
     # triangulate the domain
@@ -233,14 +233,14 @@ def animation_surface2D(model, plot_variable, points, animation_variable,
         # set new text
         info_string = plot._create_info_text(dic_for_other_variables)  
         text_box.set_text(info_string)
-    
+
     ani = anim.FuncAnimation(fig, animate, frames=frame_number, 
                              fargs=(outputs, surf), interval=ani_speed)
-    
+
     return fig, ani
 
 
-def _animation_for_two_outputs(model, plot_variables, domain_points,
+def _animation_for_two_outputs(model, solution_name, plot_variables, domain_points,
                                animation_variable, frame_number, device, 
                                ani_speed, angle, dic_for_other_variables,
                                all_variables, plot_output_entries):
@@ -249,14 +249,14 @@ def _animation_for_two_outputs(model, plot_variables, domain_points,
     '''
     # animate curve in 3D
     if plot_variables[0] is None:
-        return animation_curve_3D(model, plot_variables[0], domain_points,
+        return animation_curve_3D(model, solution_name, plot_variables[0], domain_points,
                                   animation_variable, frame_number,
                                   device, ani_speed, angle, 
                                   dic_for_other_variables, all_variables,
                                   plot_output_entry=plot_output_entries)
     # animate quiver plot   
     elif len(plot_variables) == 1 and plot_variables[0].domain.dim == 2:
-        return animation_quiver_2D(model, plot_variables[0], domain_points, 
+        return animation_quiver_2D(model, solution_name, plot_variables[0], domain_points, 
                                    animation_variable, frame_number, device,
                                    ani_speed, angle, dic_for_other_variables,
                                    all_variables,
@@ -265,7 +265,7 @@ def _animation_for_two_outputs(model, plot_variables, domain_points,
         raise NotImplementedError
 
 
-def animation_curve_3D(model, plot_variable, points, animation_variable, frame_number,
+def animation_curve_3D(model, solution_name, plot_variable, points, animation_variable, frame_number,
                        device, ani_speed, angle, dic_for_other_variables,
                        all_variables, plot_output_entry):
     '''Handles a curve animation, inputs are tha same as in animation
@@ -277,7 +277,7 @@ def animation_curve_3D(model, plot_variable, points, animation_variable, frame_n
                                        all_variables, device)
     
     # evaluate the model and get max and min values over all points
-    outputs = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entry]
+    outputs = model.forward(input_dic)[solution_name].data.cpu().numpy()[:, plot_output_entry]
 
     # construct the figure handle and axis for the animation
     fig = plt.figure()
@@ -311,7 +311,7 @@ def animation_curve_3D(model, plot_variable, points, animation_variable, frame_n
     return fig, ani
 
 
-def animation_quiver_2D(model, plot_variable, points, animation_variable,
+def animation_quiver_2D(model, solution_name, plot_variable, points, animation_variable,
                         frame_number, device, ani_speed, angle,
                         dic_for_other_variables, all_variables, plot_output_entry):
     '''Handles quiver animations in 2D
@@ -326,7 +326,7 @@ def animation_quiver_2D(model, plot_variable, points, animation_variable,
     input_dic = plot._create_input_dic(input_dic, points, dic_for_other_variables, 
                                        all_variables, device)
     # evaluate the model and get max and min values over all points
-    outputs = _evaluate_model(model, points, animation_points, 
+    outputs = _evaluate_model(model, solution_name, points, animation_points, 
                               animation_variable.name, input_dic, plot_output_entry)
     # for the colors
     color = np.linalg.norm(outputs, axis=-1)
@@ -387,7 +387,7 @@ def animation_quiver_2D(model, plot_variable, points, animation_variable,
     return fig, ani
 
 
-def animation_contour_2D(model, plot_variable, points, animation_variable,
+def animation_contour_2D(model, solution_name, plot_variable, points, animation_variable,
                         frame_number, device, ani_speed, angle,
                         dic_for_other_variables, all_variables, plot_output_entry):
     '''Handles colormap animations in 2D
@@ -402,7 +402,7 @@ def animation_contour_2D(model, plot_variable, points, animation_variable,
     input_dic = plot._create_input_dic(input_dic, points, dic_for_other_variables, 
                                        all_variables, device)
     # evaluate the model and get max and min values over all points
-    outputs = _evaluate_model(model, points, animation_points, 
+    outputs = _evaluate_model(model, solution_name, points, animation_points, 
                               animation_variable.name, input_dic, plot_output_entry)
     if len(plot_output_entry) > 1:
         # if we have many outputs take the norm
@@ -468,7 +468,7 @@ def _get_max_min(points):
     return np.amax(points), np.amin(points)
 
 
-def _evaluate_model(model, points, animation_points, animation_name, input_dic,
+def _evaluate_model(model, solution_name, points, animation_points, animation_name, input_dic,
                     plot_output_entry):
     '''Evaluates the model at all domain and animation points
 
@@ -491,6 +491,6 @@ def _evaluate_model(model, points, animation_points, animation_name, input_dic,
     for i in range(len(animation_points)):
         # only need to change the animation varibale
         input_dic[animation_name] = animation_points[i][0]*torch.ones((points, 1))
-        out = model.forward(input_dic)
+        out = model.forward(input_dic)[solution_name]
         outputs[:,i,:] = out.data.cpu().numpy()[:, plot_output_entry]
     return outputs
