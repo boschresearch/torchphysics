@@ -131,7 +131,7 @@ class DiffEqCondition(Condition):
     def forward(self, model, data):
         u = model({v: data[v] for v in self.setting.variables})
         inp = prepare_user_fun_input(self.pde,
-                                     {'u': u,
+                                     {**u,
                                       **data,
                                       **self.setting.parameters})
         err = self.pde(**inp)
@@ -193,17 +193,18 @@ class DataCondition(Condition):
         training loss. Defaults to 1.
     """
 
-    def __init__(self, data_x, data_u, name, norm,
+    def __init__(self, data_inp, data_out, name, norm, solution_name='u',
                  weight=1.0):
         super().__init__(name, norm, weight,
                          track_gradients=False,
                          data_plot_variables=False)
-        self.data_x = data_x
-        self.data_u = data_u
+        self.solution_name = solution_name
+        self.data_x = data_inp
+        self.data_u = data_out
 
     def forward(self, model, data):
         u = model({v: data[v] for v in self.setting.variables})
-        return self.norm(u, data['target'])
+        return self.norm(u[self.solution_name], data['target'])
 
     def get_data(self):
         if self.is_registered():
@@ -303,13 +304,15 @@ class DirichletCondition(BoundaryCondition):
         If False, no plots are created. If True, behaviour is defined in each condition.
     """
 
-    def __init__(self, dirichlet_fun, name, norm, whole_batch=True,
+    def __init__(self, dirichlet_fun, name, norm, solution_name='u', whole_batch=True,
                  sampling_strategy='random', boundary_sampling_strategy='random',
                  weight=1.0, dataset_size=10000,
                  data_plot_variables=True):
         super().__init__(name, norm, weight=weight,
                          track_gradients=False,
                          data_plot_variables=data_plot_variables)
+        self.solution_name = solution_name
+
         self.dirichlet_fun = dirichlet_fun
         self.whole_batch = whole_batch
         self.dataset_size = dataset_size
@@ -321,7 +324,7 @@ class DirichletCondition(BoundaryCondition):
 
     def forward(self, model, data):
         u = model({v: data[v] for v in self.setting.variables})
-        return self.norm(u, data['target'])
+        return self.norm(u[self.solution_name], data['target'])
 
     def get_data(self):
         if self.is_registered():
@@ -384,13 +387,15 @@ class NeumannCondition(BoundaryCondition):
         If False, no plots are created. If True, behaviour is defined in each condition.
     """
 
-    def __init__(self, neumann_fun, name, norm, whole_batch=True,
+    def __init__(self, neumann_fun, name, norm, solution_name='u', whole_batch=True,
                  sampling_strategy='random', boundary_sampling_strategy='random',
                  weight=1.0, dataset_size=10000,
                  data_plot_variables=True):
         super().__init__(name, norm, weight=weight,
                          track_gradients=True,
                          data_plot_variables=data_plot_variables)
+        self.solution_name = solution_name
+
         self.neumann_fun = neumann_fun
         self.whole_batch = whole_batch
         self.dataset_size = dataset_size
@@ -402,7 +407,7 @@ class NeumannCondition(BoundaryCondition):
 
     def forward(self, model, data):
         u = model({v: data[v] for v in self.setting.variables})
-        normal_derivatives = normal_derivative(u, data[self.boundary_variable],
+        normal_derivatives = normal_derivative(u[self.solution_name], data[self.boundary_variable],
                                                data['normal'])
         return self.norm(normal_derivatives, data['target'])
 
@@ -501,7 +506,7 @@ class DiffEqBoundaryCondition(BoundaryCondition):
     def forward(self, model, data):
         u = model({v: data[v] for v in self.setting.variables})
         inp = prepare_user_fun_input(self.bound_condition_fun,
-                                     {'u': u,
+                                     {**u,
                                       **data,
                                       **self.setting.parameters})
         err = self.bound_condition_fun(**inp)

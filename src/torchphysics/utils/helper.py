@@ -63,33 +63,6 @@ def apply_to_batch(f, batch_size, **batch):
     return out.astype(np.float32)
 
 
-"""
-def apply_user_fun(f, args, whole_batch=True, batch_size=None):
-    ""
-    helper method that passes only the required arguments to
-    a user-defined function
-    ""
-    # first case: the user function can take arbitrary args:
-    if '**' in str(signature(f)):
-        if whole_batch:
-            return args, f(**args)
-        else:
-            return apply_to_batch(f, batch_size=batch_size, **args)
-    # second case: we only pass the args needed by the user function
-    else:
-        try:
-            inp = {k: args[k] for k in dict(signature(f).parameters)}
-            if whole_batch:
-                return args, f(**inp)
-            else:
-                return apply_to_batch(f, batch_size=batch_size, **inp)
-        except KeyError:
-            print(f"The user-defined function '{f.__name__}' expects arguments {str(signature(f))}.
-                      However, only {args.keys()} are given in the library.")
-        raise KeyError
-"""
-
-
 def prepare_user_fun_input(fun, args):
     # first case: the user function can take arbitrary args:
     if '**' in str(signature(fun)):

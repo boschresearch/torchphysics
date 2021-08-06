@@ -54,7 +54,7 @@ class Setting(Problem, DataModule):
         Number of iterations per epoch.
     """
     def __init__(self, variables={}, train_conditions={}, val_conditions={},
-                 parameters={}, n_iterations=1000):
+                 parameters={}, solution_dims={'u': 1}, n_iterations=1000):
         DataModule.__init__(self)
         self.n_iterations = n_iterations
 
@@ -86,6 +86,8 @@ class Setting(Problem, DataModule):
         else:
             raise TypeError(f"""Got type {type(parameters)} but expected
                              one of list, tuple, dict or ParameterSub.""")
+        # define the solution spaces
+        self.solution_dims = solution_dims
         # run data preparation manually
         self.prepare_data()
 
@@ -227,6 +229,16 @@ class Setting(Problem, DataModule):
 
     def is_well_posed(self):
         raise NotImplementedError
+
+    def get_dim(self):
+        d = 0
+        for v in self.variables:
+            d += self.variables[v].get_dim()
+        return d
+
+    @property
+    def variable_dims(self):
+        return {k: v.get_dim() for k, v in self.variables.items()}
 
     def serialize(self):
         dct = {}

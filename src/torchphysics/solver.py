@@ -31,7 +31,7 @@ class PINNModule(pl.LightningModule):
         The (initial) learning rate of the used optimizer. Should be set
         to 1e-3 for Adam
     log_plotter : Plotter
-        A plotter from utils.plot, that plots the solution at desired 
+        A plotter from utils.plot, that plots the solution at desired
         training epochs to the tensorboard
     scheduler : torch.optim.lr_scheduler
         A scheduler to change/adjust the learning rate based on the number of epochs
