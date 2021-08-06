@@ -55,10 +55,11 @@ class Plotter():
             - 'contour_surface' for contour/colormaps, with a 2D-domain
     '''
 
-    def __init__(self, plot_variables, points, angle=[30, 30],
+    def __init__(self, solution_name, plot_variables, points, angle=[30, 30],
                  dic_for_other_variables=None, all_variables=None,
-                 log_interval=None, plot_output_entries=[-1], 
+                 log_interval=None, plot_output_entries=[-1],
                  plot_type=''):
+        self.solution_name = solution_name
         self.plot_variables = plot_variables
         self.points = points
         self.angle = angle
@@ -69,14 +70,15 @@ class Plotter():
         self.plot_type = plot_type
 
     def plot(self, model, device='cpu'):
-        return _plot(model, self.plot_variables, self.points, angle=self.angle,
+        return _plot(model, self.solution_name, self.plot_variables, self.points,
+                     angle=self.angle,
                      dic_for_other_variables=self.dic_for_other_variables,
                      all_variables=self.all_variables,
                      device=device, plot_output_entries=self.plot_output_entries,
                      plot_type=self.plot_type)
 
 
-def _plot(model, plot_variables, points, angle=[30, 30],
+def _plot(model, solution_name, plot_variables, points, angle=[30, 30],
           dic_for_other_variables=None, all_variables=None, device='cpu', 
           plot_output_entries=[-1], plot_type=''):
     '''Main function for plotting
@@ -120,7 +122,7 @@ def _plot(model, plot_variables, points, angle=[30, 30],
             - 'curve' for a curve in 3D, with a 2D-domain, 
             - 'quiver_2D' for quiver/vector field plots, with a 2D-domain
             - 'contour_surface' for contour/colormaps, with a 2D-domain
-    
+
     Returns
     -------
     plt.figure
@@ -133,61 +135,61 @@ def _plot(model, plot_variables, points, angle=[30, 30],
         plot_output_entries = np.arange(0, model.output_dim, dtype=int)
     # check if a plot type is specified
     plot_types = {'line': line_plot, 'surface_2D': surface2D,
-                  'curve': curve3D, 'quiver_2D': quiver2D, 
+                  'curve': curve3D, 'quiver_2D': quiver2D,
                   'contour_surface': contour_2D}
     plot_fun = plot_types.get(plot_type)
     if plot_fun is not None:
-        return plot_fun(model=model, plot_variable=plot_variables,
+        return plot_fun(model=model, solution_name=solution_name, plot_variable=plot_variables,
                         points=points, angle=angle,
                         dic_for_other_variables=dic_for_other_variables,
                         all_variables=all_variables,
                         device=device, plot_output_entry=plot_output_entries)
     # If no type is give, find the correct type:
-    # set everything to list to easier handel different cases
+    # set everything to list to easier handle different cases
     if not isinstance(plot_variables, list):
         plot_variables = [plot_variables]
     # If only one output should be plotted we create a line/surface plot
     if len(plot_output_entries) == 1:
-        return _plot_for_one_output(model, plot_variables, points, angle,
-                                    dic_for_other_variables, all_variables, device, 
+        return _plot_for_one_output(model, solution_name, plot_variables, points, angle,
+                                    dic_for_other_variables, all_variables, device,
                                     plot_output_entries[0])
     # If two outputs should be used, create a quiver or curve plot
     if len(plot_output_entries) == 2:
-        return _plot_for_two_outputs(model, plot_variables, points, angle,
-                                     dic_for_other_variables, all_variables, device, 
+        return _plot_for_two_outputs(model, solution_name, plot_variables, points, angle,
+                                     dic_for_other_variables, all_variables, device,
                                      plot_output_entries)
     else:
         raise NotImplementedError('Plotting for a ' + model.output_dim +
-                                  ' dimensional output is not implemented!' + 
+                                  ' dimensional output is not implemented!' +
                                   ' Please specify the output for the plot.')
 
 
-def _plot_for_one_output(model, plot_variables, points, angle,
+def _plot_for_one_output(model, solution_name, plot_variables, points, angle,
                          dic_for_other_variables, all_variables, device, 
                          plot_output_entry):
     '''Handles plots if only one output of the model should be plotted.
     '''
     # surface plots:
     if len(plot_variables) == 1 and plot_variables[0].domain.dim == 2:
-        return surface2D(model, plot_variables[0], points, angle,
+        return surface2D(model, solution_name, plot_variables[0], points, angle,
                          dic_for_other_variables, all_variables, device, 
                          plot_output_entry)
     # line plots:                       
     elif len(plot_variables) == 1 and plot_variables[0].domain.dim == 1:
-        return line_plot(model, plot_variables[0], points, angle,
+        return line_plot(model, solution_name, plot_variables[0], points, angle,
                          dic_for_other_variables, all_variables, device, 
                          plot_output_entry)
     # surface plots for two different variables:
     elif (len(plot_variables) == 2 and
           plot_variables[0].domain.dim + plot_variables[0].domain.dim == 2):
-        return surface2D_2_variables(model, plot_variables,
+        return surface2D_2_variables(model, solution_name, plot_variables,
                                      points, angle, dic_for_other_variables,
                                      all_variables, device, plot_output_entry)
     else:
         raise NotImplementedError
 
 
-def surface2D(model, plot_variable, points, angle,
+def surface2D(model, solution_name, plot_variable, points, angle,
               dic_for_other_variables, all_variables, device, plot_output_entry):
     '''Handels surface plots w.r.t. a two dimensional variable.
     Inputs are the same as _plot().
@@ -198,7 +200,7 @@ def surface2D(model, plot_variable, points, angle,
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
                                   all_variables, device)
     # Evaluate the model
-    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entry]
+    output = model.forward(input_dic)[solution_name].data.cpu().numpy()[:,plot_output_entry]
     # For complex domains it is best to triangulate them for the plotting
     triangulation = _triangulation_of_domain(plot_variable, domain_points)
     # Create the plot
@@ -220,7 +222,7 @@ def surface2D(model, plot_variable, points, angle,
     return fig
 
 
-def line_plot(model, plot_variable, points, angle,
+def line_plot(model, solution_name, plot_variable, points, angle,
               dic_for_other_variables, all_variables, device, plot_output_entry):
     '''Handels line plots w.r.t. a one dimensional variable.
     Inputs are the same as _plot().
@@ -230,7 +232,7 @@ def line_plot(model, plot_variable, points, angle,
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
                                   all_variables, device)
     # Evaluate the model
-    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entry]
+    output = model.forward(input_dic)[solution_name].data.cpu().numpy()[:, plot_output_entry]
     # Create the plot
     fig = plt.figure()
     ax = fig.add_subplot()
@@ -246,7 +248,7 @@ def line_plot(model, plot_variable, points, angle,
     return fig
 
 
-def surface2D_2_variables(model, plot_variable, points, angle,
+def surface2D_2_variables(model, solution_name, plot_variable, points, angle,
                           dic_for_other_variables,
                           all_variables, device, plot_output_entry):
     '''Handels surface plots, if the inputs are two intervals
@@ -265,7 +267,7 @@ def surface2D_2_variables(model, plot_variable, points, angle,
     input_dic = _create_input_dic(input_dic, points**2, dic_for_other_variables,
                                   all_variables, device)
     # Evaluate model
-    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entry]
+    output = model.forward(input_dic)[solution_name].data.cpu().numpy()[:, plot_output_entry]
     # Create the plot (we dont need a triangulation, since the plot over two intervalls
     # will be a rectangle)
     fig = plt.figure()
@@ -285,40 +287,40 @@ def surface2D_2_variables(model, plot_variable, points, angle,
     return fig
 
 
-def _plot_for_two_outputs(model, plot_variables, points, angle,
+def _plot_for_two_outputs(model, solution_name, plot_variables, points, angle,
                           dic_for_other_variables, all_variables, device, 
                           plot_output_entries):
     '''Handles plots if two outputs of the model should be plotted.
     '''
     # plot a curve in 3D
     if len(plot_variables) == 1 and plot_variables[0].domain.dim == 1:
-        return curve3D(model, plot_variables[0], points, angle,
+        return curve3D(model, solution_name, plot_variables[0], points, angle,
                        dic_for_other_variables, all_variables, device, 
                        plot_output_entries)
     # plot vector field/quiver in 2D
     if len(plot_variables) == 1 and plot_variables[0].domain.dim == 2:
-        return quiver2D(model, plot_variables[0], points, angle,
+        return quiver2D(model, solution_name, plot_variables[0], points, angle,
                         dic_for_other_variables, all_variables, device, 
                         plot_output_entries)
     else:
         raise NotImplementedError
 
 
-def curve3D(model, plot_variable, points, angle,
+def curve3D(model, solution_name, plot_variable, points, angle,
             dic_for_other_variables, all_variables, device, plot_output_entry):
     '''Handles curve plots where the output is 2D and the domain is 1D.
     '''
     # First create the input dic. for the model
     domain_points, input_dic = _create_domain(plot_variable, points, device)
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
-                                  all_variables, device)    
+                                  all_variables, device)
     # Evaluate the model
-    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entry]
+    output = model.forward(input_dic)[solution_name].data.cpu().numpy()[:, plot_output_entry]
     # Create the plot
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     ax.view_init(angle[0], angle[1])
-    # Since we can't set the domain-axis in the center 
+    # Since we can't set the domain-axis in the center
     # (https://stackoverflow.com/questions/48442713/move-spines-in-matplotlib-3d-plot)
     # we plot a helper line to better show the structure of the curve
     domain_points = domain_points.flatten()
@@ -336,7 +338,7 @@ def curve3D(model, plot_variable, points, angle,
     return fig
 
 
-def quiver2D(model, plot_variable, points, angle,
+def quiver2D(model, solution_name, plot_variable, points, angle,
              dic_for_other_variables, all_variables, device, plot_output_entry):
     '''Handles quiver/vector field plots w.r.t. a two dimensional variable.
     Inputs are the same as _plot().
@@ -347,7 +349,7 @@ def quiver2D(model, plot_variable, points, angle,
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
                                   all_variables, device)
     # Evaluate the model
-    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entry]
+    output = model.forward(input_dic)[solution_name].data.cpu().numpy()[:, plot_output_entry]
     # for the colors
     color = np.linalg.norm(output, axis=1)
     norm = colors.Normalize()
@@ -385,15 +387,15 @@ def quiver2D(model, plot_variable, points, angle,
         info_string = _create_info_text(dic_for_other_variables)
         ax.text(1.25, 0.5, info_string, bbox={'facecolor': 'w', 'pad': 5},
                 transform=ax.transAxes)
-                
+
     ax.set_xlabel(plot_variable.name + '_1')
     ax.set_ylabel(plot_variable.name + '_2')
     #plt.show()
     return fig
 
 
-def contour_2D(model, plot_variable, points, angle,
-              dic_for_other_variables, all_variables, device, plot_output_entry):
+def contour_2D(model, solution_name, plot_variable, points, angle,
+               dic_for_other_variables, all_variables, device, plot_output_entry):
     '''Handles colormap/contour plots w.r.t. a two dimensional variable.
     Inputs are the same as _plot().
     '''
@@ -403,7 +405,7 @@ def contour_2D(model, plot_variable, points, angle,
     input_dic = _create_input_dic(input_dic, points, dic_for_other_variables,
                                   all_variables, device)
     # Evaluate the model
-    output = model.forward(input_dic).data.cpu().numpy()[:, plot_output_entry]
+    output = model.forward(input_dic)[solution_name].data.cpu().numpy()[:, plot_output_entry]
     if len(plot_output_entry) > 1:
         # if we have many outputs take the norm
         output = np.linalg.norm(output, axis=1)
@@ -419,7 +421,7 @@ def contour_2D(model, plot_variable, points, angle,
     poly = plot_variable.domain.outline()
     if isinstance(poly, (patches.Rectangle, patches.Circle, patches.Polygon)):
         ax.add_patch(poly)
-    else: # domain operations or polynom are used:
+    else:  # domain operations or polynom are used:
         for p in poly:
             ax.plot(p[:, 0], p[:, 1], color='k', linewidth=2, linestyle='--')
     # For complex domains it is best to triangulate them
@@ -431,7 +433,7 @@ def contour_2D(model, plot_variable, points, angle,
         info_string = _create_info_text(dic_for_other_variables)
         ax.text(1.3, 0.5, info_string, bbox={'facecolor': 'w', 'pad': 5},
                 transform=ax.transAxes)
-                
+
     ax.set_xlabel(plot_variable.name + '_1')
     ax.set_ylabel(plot_variable.name + '_2')
     #plt.show()
@@ -447,7 +449,7 @@ def _create_domain(plot_variable, points, device):
 def _create_input_dic(input_dic, points, dic_for_other_variables, all_variables,
                       device):
     '''Creates the input dictonary for the model
-    
+
     Parameters
     ----------
     input_dic : dic

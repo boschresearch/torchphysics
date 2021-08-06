@@ -4,10 +4,10 @@ the computed solution.
 import time
 import torch
 import numpy as np
-from . import plot as plt 
+from . import plot as plt
 
 
-def get_min_max_inside(model, domain_variable, resolution, device='cpu',
+def get_min_max_inside(model, solution_name, domain_variable, resolution, device='cpu',
                        dic_for_other_variables=None, all_variables=None):
     '''Computes the minimum and maximum values of the model w.r.t. the given
     variables.
@@ -51,7 +51,7 @@ def get_min_max_inside(model, domain_variable, resolution, device='cpu',
     start = time.time()
     pred = model(input_dic)
     end = time.time()
-    pred = pred.data.cpu().numpy()
+    pred = pred[solution_name].data.cpu().numpy()
     max_pred = np.max(pred)
     min_pred = np.min(pred)
     print('Time to evaluate model:', end - start)
@@ -62,8 +62,8 @@ def get_min_max_inside(model, domain_variable, resolution, device='cpu',
     return min_pred, max_pred
 
 
-def get_min_max_boundary(model, boundary_variable, resolution, device='cpu',
-                       dic_for_other_variables=None, all_variables=None):
+def get_min_max_boundary(model, solution_name, boundary_variable, resolution, device='cpu',
+                         dic_for_other_variables=None, all_variables=None):
     '''Computes the minimum and maximum values of the model w.r.t. the given
     variables (at the boundary).
 
@@ -105,7 +105,7 @@ def get_min_max_boundary(model, boundary_variable, resolution, device='cpu',
     start = time.time()
     pred = model(input_dic)
     end = time.time()
-    pred = pred.data.cpu().numpy()
+    pred = pred[solution_name].data.cpu().numpy()
     max_pred = np.max(pred)
     min_pred = np.min(pred)
     print('Time to evaluate model:', end - start)
