@@ -1,8 +1,9 @@
 import pytest
 import numpy as np
+import matplotlib.patches as patches
 import shapely.geometry as s_geo
 from torchphysics.problem.domain.domain2D import (Rectangle, Circle,
-                                                    Triangle, Polygon2D)
+                                                  Triangle, Polygon2D)
 
 # Tests for rectangle
 
@@ -188,6 +189,16 @@ def test_bounds_for_rect():
     assert bounds == [0, 2, -1, 1]
 
 
+def test_outline_rect():
+    R = Rectangle([0, 0], [2, 0], [0, 1])
+    outline = R.outline()
+    assert isinstance(outline, patches.Rectangle)
+    assert outline.xy == (0,0)
+    assert outline.get_height() == 1
+    assert outline.get_width() == 2
+    assert outline.angle == 360.0
+
+
 def test_serialize_rect():
     R = Rectangle([0, 0], [1, 0], [0, 1])
     dct = R.serialize()
@@ -337,6 +348,13 @@ def test_bounds_for_circle():
     C = Circle([1, 0], 5)
     bounds = C._compute_bounds()
     assert bounds == [-4, 6, -5, 5]
+
+
+def test_outline_circle():
+    C = Circle([1,0], 3)
+    outline = C.outline()
+    assert isinstance(outline, patches.Circle)
+    assert outline.get_radius() == 3
 
 
 def test_serialize_circle():
@@ -505,6 +523,14 @@ def test_grid_for_plot_triangle():
     inside = T.is_inside(points)
     bound = T.is_on_boundary(points)
     assert all(np.logical_or(inside, bound))
+
+
+def test_outline_triangle():
+    T = Triangle([0, 10], [13, 5], [-12, 2])
+    outline = T.outline()
+    assert isinstance(outline, patches.Polygon)
+    edges = outline.get_xy()
+    assert np.allclose(edges, [[0, 10], [-12, 2], [13, 5], [0, 10]])
 
 
 def test_serialize_triangle():
@@ -743,6 +769,24 @@ def test_output_type_poly2D():
     assert isinstance(b_rand[0][0], np.float32)
     assert isinstance(i_grid[0][0], np.float32)
     assert isinstance(b_grid[0][0], np.float32)
+
+
+def test_outline_poly2D():
+    P = Polygon2D([[0, 10], [0, 0], [10, 2], [10, 8]])
+    outline = P.outline()
+    assert isinstance(outline, list)
+    assert np.allclose(outline[0], [[0, 10], [0, 0], [10, 2], [10, 8], [0, 10]])
+
+
+def test_outline_poly2D_with_hole():
+    h = s_geo.Polygon(shell=[[0.15, 0.15], [0.25, 0.15], [0.15, 0.25]])
+    p = s_geo.Polygon(shell=[[0, 0], [1, 0], [0, 1]], holes=[h.exterior.coords])
+    P = Polygon2D(shapely_polygon=p)
+    outline = P.outline()
+    assert isinstance(outline, list)
+    assert np.allclose(outline[0], [[0, 0], [1, 0], [0, 1], [0, 0]])
+    assert np.allclose(outline[1], [[0.15, 0.15], [0.15, 0.25],
+                                    [0.25, 0.15], [0.15, 0.15]])
 
 
 def test_serialize_poly2D():

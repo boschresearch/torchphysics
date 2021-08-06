@@ -1,10 +1,8 @@
-from matplotlib.patches import Polygon
 import numpy as np
 import abc
 from .domain import Domain
 from .domain1D import Interval
 from .domain2D import Rectangle, Circle, Triangle, Polygon2D
-import sys
 
 
 class Domain_operation(Domain):
@@ -141,7 +139,7 @@ class Domain_operation(Domain):
         Returns 
         -------
         shapely.geometry.polygon
-            The domain as a polygon
+            The domain as a shapely polygon
         """
         import shapely.geometry as s_geos
         if isinstance(domain, Domain_operation):
@@ -154,7 +152,7 @@ class Domain_operation(Domain):
             return s_geos.Point(domain.center).buffer(domain.radius)
         elif isinstance(domain, Triangle):
             return s_geos.Polygon(domain.corners) 
-        elif isinstance(domain, Polygon):
+        elif isinstance(domain, Polygon2D):
             return domain.polygon
         else:
             raise NotImplementedError
@@ -299,18 +297,14 @@ class Cut(Domain_operation):
         shapely.geometry.polygon
             A polygon, that contains the form of this domain.
         """
-        if 'shapely' in sys.modules:
-            domain = self._change_to_shapely()
-            cords = [np.array(domain.exterior.coords)] 
-            for i in domain.interiors:
-                cords.append(np.array(i.coords))
-            return cords 
-        else:
-            print("shapely is not installed, can't show complex domain!")
-            return self.base.outline()
+        domain = self._change_to_shapely()
+        cords = [np.array(domain.exterior.coords)] 
+        for i in domain.interiors:
+            cords.append(np.array(i.coords))
+        return cords 
 
     def _change_to_shapely(self):
-        """Impleemnts the specific operation (cut)
+        """Implements the specific operation (cut)
         """
         base = self.construct_shapely(self.base)
         cut = self.construct_shapely(self.cut)
@@ -459,19 +453,15 @@ class Union(Domain_operation):
         shapely.geometry.polygon
             A polygon, that contains the form of this domain.
         """
-        if 'shapely' in sys.modules:
-            domain = self._change_to_shapely()
-            cords = [np.array(domain.exterior.coords)] 
-            for i in domain.interiors:
-                cords.append(np.array(i.coords))
-            return cords 
-        else:
-            print("shapely is not installed, can't show complex domain!")
-            return self.base.outline()
+        domain = self._change_to_shapely()
+        cords = [np.array(domain.exterior.coords)] 
+        for i in domain.interiors:
+            cords.append(np.array(i.coords))
+        return cords 
 
     def _change_to_shapely(self):
         from shapely.ops import unary_union
-        """Impleemnts the specific operation (union)
+        """Implements the specific operation (union)
         """
         domain_1 = self.construct_shapely(self.domain_1)
         domain_2 = self.construct_shapely(self.domain_2)
@@ -604,18 +594,14 @@ class Intersection(Domain_operation):
         shapely.geometry.polygon
             A polygon, that contains the form of this domain.
         """
-        if 'shapely' in sys.modules:
-            domain = self._change_to_shapely()
-            cords = [np.array(domain.exterior.coords)] 
-            for i in domain.interiors:
-                cords.append(np.array(i.coords))
-            return cords 
-        else:
-            print("shapely is not installed, can't show complex domain!")
-            return self.base.outline()
+        domain = self._change_to_shapely()
+        cords = [np.array(domain.exterior.coords)] 
+        for i in domain.interiors:
+            cords.append(np.array(i.coords))
+        return cords 
 
     def _change_to_shapely(self):
-        """Impleemnts the specific operation (intersection)
+        """Implements the specific operation (intersection)
         """
         domain_1 = self.construct_shapely(self.domain_1)
         domain_2 = self.construct_shapely(self.domain_2)
