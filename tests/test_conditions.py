@@ -173,11 +173,12 @@ def test_data_sampling_with_int_grid_divide_2D_1D_diffeqcondition():
 def test_data_sampling_with_wrong_input_diffeqcondition():
     cond = condi.DiffEqCondition(pde=condition_function,
                                  norm=torch.nn.MSELoss(),
-                                 dataset_size='42',
+                                 dataset_size=42,
                                  sampling_strategy='grid')
     x = Variable(name='x', domain=Rectangle([0, 0], [1, 0], [0, 1]))
     t = Variable(name='t', domain=Interval(-1, 1))
     setting = Setting(variables={'x': x, 't': t})
+    cond.datacreator.dataset_size = '42'
     cond.setting = setting
     with pytest.raises(TypeError):
         _ = cond.get_data()

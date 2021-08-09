@@ -118,12 +118,15 @@ class DiffEqCondition(Condition):
     def __init__(self, pde, norm, name='pde', data_fun=None,
                  sampling_strategy='random', weight=1.0,
                  dataset_size=10000, track_gradients=True,
+                 data_fun_whole_batch=True,
                  data_plot_variables=False):
         super().__init__(name, norm, weight,
                          track_gradients=track_gradients,
                          data_plot_variables=data_plot_variables)
         self.pde = pde
         self.data_fun = data_fun
+        self.data_fun_whole_batch = data_fun_whole_batch
+        self.dataset_len = get_data_len(dataset_size)
         self.datacreator = dc.InnerDataCreator(variables=None,
                                                dataset_size=dataset_size,
                                                sampling_strategy=sampling_strategy)
