@@ -81,9 +81,30 @@ class Domain():
         else:
             raise NotImplementedError
 
-    def _cut_points(self, points, n):
-        index = np.random.choice(len(points), int(n), replace=False)
-        return points[index]
+    def _cut_points(self, n, points):
+        """Cuts away some random points,
+        if more than n were sampled (can happen by grid-sampling).
+        """
+        if len(points) > n:
+            index = np.random.choice(len(points), int(n), replace=False)
+            return points[index]
+        return points
+
+    def _check_inside_grid_enough_points(self, n, points):
+        # checks if there are not enough points for the grid.
+        # If not, add some random points 
+        if len(points) < n:
+            new_points = self._random_sampling_inside(n-len(points))
+            points = np.append(points, new_points, axis=0)
+        return points
+
+    def _check_boundary_grid_enough_points(self, n, points):
+        # checks if there are not enough points for the grid.
+        # If not, add some random points 
+        if len(points) < n:
+            new_points = self._random_sampling_boundary(n-len(points))
+            points = np.append(points, new_points, axis=0)
+        return points
 
     @abc.abstractmethod
     def _compute_bounds(self):

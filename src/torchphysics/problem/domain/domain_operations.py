@@ -36,7 +36,7 @@ class Domain_operation(Domain):
             Type of sampling on the boundary. 
         '''
         points = domain.sample_boundary(n, type)
-        number = len(points[np.where(self.is_on_boundary(points))])
+        number = len(points[np.where(self.is_on_boundary(points))[0]])
         return number/n
 
     def _check_volume_ratio(self, domain_1, domain_2, n=100, type='grid'):
@@ -54,7 +54,7 @@ class Domain_operation(Domain):
             Type of the inside sampling. 
         '''
         points = domain_1.sample_inside(n, type)
-        number = len(points[np.where(domain_2.is_inside(points))])
+        number = len(points[np.where(domain_2.is_inside(points))[0]])
         return number/n
 
     def _sample_new_points_inside(self, domain_1, domain_2, n, type):
@@ -87,25 +87,19 @@ class Domain_operation(Domain):
                                                           type='random')
             points = np.append(points, new_points, axis=0)
             current_domain_is_1 = not current_domain_is_1
-        if len(points) > n: # check if to many points
-            points = self._cut_points(points, n)
+        points = super()._cut_points(n, points)
         return points.astype(np.float32)
 
     def _grid_sampling_boundary(self, domain_1, domain_2, n):
-        points = np.empty((0,self.dim))
         # sample on domain_1, scale the n according to the percent of the surface
         n_1 = int(domain_1.surface*n/self.surface)
-        new_points = self._sample_new_points_boundary(domain_1, n_1, type='grid')
-        points = np.append(points, new_points, axis=0)
+        points = self._sample_new_points_boundary(domain_1, n_1, type='grid')
         # sample on domain_2, scale the n according to the percent of the surface
         n_2 = int(domain_2.surface*n/self.surface)
         new_points = self._sample_new_points_boundary(domain_2, n_2, type='grid')
         points = np.append(points, new_points, axis=0)
-        if len(points) < n: # check if not enough points -> add random points
-            points = np.append(points, self._random_sampling_boundary(n-len(points)),
-                               axis=0)
-        if len(points) > n: # check if to many points
-            points = self._cut_points(points, n)
+        points = super()._check_boundary_grid_enough_points(n, points)
+        points = super()._cut_points(n, points)
         return points.astype(np.float32)
 
     def _get_boundary_normal(self, domain_1, domain_2, points, operation_is_cut=False):
@@ -194,13 +188,13 @@ class Cut(Domain_operation):
     
     def _approximate_volume(self, n):
         # Instead of exactly computing the volume we only approximate it. 
-        # Needed for example if we want cut this domain again. 
+        # Needed for example if we want to cut this domain again. 
         volume_ratio = self._check_volume_ratio(self.cut, self.base, n)
         return self.base.volume-volume_ratio*self.cut.volume
         
     def _approximate_surface(self, n):
         # Instead of exactly computing the surface we only approximate it. 
-        # Needed for example if we want cut this domain again. 
+        # Needed for example if we want to cut this domain again. 
         bound_ratio_base = self._check_boundary_ratio(self.base, n)
         bound_ratio_cut = self._check_boundary_ratio(self.cut, n)
         return self.base.surface*bound_ratio_base + self.cut.surface*bound_ratio_cut 
@@ -256,11 +250,8 @@ class Cut(Domain_operation):
         new_points = self._sample_new_points_inside(self.base, self.cut,
                                                     scaled_n, type='grid')
         points = np.append(points, new_points, axis=0)
-        if len(points) < n: # check if we have enough points
-            points = np.append(points, self._random_sampling_inside(n-len(points)),
-                               axis=0)
-        if len(points) > n: # check if we have to many points
-            points = self._cut_points(points, n)
+        points = super()._check_inside_grid_enough_points(n, points)
+        points = super()._cut_points(n, points)
         return points.astype(np.float32)
 
     def _random_sampling_boundary(self, n):
@@ -539,11 +530,8 @@ class Intersection(Domain_operation):
         in_2 = self.domain_2.is_inside(new_points)
         index = np.where(in_2)[0]
         points = np.append(points, new_points[index], axis=0)
-        if len(points) < n: # check if not enough points
-            points = np.append(points, self._random_sampling_inside(n-len(points)),
-                               axis=0)
-        if len(points) > n: # check if to many points
-            points = self._cut_points(points, n)
+        points = super()._check_inside_grid_enough_points(n, points)
+        points = super()._cut_points(n, points)
         return points.astype(np.float32)
 
     def _random_sampling_boundary(self, n):

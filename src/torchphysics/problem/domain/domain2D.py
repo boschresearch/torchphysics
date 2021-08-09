@@ -13,17 +13,16 @@ class Rectangle(Domain):
     ----------
     corner_dl, corner_dr, corner_tl : array_like
         Three corners of the rectangle, in the following order
-            tl ----- x
-            |        |
-            |        |
-            dl ----- dr
+        |    tl ----- x
+        |    |        |
+        |    |        |
+        |    dl ----- dr
         (dl = down left, dr = down right, tl = top left)
         E.g. for the unit square: corner_dl = [0,0], corner_dr = [1,0],
                                   corner_tl = [0,1].
     tol : number, optional
         The error tolerance for checking if points are inside or at the boundary.
     '''
-
     def __init__(self, corner_dl, corner_dr, corner_tl, tol=1e-06):
         self._check_rectangle(corner_dl, corner_dr, corner_tl, tol)
         self.corner_dl = np.asarray(corner_dl)
@@ -50,6 +49,12 @@ class Rectangle(Domain):
     def _transform_to_unit_square(self, points, corner):
         return np.array([np.matmul(self.inverse_matrix,
                                    np.subtract(i, corner)) for i in points])
+
+    def _transform_to_rectangle(self, points):
+        trans_matrix = np.column_stack(
+            (self.corner_dr-self.corner_dl, self.corner_tl-self.corner_dl))
+        points = [np.matmul(trans_matrix, p) for p in points]
+        return np.add(points, self.corner_dl)
 
     def _is_inside_unit_square(self, points):
         return ((points[:, 0] > -self.tol) & (points[:, 0] < 1+self.tol)
@@ -107,10 +112,7 @@ class Rectangle(Domain):
 
     def _grid_sampling_inside(self, n):
         points = self.grid_in_box(n)
-        # append random points if there are not enough points in the grid
-        if len(points) < n:
-            points = np.append(points, self._random_sampling_inside(n-len(points)),
-                               axis=0)
+        points = super()._check_inside_grid_enough_points(n, points)
         return points.astype(np.float32)
 
     def grid_in_box(self, n):
@@ -127,12 +129,6 @@ class Rectangle(Domain):
         points = [np.matmul(trans_matrix, p) for p in points]
         points = np.add(points, self.corner_dl)
         return points
-
-    def _transform_to_rectangle(self, points):
-        trans_matrix = np.column_stack(
-            (self.corner_dr-self.corner_dl, self.corner_tl-self.corner_dl))
-        points = [np.matmul(trans_matrix, p) for p in points]
-        return np.add(points, self.corner_dl)
 
     def _random_sampling_boundary(self, n):
         n_x = int(np.floor(self.length_lr*n/(self.length_lr+self.length_td)))
@@ -154,6 +150,9 @@ class Rectangle(Domain):
         return np.empty((0, 2))
 
     def _grid_sampling_boundary(self, n):
+        # sample equdistant point on the interval [0, self.surface],
+        # than transform each point to the boundary depending on
+        # the side lengths of the rectangle. 
         line_points = np.linspace(0, self.surface, n+1)[:-1]
         corners = [self.corner_dl, self.corner_dr,
                    self.corner_dr + (self.corner_tl-self.corner_dl),
@@ -161,8 +160,8 @@ class Rectangle(Domain):
         side_lengths = [self.length_lr, self.length_td,
                         self.length_lr, self.length_td]
         points = np.empty((0, self.dim))
-        for i in range(len(line_points)):
-            for k in range(len(corners)-1):
+        for i in range(len(line_points)): # take each point
+            for k in range(len(corners)-1): # check on which side it should be
                 if line_points[i] < sum(side_lengths[:k+1]):
                     norm = side_lengths[k]
                     coord = line_points[i] - sum(side_lengths[:k])
@@ -324,12 +323,8 @@ class Circle(Domain):
 
     def _grid_sampling_inside(self, n):
         points = self._point_grid_in_circle(n)
-        # append random points if there are not enough points in the grid
-        if len(points) < n:
-            points = np.append(points, self._random_sampling_inside(n-len(points)),
-                               axis=0)
-        if len(points) > n:
-            points = super()._cut_points(points, n)
+        points = super()._check_inside_grid_enough_points(n, points)
+        points = super()._cut_points(n, points)
         return points.astype(np.float32)
 
     def _point_grid_in_circle(self, n):
@@ -538,11 +533,8 @@ class Triangle(Domain):
     def _grid_sampling_inside(self, n):
         bounds = self._compute_bounds()
         points = self._grid_sampling_with_bbox(n, bounds)
-        if len(points) < n:
-            points = np.append(points, self._random_sampling_inside(n-len(points)),
-                               axis=0)
-        if len(points) > n:
-            points = self._cut_points(points, n)
+        points = super()._check_inside_grid_enough_points(n, points)
+        points = super()._cut_points(n, points)
         return points
 
     def _compute_bounds(self):
@@ -779,19 +771,23 @@ class Polygon2D(Domain):
         for t in triangulate(self.polygon):
             new_points = self._sample_in_triangulation(t, n)
             points = np.append(points, new_points, axis=0)
-            # remember the biggest tirangle that was inside
+            # remember the biggest triangle that was inside, to maybe later 
+            # sample some additional points
             if t.within(self.polygon) and t.area > t_area:
                 big_t = [t][0]
                 t_area = t.area
+        points = self._check_enough_points_sampled(n, points, big_t)
+        points = super()._cut_points(n, points)
+        return points.astype(np.float32)
+
+    def _check_enough_points_sampled(self, n, points, big_t):
         # if not enough points are sampled, create some new points in the biggest 
         # triangle
-        if len(points) < n:
+        while len(points) < n:
             points = np.append(points,
                                self._sample_in_triangulation(big_t, n-len(points)),
-                               axis=0)
-        if len(points) > n:
-            points = self._cut_points(points, n)
-        return points.astype(np.float32)
+                               axis=0)                          
+        return points
 
     def _sample_in_triangulation(self, t, n):
         (x0, y0), (x1, y1), (x2, y2), _ = t.exterior.coords
@@ -807,11 +803,8 @@ class Polygon2D(Domain):
     def _grid_sampling_inside(self, n):
         bounds = self._compute_bounds()
         points = Triangle._grid_sampling_with_bbox(self, n, bounds)
-        if len(points) < n:
-            points = np.append(points, self._random_sampling_inside(n-len(points)),
-                               axis=0)
-        if len(points) > n:
-            points = self._cut_points(points, n)
+        points = super()._check_inside_grid_enough_points(n, points)
+        points = super()._cut_points(n, points)
         return points
 
     def _random_sampling_boundary(self, n):
