@@ -16,6 +16,8 @@ class Plotter():
 
     Parameters
     ----------
+    solution_name : str
+        The output function of the network that should be animated.
     plot_variables : Variabale or list of Variables.
         #TODO: what happens if dim(var) >= 3?
         The main variable(s) over which the solution should be plotted.
@@ -85,6 +87,8 @@ def _plot(model, solution_name, plot_variables, points, angle=[30, 30],
     ----------
     model : DiffEqModel
         A neural network of which the output should be plotted
+    solution_name : str
+        The output function of the network that should be animated.
     plot_variables : Variabale or list of Variables.
         The main variable(s) over which the solution should be plotted.
     points : int
@@ -136,7 +140,7 @@ def _plot(model, solution_name, plot_variables, points, angle=[30, 30],
                   'curve': curve3D, 'quiver_2D': quiver2D,
                   'contour_surface': contour_2D}
     plot_fun = plot_types.get(plot_type)
-    # If no (or wrong) type is given, find the correct type:
+    # If no (or wrong) type is given, try to find the correct type:
     if plot_fun is None:
         if len(plot_output_entries) == 1:
             plot_fun = _plot_for_one_output(plot_variables)
@@ -167,7 +171,7 @@ def _plot_for_one_output(plot_variables):
         return line_plot
     # surface plots for two different variables:
     elif (len(plot_variables) == 2 and
-          plot_variables[0].domain.dim + plot_variables[0].domain.dim == 2):
+          plot_variables[0].domain.dim + plot_variables[1].domain.dim == 2):
         return surface2D_2_variables
     else:
         raise NotImplementedError("""Can't plot 1D-output on given domain""")
@@ -331,9 +335,6 @@ def quiver2D(model, solution_name, plot_variables, points, angle,
         info_string = _create_info_text(dic_for_other_variables)
         ax.text(1.25, 0.5, info_string, bbox={'facecolor': 'w', 'pad': 5},
                 transform=ax.transAxes)
-
-    ax.set_xlabel(plot_variable.name + '_1')
-    ax.set_ylabel(plot_variable.name + '_2')
     #plt.show()
     return fig
 

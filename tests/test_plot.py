@@ -3,6 +3,7 @@ import torch
 import os
 import numpy as np
 from matplotlib import animation as matplotani
+import matplotlib.pyplot as pyplot
 
 import torchphysics.utils.plot as plt
 import torchphysics.utils.animation as ani  
@@ -129,6 +130,7 @@ def test_1D_plot():
                       solution_dims={'u':1},
                       width=5, depth=1)
     fig = plotter.plot(model=model)  
+    pyplot.close(fig)
 
 
 def test_2D_plot():
@@ -150,6 +152,7 @@ def test_2D_plot():
                       solution_dims={'u':1},
                       width=5, depth=1)
     fig = plotter.plot(model=model)  
+    pyplot.close(fig)
 
 
 def test_plot_2D_two_intervals():
@@ -171,6 +174,7 @@ def test_plot_2D_two_intervals():
                       solution_dims={'u':1},
                       width=5, depth=1)
     fig = plotter.plot(model=model)  
+    pyplot.close(fig)
 
 
 def test_scatter():
@@ -197,6 +201,7 @@ def test_scatter():
     assert fig.axes[0].get_xlabel() == 'x'
     assert fig.axes[0].get_ylabel() == 'x'
     assert fig.axes[0].get_zlabel() == 't'
+    pyplot.close(fig)
 
 
 def test_2D_quiver():
@@ -218,6 +223,7 @@ def test_2D_quiver():
                       solution_dims={'u':2},
                       width=5, depth=1)
     fig = plotter.plot(model=model) 
+    pyplot.close(fig)
 
 
 def test_quiver_2D_for_complex_domain():
@@ -233,6 +239,7 @@ def test_quiver_2D_for_complex_domain():
     assert fig.axes[0].get_xlabel() == 'R_1'
     assert fig.axes[0].get_ylim() == (-0.1, 2.1)
     assert fig.axes[0].get_ylabel() == 'R_2'
+    pyplot.close(fig)
 
 
 def test_3D_curve():
@@ -252,6 +259,7 @@ def test_3D_curve():
                       solution_dims={'u': 2},
                       width=5, depth=1)
     fig = plotter.plot(model=model) 
+    pyplot.close(fig)
 
 
 def test_contour_2D():
@@ -274,6 +282,7 @@ def test_contour_2D():
     fig = plt.contour_2D(model, plot_variables=[R], angle=0, solution_name='u',
                          points=10, all_variables=None, device='cpu',
                          plot_output_entry=[0,1], dic_for_other_variables={'D':[0,1]})
+    pyplot.close(fig)
 
 
 def test_contour_2D_for_complex_domain():
@@ -290,6 +299,7 @@ def test_contour_2D_for_complex_domain():
     assert fig.axes[0].get_xlabel() == 'R_1'
     assert fig.axes[0].get_ylim() == (-0.1, 2.1)
     assert fig.axes[0].get_ylabel() == 'R_2'
+    pyplot.close(fig)
 
 
 # Test animation
@@ -324,20 +334,21 @@ def test_ani_1D():
     model = SimpleFCN(variable_dims={'x': 1, 't': 1},
                       solution_dims={'u': 1},
                       width=5, depth=1)        
-    _, animation = ani.animation(model, plot_variable=I1, domain_points=10,
-                                 animation_variable=I2, solution_name='u',
-                                 frame_number=4)
+    fig, animation = ani.animation(model, plot_variable=I1, domain_points=10,
+                                   animation_variable=I2, solution_name='u',
+                                   frame_number=4)
     assert isinstance(animation, matplotani.FuncAnimation)
     # with extra input 
     model = SimpleFCN(variable_dims={'x': 1, 't': 1, 'D': 2},
                       solution_dims={'u': 1},
                       width=5, depth=1)      
-    _, animation = ani.animation(model, plot_variable=I1, domain_points=10,
-                                 solution_name='u',
-                                 animation_variable=I2, frame_number=1, 
-                                 dic_for_other_variables={'D': [1, 2]})
+    fig, animation = ani.animation(model, plot_variable=I1, domain_points=10,
+                                   solution_name='u',
+                                   animation_variable=I2, frame_number=1, 
+                                   dic_for_other_variables={'D': [1, 2]})
     animation.save('test.gif')
     os.remove('test.gif')
+    pyplot.close(fig)
                             
 
 def test_ani_2D():
@@ -356,14 +367,7 @@ def test_ani_2D():
     assert fig.axes[0].get_ylabel() == 'R_2'
     animation.save('test.gif')
     os.remove('test.gif')
-    # with extra input 
-    model = SimpleFCN(variable_dims={'R': 2, 't': 1, 'D': 2},
-                      solution_dims={'u': 1},
-                      width=5, depth=1)     
-    _, animation = ani.animation(model, plot_variable=R, domain_points=10,
-                                 solution_name='u',
-                                 animation_variable=I2, frame_number=4, 
-                                 dic_for_other_variables={'D': [1, 2]})
+    pyplot.close(fig)
 
 
 def test_ani_quiver_2D():
@@ -382,14 +386,7 @@ def test_ani_quiver_2D():
     assert fig.axes[0].get_ylabel() == 'R_2'
     animation.save('test.gif')
     os.remove('test.gif')
-    # with extra input 
-    model = SimpleFCN(variable_dims={'R': 2, 't': 1, 'D': 2},
-                      solution_dims={'u': 2, 'k':2},
-                      width=5, depth=1)       
-    _, animation = ani.animation(model, plot_variable=R, domain_points=10,
-                                 solution_name='u',
-                                 animation_variable=I2, frame_number=4, 
-                                 dic_for_other_variables={'D': [1, 2]})
+    pyplot.close(fig)
 
 
 def test_ani_quiver_2D_for_complex_domain():
@@ -407,6 +404,7 @@ def test_ani_quiver_2D_for_complex_domain():
     assert fig.axes[0].get_xlabel() == 'R_1'
     assert fig.axes[0].get_ylim() == (-0.1, 2.1)
     assert fig.axes[0].get_ylabel() == 'R_2'
+    pyplot.close(fig)
 
 
 def test_ani_contour_2D():
@@ -429,18 +427,7 @@ def test_ani_contour_2D():
     assert fig.axes[0].get_ylabel() == 'R_2'
     animation.save('test.gif')
     os.remove('test.gif')
-    # with extra input 
-    model = SimpleFCN(variable_dims={'R': 2, 't': 1, 'D': 2},
-                      solution_dims={'u': 2, 'k':2},
-                      width=5, depth=1)       
-    fig, animation = ani.animation_contour_2D(model, plot_variable=R,
-                                              points=10, all_variables=None,
-                                              animation_variable=I2,
-                                              ani_speed=5, angle=0,
-                                              solution_name='k',
-                                              frame_number=1, device='cpu',
-                                              plot_output_entry=[0,1], 
-                                              dic_for_other_variables={'D':[0,1]})
+    pyplot.close(fig)
 
 
 def test_ani_contour_2D_for_complex_domain():
@@ -463,6 +450,7 @@ def test_ani_contour_2D_for_complex_domain():
     assert fig.axes[0].get_xlabel() == 'R_1'
     assert fig.axes[0].get_ylim() == (-0.1, 2.1)
     assert fig.axes[0].get_ylabel() == 'R_2'
+    pyplot.close(fig)
 
 
 def test_ani_curve_3D():
@@ -482,7 +470,8 @@ def test_ani_curve_3D():
     model = SimpleFCN(variable_dims={'t': 1, 'D': 2},
                       solution_dims={'u': 2, 'k':2},
                       width=5, depth=1)        
-    _, animation = ani.animation(model, plot_variable=None, domain_points=0,
-                                 solution_name='k',
-                                 animation_variable=I, frame_number=2, 
-                                 dic_for_other_variables={'D': [1, 2]})
+    fig, animation = ani.animation(model, plot_variable=None, domain_points=0,
+                                   solution_name='k',
+                                   animation_variable=I, frame_number=2, 
+                                   dic_for_other_variables={'D': [1, 2]})
+    pyplot.close(fig)
