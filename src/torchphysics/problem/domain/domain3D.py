@@ -389,7 +389,7 @@ class Sphere(Domain):
         return on_bound.reshape(-1, 1)
 
     def _compute_bounds(self):
-        """computes bounds of the domain
+        """computes bounds of the sphere.
 
         Returns
         -------
@@ -498,7 +498,22 @@ class Sphere(Domain):
 
 
 class Cylinder(Domain):
+    """Class for arbitrary cylinders.
 
+    Parameters
+    ----------
+    center : array_like
+        The center of the cylinder, e.g. center = [5,0,1].
+    radius : number
+        The radius of the cylinder.
+    height : number
+        The total height of the cylinder.
+    orientation : array_like
+        The orientation of the cylinder. A vector that is orthognal to the circle
+        areas of the cylinder.
+    tol : number, optional
+        The error tolerance for checking if points are inside or at the boundary.
+    """
     def __init__(self, center, radius, height, orientation, tol=1e-06):
         super().__init__(dim=3, volume=np.pi*radius**2*height,
                          surface=2*np.pi*(radius**2+radius*height),
@@ -539,6 +554,20 @@ class Cylinder(Domain):
         return points
 
     def is_inside(self, points):
+        """Checks if the given points are inside the cylinder.
+
+        Parameters
+        ----------
+        points : list of lists
+            A list containing all points that have to be checked.
+            The list has to be of the form [[x1,y1,z1],[x2,y2,z2],...].
+
+        Returns
+        ----------
+        np.array
+            Every entry of the output contains either true,
+            if the points was inside, or false if not.
+        """
         points = self._transform_points_to_origin_and_rotate(points)
         norm_points = np.linalg.norm(points[:, 0:2], axis=1)
         return self._inside_cylinder(points, norm_points).reshape(-1, 1)
@@ -549,6 +578,20 @@ class Cylinder(Domain):
         return np.logical_and(norm_inside, height_inside)
 
     def is_on_boundary(self, points):
+        """Checks if the given points are on the boundary of the sphere.
+
+        Parameters
+        ----------
+        points : list of lists
+            A list containing all points that have to be checked.
+            The list has to be of the form [[x1,y1,z1],[x2,y2,z2],...].
+
+        Returns
+        ----------
+        np.array
+            Every entry of the output contains either true,
+            if the points was on the boundary, or false if not.
+        """
         points = self._transform_points_to_origin_and_rotate(points)
         norm_points = np.linalg.norm(points[:, 0:2], axis=1)
         norm_on_bound = np.isclose(norm_points, self.radius, atol=self.tol)
@@ -631,6 +674,20 @@ class Cylinder(Domain):
         return points.astype(np.float32)
 
     def boundary_normal(self, points):
+        '''Computes the boundary normal.
+
+        Parameters
+        ----------
+        points : list of lists
+            A list containing all points where the normal vector
+            has to be computed, e.g. [[x1,y1,z1],[x2,y2,z2],...].
+
+        Returns
+        ----------
+        np.array
+            Every entry of the output contains the normal vector at the point,
+            specified in the input array.
+        '''
         normals = np.zeros((len(points), 3))
         index = np.zeros((len(points), 3))
         points = self._transform_points_to_origin_and_rotate(points)
@@ -657,6 +714,13 @@ class Cylinder(Domain):
         return normals.astype(np.float32)
 
     def _compute_bounds(self):
+        """computes bounds of the cylinder.
+
+        Returns
+        -------
+        np.array:
+            The bounds in the form: [min_x, max_x, min_y, max_y, min_z, max_z]
+        """
         # first take size in the direction of the orientation
         A = self.center + self.height/2 * self.orientation
         B = self.center - self.height/2 * self.orientation

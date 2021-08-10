@@ -50,7 +50,7 @@ class Plotter():
         will try to use a fitting way, to show the data. Implemented types are:
             - 'line' for plots in 1D
             - 'surface_2D' for surface plots, with a 2D-domain
-            - 'curve' for a curve in 3D, with a 2D-domain, 
+            - 'curve' for a curve in 3D, with a 1D-domain, 
             - 'quiver_2D' for quiver/vector field plots, with a 2D-domain
             - 'contour_surface' for contour/colormaps, with a 2D-domain
     '''
@@ -121,7 +121,7 @@ def _plot(model, solution_name, plot_variables, points, angle=[30, 30],
         will try to use a fitting way, to show the data. Implemented types are:
             - 'line' for plots in 1D
             - 'surface_2D' for surface plots, with a 2D-domain
-            - 'curve' for a curve in 3D, with a 2D-domain, 
+            - 'curve' for a curve in 3D, with a 1D-domain, 
             - 'quiver_2D' for quiver/vector field plots, with a 2D-domain
             - 'contour_surface' for contour/colormaps, with a 2D-domain
 

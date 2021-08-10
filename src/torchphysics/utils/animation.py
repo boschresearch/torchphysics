@@ -62,7 +62,7 @@ def animation(model, solution_name, plot_variable, domain_points,
         will try to use a fitting way, to show the data. Implemented types are:
             - 'line' for line animations, with a 1D-domain and output
             - 'surface_2D' for surface animation, with a 2D-domain
-            - 'curve' for a curve in 3D, with a 2D-domain, 
+            - 'curve' for a curve in 3D, with a 1D-domain, 
             - 'quiver_2D' for quiver/vector field animation, with a 2D-domain
             - 'contour_surface' for contour/colormaps, with a 2D-domain
 
