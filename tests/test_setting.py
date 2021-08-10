@@ -210,13 +210,11 @@ def test_get_individual_input_dim_of_setting():
 
 def test_prepare_train_data():
     x = Variable(name='x', domain=Interval(0, 1))
-    s = setting.Setting(variables=x)
     c = DiffEqCondition(pde=None,
                         name='test', 
                         dataset_size=10,
                         norm=torch.nn.MSELoss())
-    s.add_train_condition(c)
-    s.prepare_data()
+    s = setting.Setting(variables=x, train_conditions={'test': c})
     assert isinstance(s.train_data['test'], dict)
     assert x.domain.is_inside(s.train_data['test']['x']).all()
 
@@ -224,13 +222,12 @@ def test_prepare_train_data():
 def test_prepare_val_data():
     x = Variable(name='x', domain=Interval(0, 1))
     t = Variable(name='t', domain=Interval(-2, -1))
-    s = setting.Setting(variables=[x, t])
     c = DiffEqCondition(pde=None,
                         name='test', 
                         dataset_size=10, 
                         norm=torch.nn.MSELoss())
-    s.add_val_condition(c)
-    s.prepare_data()
+    s = setting.Setting(variables=[x, t],
+                        val_conditions={'test': c})
     assert isinstance(s.val_data['test'], dict)
     assert x.domain.is_inside(s.val_data['test']['x']).all()
     assert t.domain.is_inside(s.val_data['test']['t']).all()
