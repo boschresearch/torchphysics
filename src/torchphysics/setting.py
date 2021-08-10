@@ -260,4 +260,5 @@ class Setting(Problem, DataModule):
         for p_name in self.parameters:
             p_dict[p_name] = list(self.parameters[p_name].shape)
         dct['parameters'] = p_dict
+        dct['solution_dims'] = self.solution_dims
         return dct

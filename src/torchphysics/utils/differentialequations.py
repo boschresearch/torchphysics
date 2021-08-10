@@ -8,7 +8,7 @@ from .differentialoperators import (laplacian,
 
 class HeatEquation(torch.nn.Module):
     """
-    Implementation of the homogenous heat equation.
+    Implementation of the homogenous heat equation: u_t - D*laplace(u) = 0
 
     Parameters
     ----------
@@ -29,14 +29,15 @@ class HeatEquation(torch.nn.Module):
         self.spatial_var = spatial_var
         self.time_var = time_var
 
-    def forward(self, u, input):
-        return grad(u, input[self.time_var]) - \
-            self.diffusivity*laplacian(u, input[self.spatial_var])
+    def forward(self, u, **inputs):
+        return grad(u, inputs[self.time_var]) - \
+            self.diffusivity*laplacian(u, inputs[self.spatial_var])
 
 
 class BurgersEquation(torch.nn.Module):
     """
-    Implementation of the viscous Burgers equation.
+    Implementation of the viscous Burgers equation:
+        u_t + (u*grad)*u - viscosity * laplace(u) = 0 
 
     Parameters
     ----------
@@ -93,9 +94,9 @@ class IncompressibleNavierStokesEquation(torch.nn.Module):
                  time_var='t'):
         super().__init__()
         raise NotImplementedError
-        self.viscosity = viscosity
-        self.spatial_var = spatial_var
-        self.time_var = time_var
+        #self.viscosity = viscosity
+        #self.spatial_var = spatial_var
+        #self.time_var = time_var
 
     def forward(self, u, p, **inputs):
         jac_t = jac(u, inputs[self.time_var]).squeeze(dim=2)  # time derivative (2d)

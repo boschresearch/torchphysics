@@ -2,12 +2,13 @@ import pytest
 import torch
 import numpy as np
 from torchphysics.utils.differentialoperators import (laplacian, 
-                                                        grad, 
-                                                        normal_derivative, 
-                                                        div, 
-                                                        jac, 
-                                                        rot,
-                                                        partial)
+                                                      grad, 
+                                                      normal_derivative, 
+                                                      div, 
+                                                      jac, 
+                                                      rot,
+                                                      partial, 
+                                                      convective)
 
 # Test laplace-operator
 def function(a):
@@ -512,3 +513,131 @@ def test_rot_for_complexer_function_2():
     d = d.detach().numpy()
     assert np.isclose(d[0], [1, np.cos(2)-1, 2-2*np.cos(2)]).all()
     assert np.isclose(d[1], [1, np.cos(0)-1, -2]).all()
+
+
+# Test partial
+def part_function(x, y, t):
+    out = x**2 * t + y * torch.sin(t)
+    return out
+
+
+def test_partial_one_input():
+    x = torch.tensor([[1.0]], requires_grad=True)
+    y = torch.tensor([[1.0]], requires_grad=True)
+    t = torch.tensor([[2.0]], requires_grad=True)
+    output = part_function(x, y, t)
+    p = partial(output, x)
+    assert p.shape == (1, 1)
+    d = p.detach().numpy()
+    assert np.isclose(d[0], 4)
+    p = partial(output, y)
+    assert p.shape == (1, 1)
+    d = p.detach().numpy()
+    assert np.isclose(d[0], np.sin(2))
+
+
+def test_partial_many_inputs():
+    x = torch.tensor([[1.0], [2.0]], requires_grad=True)
+    y = torch.tensor([[1.0], [3.0]], requires_grad=True)
+    t = torch.tensor([[2.0], [0.0]], requires_grad=True)
+    output = part_function(x, y, t)
+    p = partial(output, x)
+    assert p.shape == (2, 1)
+    d = p.detach().numpy()
+    assert np.isclose(d[0], 4)
+    assert np.isclose(d[1], 0)
+    p = partial(output, y)
+    assert p.shape == (2, 1)
+    d = p.detach().numpy()
+    assert np.isclose(d[0], np.sin(2))
+    assert np.isclose(d[1], 0)
+
+
+def test_partial_mixed_derivative():
+    x = torch.tensor([[1.0], [2.0]], requires_grad=True)
+    y = torch.tensor([[1.0], [3.0]], requires_grad=True)
+    t = torch.tensor([[2.0], [0.0]], requires_grad=True)
+    output = part_function(x, y, t)
+    p = partial(output, x, t, x)
+    assert p.shape == (2, 1)
+    d = p.detach().numpy()
+    assert np.isclose(d[0], 2)
+    assert np.isclose(d[1], 2)
+
+
+def test_partial_mixed_derivative_2():
+    x = torch.tensor([[1.0], [2.0]], requires_grad=True)
+    y = torch.tensor([[1.0], [3.0]], requires_grad=True)
+    t = torch.tensor([[2.0], [0.0]], requires_grad=True)
+    output = part_function(x, y, t)
+    p = partial(output, y, t, t)
+    assert p.shape == (2, 1)
+    d = p.detach().numpy()
+    assert np.isclose(d[0], -np.sin(2))
+    assert np.isclose(d[1], 0)
+
+
+def test_partial_repeated_gives_0():
+    x = torch.tensor([[1.0], [2.0]], requires_grad=True)
+    y = torch.tensor([[1.0], [3.0]], requires_grad=True)
+    t = torch.tensor([[2.0], [0.0]], requires_grad=True)
+    output = part_function(x, y, t)
+    p = partial(output, x, x, x)
+    assert p.shape == (2, 1)
+    d = p.detach().numpy()
+    assert np.allclose(d[0], [[0], [0]])
+
+
+# Test convective
+def convec_function(x):
+    out = torch.zeros((len(x), 3))
+    out[:, :1] += x[:, :1]**2 
+    out[:, 1:2] += x[:, :1]
+    out[:, 2:] += x[:, 1:2] * x[:, 2:]
+    return out
+
+
+def test_convective_one_input():
+    a = torch.tensor([[1.0, 1.0, 2.0]], requires_grad=True)
+    output = convec_function(a)
+    d = convective(output, a, output)
+    assert d.shape == (1, 3)
+    d = d.detach().numpy()
+    assert np.isclose(d[0], [2, 1, 4]).all()
+
+
+def test_convective_many_inputs():
+    a = torch.tensor([[1, 1, 2.0], [0, 1.0, 0], [1.0, 3.0, 4]], requires_grad=True)
+    output = convec_function(a)
+    d = convective(output, a, output)
+    assert d.shape == (3, 3)
+    d = d.detach().numpy()
+    assert np.isclose(d[0], [2, 1, 4]).all()
+    assert np.isclose(d[1], [0, 0, 0]).all()
+    assert np.isclose(d[2], [2, 1, 40]).all()
+
+
+def test_convective_for_different_conv_field():
+    a = torch.tensor([[1, 1, 2.0], [0, 1.0, 0], [1.0, 3.0, 4]], requires_grad=True)
+    output = convec_function(a)
+    d = convective(output, a, a)
+    assert d.shape == (3, 3)
+    d = d.detach().numpy()
+    assert np.isclose(d[0], [2, 1, 4]).all()
+    assert np.isclose(d[1], [0, 0, 0]).all()
+    assert np.isclose(d[2], [2, 1, 24]).all()
+
+
+def test_convective_in_2D():
+    a = torch.tensor([[1, 1], [0, 1.0]], requires_grad=True)
+    def func(x):
+        out = torch.zeros((len(x), 2))
+        out[:, :1] += x[:, :1]**2 
+        out[:, 1:2] += x[:, 1:]
+        return out
+    output = func(a)
+    d = convective(output, a, a)
+    assert d.shape == (2, 2)
+    d = d.detach().numpy()
+    assert np.isclose(d[0], [2, 1]).all()
+    assert np.isclose(d[1], [0, 1]).all()

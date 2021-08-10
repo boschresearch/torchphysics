@@ -56,6 +56,47 @@ def test_serialize_condition():
     assert dct['weight'] == 1
 
 
+def test_remove_nan_from_data():
+    out = np.array([[np.NaN], [2]])
+    batch_size = 2
+    input_dic = {'x': np.array([[0], [2]]),
+                 't': np.array([[1], [3]])}
+    input_dic, out = condi.remove_nan(input_dic, out, batch_size)
+    assert len(out) == 1
+    assert out[0] == [2]
+    assert input_dic['x'] == [2]
+    assert input_dic['t'] == [3]
+
+
+def test_remove_nan_from_data_only_for_arrays():
+    out = np.array([[np.NaN], [2]])
+    batch_size = 2
+    input_dic = {'x': [[0], [2]],
+                 't': [[1], [3]]}
+    input_dic, out = condi.remove_nan(input_dic, out, batch_size)
+    assert len(out) == 1
+    assert out[0] == [2]
+    assert np.allclose(input_dic['x'], [[0], [2]])
+    assert np.allclose(input_dic['t'], [[1], [3]])
+
+
+def test_get_data_len_with_int():
+    assert condi.get_data_len(3) == 3
+
+
+def test_get_data_len_with_list():
+    assert condi.get_data_len([3, 4, 5]) == 60
+
+
+def test_get_data_len_with_dic():
+    assert condi.get_data_len({'x': 4, 't': 3}) == 12    
+
+
+def test_get_data_len_error_for_wrong_type():
+    with pytest.raises(ValueError):
+        _ = condi.get_data_len('hello')
+
+
 # Test DiffEqCondition
 def test_create_diffeqcondition():
     cond = condi.DiffEqCondition(pde=condition_function,
@@ -219,6 +260,28 @@ def test_data_sampling_with_dic_diffeqcondition():
     assert np.shape(data['t']) == (50, 1)
     assert t.domain.is_inside(data['t']).all()
     assert x.domain.is_inside(data['x']).all()
+
+
+def test_data_sampling_with_data_fun_diffeqcondition():
+    def fun(x):
+        return x
+    cond = condi.DiffEqCondition(pde=condition_function,
+                                 data_fun=fun,
+                                 norm=torch.nn.MSELoss(),
+                                 dataset_size=500,
+                                 sampling_strategy='random', 
+                                 data_fun_whole_batch=False)
+    x = Variable(name='x', domain=Interval(0, 1))
+    t = Variable(name='t', domain=Interval(-1, 1))
+    setting = Setting(variables={'x': x, 't': t})
+    cond.setting = setting
+    data = cond.get_data()
+    assert np.shape(data['x']) == (500, 1)
+    assert np.shape(data['t']) == (500, 1)
+    assert np.shape(data['data']) == (500, 1)
+    assert np.equal(data['data'], data['x']).all()
+    assert t.domain.is_inside(data['t']).all()
+    assert not x.domain.is_inside(data['t']).all()
 
 
 def test_serialize_diffeqcondition():

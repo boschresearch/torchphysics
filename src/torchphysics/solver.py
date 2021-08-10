@@ -65,7 +65,7 @@ class PINNModule(pl.LightningModule):
             dct['problem'] = self.trainer.datamodule.serialize()
         else:
             dct['problem'] = None
-        dct['optimizer'] = {'name': self.optimizer.__class__.__name__,
+        dct['optimizer'] = {'name': self.optimizer.__name__,
                             'lr': self.lr
                             }
         dct['optim_params'] = self.optim_params
