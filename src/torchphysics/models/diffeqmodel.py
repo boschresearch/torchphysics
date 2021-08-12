@@ -60,6 +60,18 @@ class DiffEqModel(nn.Module):
         return torch.cat([v for v in ordered_inputs.values()], dim=1)
 
     def _prepare_outputs(self, y):
+        """Divides the model output to the given solution dimensions.
+
+        Parameters
+        ----------
+        y : torch.Tensor
+            The output tensor, after evaluating the input data.
+        Returns
+        -------
+        ordered dict
+            A dictionary containing the output tensors in form and order 
+            of solution_dims. 
+        """
         idx = 0
         dct = {}
         for s in self.solution_dims:

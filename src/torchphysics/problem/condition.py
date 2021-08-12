@@ -94,10 +94,18 @@ class DiffEqCondition(Condition):
         The norm is used to compute the loss for the deviation of the model from a PDE.
     name : str
         name of this condition (should be unique per problem or variable)
-    sampling_strategy : str
+    data_fun : function handle, optional
+        A method that represents the possible right-hand side of the differential 
+        equation.
+        If the right-hand side dependents on the model outputs, or is zero, this
+        parameter should be None and the whole condition has to be implemented in
+        bound_condition_fun!
+        If independent of the model, it is more efficent to comput the function only
+        once. 
+    sampling_strategy : str, optional
         The sampling strategy used to sample data points for this condition. See domains
         for more details.
-    weight : float
+    weight : float, optional
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
     dataset_size : int, list, tuple or dic
@@ -107,10 +115,13 @@ class DiffEqCondition(Condition):
         number. The number of desired points can also be uniquely picked for each
         variable, if a list, tuple or dic is given as an input. Then the whole number
         of data points will be the product of the given numbers.
-    track_gradients : bool
+    track_gradients : bool, optional
         If True, the gradients are still tracked during validation to enable the
         computation of derivatives w.r.t. the inputs.
-    data_plot_variables : bool or tuple
+    data_fun_whole_batch : bool, optional
+        Specifies if the data_fun can work with a whole batch of data (then True)
+        or every sample point has to be evaluated alone (False). 
+    data_plot_variables : bool or tuple, optional
         The variables which are used to log the used training data in a scatter plot.
         If False, no plots are created. If True, behaviour is defined in each condition.
     """
@@ -179,11 +190,11 @@ class DataCondition(Condition):
 
     Parameters
     ----------
-    data_x : dict
+    data_inp : dict
         A dictionary containing pairs of variables and data for that variables,
         organized in numpy arrays or torch tensors of equal length.
-    data_u : array-like
-        The targeted solution values for the data points in data_x.
+    data_out : array-like
+        The targeted solution values for the data points in data_inp.
     name : str
         name of this condition (should be unique per problem or variable)
     norm : torch.nn.Module
@@ -191,6 +202,8 @@ class DataCondition(Condition):
         two input tensors, and is therefore similar to the implementation of nn.MSELoss.
         The norm is used to compute the loss for the deviation of the model from the
         given data.
+    solution_name : str
+        The output function which should be fitted to the given dataset.
     weight : float
         Scalar weight of this condition that is used in the weighted sum for the
         training loss. Defaults to 1.
@@ -286,6 +299,11 @@ class DirichletCondition(BoundaryCondition):
         two input tensors, and is therefore similar to the implementation of nn.MSELoss.
         The norm is used to compute the loss for the deviation of the model from the
         given data.
+    solution_name : str
+        The output function for which the given boundary condition should be learned.
+    data_fun_whole_batch : bool, optional
+        Specifies if the dirichlet_fun can work with a whole batch of data (then True),
+        or every sample point has to be evaluated alone (False). 
     sampling_strategy : str
         The sampling strategy used to sample data points for this condition. See domains
         for more details.
@@ -369,6 +387,11 @@ class NeumannCondition(BoundaryCondition):
         two input tensors, and is therefore similar to the implementation of nn.MSELoss.
         The norm is used to compute the loss for the deviation of the model from the
         given data.
+    solution_name : str
+        The output function for which the given boundary condition should be learned.
+    data_fun_whole_batch : bool, optional
+        Specifies if the neumann_fun can work with a whole batch of data (then True),
+        or every sample point has to be evaluated alone (False). 
     sampling_strategy : str
         The sampling strategy used to sample data points for this condition. See domains
         for more details.
@@ -484,6 +507,9 @@ class DiffEqBoundaryCondition(BoundaryCondition):
         If the right-hand side dependents on the model outputs, or is zero, this
         parameter should be None and the whole condition has to be implemented in
         bound_condition_fun.
+    data_fun_whole_batch : bool, optional
+        Specifies if the data_fun can work with a whole batch of data (then True)
+        or every sample point has to be evaluated alone (False). 
     data_plot_variables : bool or tuple
         The variables which are used to log the used training data in a scatter plot.
         If False, no plots are created. If True, behaviour is defined in each condition.

@@ -16,6 +16,8 @@ def get_min_max_inside(model, solution_name, domain_variable, resolution, device
     ----------
     model : DiffEqModel
         A neural network of which values should be computed.
+    solution_name : str
+        The output function for which the min. and max. should be computed.
     domain_variable : Variabale
         The main variable(s) over which the solution should be evaluated. For
         this variable a grid will be put over the domain. 
@@ -62,8 +64,9 @@ def get_min_max_inside(model, solution_name, domain_variable, resolution, device
     return min_pred, max_pred
 
 
-def get_min_max_boundary(model, solution_name, boundary_variable, resolution, device='cpu',
-                         dic_for_other_variables=None, all_variables=None):
+def get_min_max_boundary(model, solution_name, boundary_variable, resolution,
+                         device='cpu', dic_for_other_variables=None,
+                         all_variables=None):
     '''Computes the minimum and maximum values of the model w.r.t. the given
     variables (at the boundary).
 
@@ -71,6 +74,8 @@ def get_min_max_boundary(model, solution_name, boundary_variable, resolution, de
     ----------
     model : DiffEqModel
         A neural network of which values should be computed.
+    solution_name : str
+        The output function for which the min. and max. should be computed.
     boundary_variable : Variabale
         The main variable(s) over which the solution should be evaluated. For
         this variable a grid will be put over the boundary. 

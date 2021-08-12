@@ -17,6 +17,8 @@ class Variable(Problem):
         Boundary conditions for this variable that are used in training
     val_conditions : list or dict of conditions
         Boundary conditions for this variable that are tracked during validation
+    order : int
+        The order of the problem w.r.t this variable.
     """
     def __init__(self, name, domain, train_conditions={}, val_conditions={}, order=0):
         self.setting = None  # other variables, are set by Setting object

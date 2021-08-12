@@ -393,12 +393,12 @@ def _create_domain(plot_variable, points, device):
 
 def _create_input_dic(input_dic, points, dic_for_other_variables, all_variables,
                       device):
-    '''Creates the input dictonary for the model
+    '''Creates the input dictionary for the model
 
     Parameters
     ----------
     input_dic : dic
-        The dictonary that already contains the data for the plot variable
+        The dictionary that already contains the data for the plot variable
     dic_for_other_variables : dic
         The data for all other variables
     all_variables : dic or list

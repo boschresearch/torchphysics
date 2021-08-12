@@ -10,11 +10,11 @@ class BlockFCN(DiffEqModel):
     Parameters
     ----------
     variable_dims : dic
-        A dictonary containing the dimensionality of the input variables.
+        A dictionary containing the dimensionality of the input variables.
         Gets automatically created by the setting and can be called over
         Setting.variable_dims. 
     solution_dims : dic
-        A dictonary containing the dimensionality of the output functions.
+        A dictionary containing the dimensionality of the output functions.
         Gets automatically created by the setting and can be called over
         Setting.solution_dims. 
     blocks : int
@@ -70,8 +70,11 @@ class BlockFCN(DiffEqModel):
 
         Returns
         -------
-        x : torch.Tensor
-            Output of the model
+        x : ordered dict
+            A dictionary containing the searched functions. The model itself gives a
+            tensor (or batch of tensors) as an output. Depending on the initially 
+            given solution_dims, the tensor will be split up on the dimension
+            of the solution. 
         """
         # prepare input
         x = self._prepare_inputs(input_dict)
@@ -88,11 +91,11 @@ class SimpleFCN(DiffEqModel):
     Parameters
     ----------
     variable_dims : dic
-        A dictonary containing the dimensionality of the input variables.
+        A dictionary containing the dimensionality of the input variables.
         Gets automatically created by the setting and can be called over
         Setting.variable_dims. 
     solution_dims : dic
-        A dictonary containing the dimensionality of the output functions.
+        A dictionary containing the dimensionality of the output functions.
         Gets automatically created by the setting and can be called over
         Setting.solution_dims. 
     depth : int
@@ -144,8 +147,11 @@ class SimpleFCN(DiffEqModel):
 
         Returns
         -------
-        x : torch.Tensor
-            Output of the model
+        x : ordered dict
+            A dictionary containing the searched functions. The model itself gives a
+            tensor (or batch of tensors) as an output. Depending on the initially 
+            given solution_dims, the tensor will be split up on the dimension
+            of the solution. 
         """
         # prepare input
         x = self._prepare_inputs(input_dict)

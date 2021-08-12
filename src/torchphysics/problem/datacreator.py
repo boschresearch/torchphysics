@@ -12,7 +12,7 @@ class DataCreator():
     Parameters
     ----------
     variables : dic
-        A dictonary containg all variables of the problem.
+        A dictionary containg all variables of the problem.
     dataset_size : int, list, tuple or dic
         Amount of samples in the used dataset. The dataset is generated once at the
         beginning of the training. 
@@ -77,7 +77,7 @@ class InnerDataCreator(DataCreator):
     Parameters
     ----------
     variables : dic
-        A dictonary containg all variables of the problem.
+        A dictionary containg all variables of the problem.
     dataset_size : int, list, tuple or dic
         Amount of samples in the used dataset. The dataset is generated once at the
         beginning of the training. 
@@ -141,7 +141,7 @@ class BoundaryDataCreator(DataCreator):
     Parameters
     ----------
     variables : dic
-        A dictonary containg all variables of the problem.
+        A dictionary containg all variables of the problem.
     dataset_size : int, list, tuple or dic
         Amount of samples in the used dataset. The dataset is generated once at the
         beginning of the training. 
@@ -256,7 +256,7 @@ class BoundaryDataCreator(DataCreator):
             sum_of_dim = sum_of_dim + self.variables[vname].domain.dim
         root_dataset_size = int(np.ceil(scaled_dataset_size**(1/sum_of_dim)))
         scaled_dataset_size = root_dataset_size**sum_of_dim
-        # Create the dictonary
+        # Create the dictionary
         for vname in self.variables:
             if (vname == self.boundary_variable
                 and self.boundary_sampling_strategy == 'random'):
@@ -290,7 +290,7 @@ class BoundaryDataCreator(DataCreator):
                 sum_of_dim = sum_of_dim + self.variables[vname].domain.dim
             scaled_dataset_size = int(np.ceil(scaled_dataset_size**(1/sum_of_dim)))    
 
-        # Create the dictonary for the dataset sizes
+        # Create the dictionary for the dataset sizes
         for vname in self.variables:
             if self.sampling_strategy == 'random':
                 dataset_dic[vname] = self.dataset_size
