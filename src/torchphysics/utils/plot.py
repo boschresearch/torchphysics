@@ -211,6 +211,7 @@ def line_plot(model, solution_name, plot_variables, points, angle,
                                                     all_variables, device,
                                                     plot_variable)
     output = _evaluate_model(model, solution_name, plot_output_entry, input_dic)
+    output = _take_norm_of_output(plot_output_entry, output)
     # Create the plot
     fig = plt.figure()
     ax = fig.add_subplot()
@@ -351,9 +352,7 @@ def contour_2D(model, solution_name, plot_variables, points, angle,
                                                     plot_variable)
 
     output = _evaluate_model(model, solution_name, plot_output_entry, input_dic)
-    if len(plot_output_entry) > 1:
-        # if we have many outputs take the norm
-        output = np.linalg.norm(output, axis=1)
+    output = _take_norm_of_output(plot_output_entry, output)
     # Create the plot
     fig = plt.figure()
     ax = fig.add_subplot()
@@ -442,8 +441,15 @@ def _order_input_dic(input_dic, all_variables):
 
 def _evaluate_model(model, solution_name, plot_output_entry, input_dic):
     # Evaluate the model
-    output = model.forward(input_dic)[solution_name]
+    output = model(input_dic)[solution_name]
     output = output.data.cpu().numpy()[:, plot_output_entry]
+    return output
+
+
+def _take_norm_of_output(plot_output_entry, output, axis=1):
+    if len(plot_output_entry) > 1:
+        # if we have many outputs take the norm
+        output = np.linalg.norm(output, axis=axis)
     return output
 
 

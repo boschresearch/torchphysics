@@ -28,16 +28,17 @@ def animation(model, solution_name, plot_variable, domain_points,
     domain_points : int 
         The number of points that should be used for the domain discretization.
     animation_variable : Variable
-        The varaiable over which the animation has to be created. Needs to 
+        The variable over which the animation has to be created. Needs to 
         have an Interval as a domain.
     frame_number : int
-        Number of frames
+        Number of frames, of the animation. Will be sampled equidistant in the 
+        domain of the animation_variable.
     device : str or torch device
         The device of the model.
-    ani_speed : Number
-        Speed of the animation
+    ani_speed : Number, optional
+        Speed of the animation.
     angle : list, optional
-        The view angle for surface plots. Standart angle is [30, 30]
+        The view angle for 3D plots. Standart angle is [30, 30]
     dic_for_other_variables : dict, optional
         A dictionary containing values for all the other variables of the 
         model. E.g. {'D' : [1,2], ...}
@@ -133,6 +134,7 @@ def animation_line(model, solution_name, plot_variable, points,
     # evaluate the model and get max and min values over all points
     outputs = _evaluate_model(model, solution_name, points, animation_points, 
                               animation_variable.name, input_dic, plot_output_entry)
+    outputs = plot._take_norm_of_output(plot_output_entry, outputs, axis=-1)
     output_max, output_min = _get_max_min(outputs)
     # construct the figure handle and axis for the animation
     fig = plt.figure()
@@ -335,9 +337,7 @@ def animation_contour_2D(model, solution_name, plot_variable, points,
     # evaluate the model and get max and min values over all points
     outputs = _evaluate_model(model, solution_name, points, animation_points, 
                               animation_variable.name, input_dic, plot_output_entry)
-    if len(plot_output_entry) > 1:
-        # if we have many outputs take the norm
-        outputs = np.linalg.norm(outputs, axis=-1)
+    outputs = plot._take_norm_of_output(plot_output_entry, outputs, axis=-1)
     output_max, output_min = _get_max_min(outputs)
     # Create the plot
     fig = plt.figure()
@@ -429,6 +429,6 @@ def _evaluate_model(model, solution_name, points, animation_points, animation_na
     for i in range(len(animation_points)):
         # only need to change the animation varibale
         input_dic[animation_name] = animation_points[i][0]*torch.ones((points, 1))
-        out = model.forward(input_dic)[solution_name]
+        out = model(input_dic)[solution_name]
         outputs[:,i,:] = out.data.cpu().numpy()[:, plot_output_entry]
     return outputs
