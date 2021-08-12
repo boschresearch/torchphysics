@@ -9,15 +9,19 @@ class BlockFCN(DiffEqModel):
 
     Parameters
     ----------
-    input_dim : int
-        dimensionality of the input variable
+    variable_dims : dic
+        A dictonary containing the dimensionality of the input variables.
+        Gets automatically created by the setting and can be called over
+        Setting.variable_dims. 
+    solution_dims : dic
+        A dictonary containing the dimensionality of the output functions.
+        Gets automatically created by the setting and can be called over
+        Setting.solution_dims. 
     blocks : int
         number of relu/tanh blocks in the FCN
         (no of hidden layers will be 2*blocks)
     width : int
         width of the hidden layers
-    output_dim : int
-        amount of output neurons
     """
 
     def __init__(self, variable_dims, solution_dims, blocks=3, width=100):
@@ -78,18 +82,23 @@ class BlockFCN(DiffEqModel):
 
 
 class SimpleFCN(DiffEqModel):
-    """A fully connected neural network with constant width.
+    """A fully connected neural network with constant width. The layers will
+    be initalized with a xavier-normal distribution.
 
     Parameters
     ----------
-    input_dim : int
-        dimensionality of the input variable
+    variable_dims : dic
+        A dictonary containing the dimensionality of the input variables.
+        Gets automatically created by the setting and can be called over
+        Setting.variable_dims. 
+    solution_dims : dic
+        A dictonary containing the dimensionality of the output functions.
+        Gets automatically created by the setting and can be called over
+        Setting.solution_dims. 
     depth : int
         number of hidden layers in the FCN
     width : int
         width of the hidden layers
-    output_dim : int
-        amount of output neurons
     """
 
     def __init__(self, variable_dims, solution_dims, depth=3, width=20):

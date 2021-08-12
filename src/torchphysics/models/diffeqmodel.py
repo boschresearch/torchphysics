@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import torch.nn as nn
 
 
@@ -65,6 +66,92 @@ class DiffEqModel(nn.Module):
             dct[s] = y[:, idx:idx+self.solution_dims[s]]
             idx += self.solution_dims[s]
         return dct
+
+    def get_layers(self):
+        """Returns the layers structure of the model.
+
+        Returns
+        -------
+        torch.nn.ModuleList
+            A list containg the used layers, in the correct order.
+        """
+        return self.layers
+
+    def set_weights_of_layer(self, new_weights, layer):
+        """Changes the weights of the specified layer to the given values.
+
+        Parameters
+        ----------
+        new_weights : number, list, array or tensor
+            The value of the new weights. If a single number is given as an input,
+            all weights of the layer will be set to this number.
+            If a list, array or tensor is given, they have to be of the right
+            input and output dimension w.r.t the layer they replace. 
+        layer : int
+            The index of the layer that should be changed. To get the structure of 
+            the used model, one can call .get_layers().
+        """
+        if isinstance(new_weights, (int, float)):
+            self.layers[layer].weight.data.fill_(float(new_weights))
+        else:
+            new_weights = self._change_to_tensor(new_weights)
+            if not new_weights.shape == self.layers[layer].weight.shape:
+                raise ValueError(f"""The shape of new_weight: {new_weights.shape} 
+                                     does not fit the shape of the layer: 
+                                     {self.layers[layer].weight.shape}.""")
+            self.layers[layer].weight.data = torch.nn.Parameter(new_weights)
+            
+    def set_biases_of_layer(self, new_biases, layer):
+        """Changes the biases of the specified layer to the given values.
+
+        Parameters
+        ----------
+        new_biases : number, list, array or tensor
+            The value of the new biases. If a single number is given as an input,
+            all biases of the layer will be set to this number.
+            If a list, array or tensor is given, they have to be of the right
+            dimension w.r.t the bias they replace. 
+        layer : int
+            The index of the layer that should be changed. To get the structure of 
+            the used model, one can call .get_layers().
+        """
+        if isinstance(new_biases, (int, float)):
+            self.layers[layer].bias.data.fill_(float(new_biases))
+        else:
+            new_biases = self._change_to_tensor(new_biases)
+            if not new_biases.shape == self.layers[layer].bias.shape:
+                raise ValueError(f"""The shape of new_weight: {new_biases.shape} 
+                                     does not fit the shape of the layer: 
+                                     {self.layers[layer].bias.shape}.""")
+            self.layers[layer].bias.data = torch.nn.Parameter(new_biases)
+
+    def set_activation_function_of_layer(self, new_func, layer):
+        """Changes the biases of the specified layer to the given values.
+
+        Parameters
+        ----------
+        new_func : function handle
+            The new activation function of the layer. 
+            If this is a custom function one has to implement a forward and
+            backward call.
+        layer : int
+            The index of the layer that should be changed. To get the structure of 
+            the used model, one can call .get_layers().
+        """
+        self.layers[layer] = new_func
+
+    def _change_to_tensor(self, input):
+        # Changes new weights and biases to torch.tensors
+        if isinstance(input, torch.Tensor):
+            return input
+        elif isinstance(input, np.ndarray):
+            return torch.from_numpy(input)
+        elif isinstance(input, (tuple, list)):
+            return torch.FloatTensor(input)
+        else:
+            raise ValueError(f"""Expected the new weights/biases to be
+                                 number, list, np.array or tensor, not
+                                 {type(input)}""")
 
     def serialize(self):
         raise NotImplementedError
