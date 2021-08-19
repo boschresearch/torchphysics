@@ -1,3 +1,4 @@
+from typing import Iterable
 import torch
 import numpy as np
 import torch.nn as nn
@@ -10,15 +11,37 @@ class DiffEqModel(nn.Module):
     Neural Network.
     """
 
-    def __init__(self, variable_dims, solution_dims):
+    def __init__(self, variable_dims, solution_dims, normalization_dict=None):
         super().__init__()
 
         self.variable_dims = variable_dims
-        # compute the input dimensionality for the network
 
+        # compute the input dimensionality for the network
         self.input_dim = 0
         for v in self.variable_dims:
             self.input_dim += self.variable_dims[v]
+
+        # setup normalization layer
+        if normalization_dict is None:
+            self.normalize = nn.Identity()
+        else:
+            self.normalize = nn.Linear(self.input_dim, self.input_dim)
+            diag = []
+            bias = []
+            for k in normalization_dict:
+                if isinstance(normalization_dict[k][0], Iterable):
+                    diag.extend(normalization_dict[k][0])
+                else:
+                    diag.append(normalization_dict[k][0])
+                if isinstance(normalization_dict[k][1], Iterable):
+                    bias.extend(normalization_dict[k][1])
+                else:
+                    bias.append(normalization_dict[k][1])
+            diag = 2./torch.tensor(diag)
+            bias = -torch.tensor(bias)*diag
+            with torch.no_grad():
+                self.normalize.weight.copy_(torch.diag(diag))
+                self.normalize.bias.copy_(bias)
 
         # compute output dimensionality
         self.solution_dims = solution_dims
@@ -53,11 +76,12 @@ class DiffEqModel(nn.Module):
             if len(ordered_inputs) != len(input_dict):
                 raise KeyError
         except KeyError:
-            print(f"""The model was trained on Variables with different names.
+            print(f"""The given variable names do not fit variable_dims.
                       This can lead to unexpected behaviour.
                       Please use Variables {list(self.variable_dims.keys())}.""")
         # construct single torch tensor from dictionary
-        return torch.cat([v for v in ordered_inputs.values()], dim=1)
+        x = torch.cat([v for v in ordered_inputs.values()], dim=1)
+        return self.normalize(x)
 
     def _prepare_outputs(self, y):
         """Divides the model output to the given solution dimensions.

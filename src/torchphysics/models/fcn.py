@@ -104,9 +104,11 @@ class SimpleFCN(DiffEqModel):
         width of the hidden layers
     """
 
-    def __init__(self, variable_dims, solution_dims, depth=3, width=20):
+    def __init__(self, variable_dims, solution_dims, normalization_dict=None, depth=3,
+                 width=20):
         super().__init__(variable_dims=variable_dims,
-                         solution_dims=solution_dims)
+                         solution_dims=solution_dims,
+                         normalization_dict=normalization_dict)
 
         self.depth = depth
         self.width = width

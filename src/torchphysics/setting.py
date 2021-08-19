@@ -52,7 +52,7 @@ class Setting(Problem, DataModule):
         solution during training.
     solution_dims : dict
         A dictionary containing the dimensionality of the output functions.
-        E.g. if we want to solve a Navier-Stokes-eq. and find the velocity 'v' and 
+        E.g. if we want to solve a Navier-Stokes-eq. and find the velocity 'v' and
         pressure 'p': 
         In 2D: solution_dims = {'v': 2, 'p': 1}
         In 3D: solution_dims = {'v': 3, 'p': 1}
@@ -245,6 +245,21 @@ class Setting(Problem, DataModule):
     @property
     def variable_dims(self):
         return {k: v.get_dim() for k, v in self.variables.items()}
+
+    @property
+    def normalization_dict(self):
+        out = {}
+        for k in self.variables:
+            var = self.variables[k]
+            width = []
+            center = []
+            bounds = var.domain._compute_bounds()
+            for i in range(var.domain.dim):
+                min_, max_ = bounds[2*i], bounds[2*i+1]
+                width.append(max_-min_)
+                center.append((max_+min_)/2)
+            out[k] = (width, center)
+        return out
 
     def serialize(self):
         dct = {}
