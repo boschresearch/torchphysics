@@ -32,7 +32,7 @@ def test_prepare_too_many_inputs(capfd):
              'D': torch.ones((3, 3))}
     Dmodel._prepare_inputs(input)
     out, _ = capfd.readouterr()
-    assert out == """The model was trained on Variables with different names.
+    assert out == """The given variable names do not fit variable_dims.
                       This can lead to unexpected behaviour.
                       Please use Variables ['x', 't'].\n"""
 

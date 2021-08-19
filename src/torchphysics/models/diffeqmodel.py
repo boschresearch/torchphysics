@@ -136,7 +136,7 @@ class DiffEqModel(nn.Module):
                                      does not fit the shape of the layer: 
                                      {self.layers[layer].weight.shape}.""")
             self.layers[layer].weight.data = torch.nn.Parameter(new_weights)
-            
+ 
     def set_biases_of_layer(self, new_biases, layer):
         """Changes the biases of the specified layer to the given values.
 
