@@ -65,6 +65,17 @@ class Domain_operation(Domain):
         new_points = np.delete(new_points, index, axis=0)
         return new_points
 
+    def _lhs_sampling_inside(self, n):
+        if self.dim == 1: # Union of two intervals
+            n_1 = int(n * self.domain_1.volume/self.volume)
+            points = self.domain_1._lhs_sampling_inside(n_1)
+            points_2 = self.domain_2._lhs_sampling_inside(n-n_1)
+            return np.append(points, points_2, axis=0)
+        elif self.dim == 2:
+            return Triangle._grid_in_triangle(self, n, type='lhs')
+        else:
+            raise NotImplementedError
+
     def _sample_new_points_boundary(self, domain_1, n, type):
         new_points = domain_1.sample_boundary(n, type) # sample points
         on_bound = self.is_on_boundary(new_points) # check if there at the boundary of
@@ -101,6 +112,58 @@ class Domain_operation(Domain):
         points = super()._check_boundary_grid_enough_points(n, points)
         points = super()._cut_points(n, points)
         return points.astype(np.float32)
+
+    def _normal_sampling_boundary(self, domain_1, domain_2, n, mean, cov):
+        on_1 = domain_1.is_on_boundary([mean])
+        on_2 = domain_2.is_on_boundary([mean])
+        if on_1 & on_2: # divide n and sample n/2 points on each domain
+            points = self._sample_normal_points(domain_1,
+                                                int(n/2), mean, cov)
+            points_2 = self._sample_normal_points(domain_2,
+                                                  n-len(points), 
+                                                  mean, cov)
+            return np.append(points, points_2, axis=0)
+        else:
+            mean_domain = domain_1
+            other_domain = domain_2
+            if on_2:
+                mean_domain = domain_2
+                other_domain = domain_1
+            return self._mean_only_on_one_domain(mean_domain, other_domain,
+                                                 n, mean, cov)
+
+    def _sample_normal_points(self, domain, n, mean, cov):
+        # samples points only on one domain and checks if they are and the
+        # new domain
+        points = np.empty((0, self.dim))
+        while len(points) < n:
+            new_points = domain._normal_sampling_boundary(n-len(points), mean, cov)
+            on_bound = self.is_on_boundary(new_points)
+            ind = np.where(on_bound)[0]
+            points = np.append(points, new_points[ind], axis=0)
+        return points.astype(np.float32)
+
+    def _mean_only_on_one_domain(self, mean_domain, other_domain, n, mean, cov):
+        # first try to sample on the domain where the mean is.
+        # Maybe all created points lay in the connected domain -> done
+        points = mean_domain._normal_sampling_boundary(n, mean, cov)
+        on_bound = self.is_on_boundary(points)
+        if all(on_bound):
+            return points
+        else:
+            points = points[np.where(on_bound)[0]]
+            missing = n - len(points)
+            mean = self._approx_mean_on_other_domain(other_domain, mean, n)
+            new_points = self._sample_normal_points(other_domain, missing, 
+                                                    mean, cov)
+        return np.append(points, new_points, axis=0)
+
+    def _approx_mean_on_other_domain(self, domain, point, n):
+        grid = domain._grid_sampling_boundary(n)
+        on_bound = np.where(self.is_on_boundary(grid))[0]
+        grid = grid[on_bound]
+        norm = np.linalg.norm(grid - point, axis=1)
+        return grid[np.argmin(norm)]
 
     def _get_boundary_normal(self, domain_1, domain_2, points, operation_is_cut=False):
         normals = np.zeros((len(points), self.dim))
@@ -260,6 +323,9 @@ class Cut(Domain_operation):
     def _grid_sampling_boundary(self, n):
         return super()._grid_sampling_boundary(self.base, self.cut, n)
 
+    def _normal_sampling_boundary(self, n, mean, cov):
+        return super()._normal_sampling_boundary(self.base, self.cut, n, mean, cov)
+
     def serialize(self):
         # to show data/information in tensorboard
         dct = super().serialize()
@@ -379,7 +445,7 @@ class Union(Domain_operation):
         points = np.append(points, new_points, axis=0)
         return points.astype(np.float32)
 
-    def sample_boundary(self, n, type='random'):
+    def sample_boundary(self, n, type='random', sample_params={}):
         # check if we have intervals, for them we have special strategies
         if self.dim == 1:
             if type == 'lower_bound_only':
@@ -388,7 +454,7 @@ class Union(Domain_operation):
             elif type == 'upper_bound_only':
                 up_bound = np.max([self.domain_1.up_bound, self.domain_2.up_bound])
                 return np.repeat(up_bound, n).astype(np.float32).reshape(-1, 1)
-        return super().sample_boundary(n, type=type)
+        return super().sample_boundary(n, type, sample_params)
 
     def _random_sampling_inside(self, n):
         return self._create_points_inside(n, type='random')
@@ -412,6 +478,10 @@ class Union(Domain_operation):
 
     def _grid_sampling_boundary(self, n):
         return super()._grid_sampling_boundary(self.domain_1, self.domain_2, n)
+
+    def _normal_sampling_boundary(self, n, mean, cov):
+        return super()._normal_sampling_boundary(self.domain_1, self.domain_2,
+                                                 n, mean, cov)
 
     def serialize(self):
         # to show data/information in tensorboard
@@ -539,6 +609,10 @@ class Intersection(Domain_operation):
 
     def _grid_sampling_boundary(self,n):
         return super()._grid_sampling_boundary(self.domain_1, self.domain_2, n)
+
+    def _normal_sampling_boundary(self, n, mean, cov):
+        return super()._normal_sampling_boundary(self.domain_1, self.domain_2,
+                                                 n, mean, cov)
 
     def serialize(self):
         # to show data/information in tensorboard

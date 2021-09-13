@@ -130,61 +130,81 @@ class Rectangle(Domain):
         points = np.add(points, self.corner_dl)
         return points
 
-    def _random_sampling_boundary(self, n):
-        n_x = int(np.floor(self.length_lr*n/(self.length_lr+self.length_td)))
-        n_y = int(np.ceil(self.length_td*n/(self.length_lr+self.length_td)))
-        side_td = self._construct_random_boundary_sides(n_x,
-                                                        self.corner_dr-self.corner_dl,
-                                                        self.corner_tl-self.corner_dl)
-        side_lr = self._construct_random_boundary_sides(n_y,
-                                                        self.corner_tl-self.corner_dl,
-                                                        self.corner_dr-self.corner_dl)
-        return np.concatenate((side_td, side_lr)).astype(np.float32)
+    def _lhs_sampling_inside(self, n):
+        points = super()._lhs_sampling_inside(n)
+        points = self._transform_to_rectangle(points)
+        return points.astype(np.float32)
 
-    def _construct_random_boundary_sides(self, n, direction, replacement):
-        if n > 0:
-            sides = np.add(self.corner_dl, self._sampling_axis(n, direction))
-            rand_int = np.random.randint(0, 2, n).reshape(-1, 1)
-            sides = np.add(sides, (replacement) * rand_int)
-            return sides
-        return np.empty((0, 2))
+    def _random_sampling_boundary(self, n):
+        # sample equdistant point on the interval [0, self.surface],
+        # than transform each point to the boundary depending on
+        # the side lengths of the rectangle. 
+        line_points = np.random.uniform(0, self.surface, n)
+        corners, side_lengths = self._create_corner_and_length_array()
+        points = Triangle._distribute_line_to_boundary(self, line_points,
+                                                       corners,
+                                                       side_lengths)
+        return points.astype(np.float32)
 
     def _grid_sampling_boundary(self, n):
         # sample equdistant point on the interval [0, self.surface],
         # than transform each point to the boundary depending on
         # the side lengths of the rectangle. 
         line_points = np.linspace(0, self.surface, n+1)[:-1]
+        corners, side_lengths = self._create_corner_and_length_array()
+        points = Triangle._distribute_line_to_boundary(self, line_points,
+                                                       corners,
+                                                       side_lengths)
+        return points.astype(np.float32)
+
+    def _create_corner_and_length_array(self):
         corners = [self.corner_dl, self.corner_dr,
                    self.corner_dr + (self.corner_tl-self.corner_dl),
                    self.corner_tl, self.corner_dl]
         side_lengths = [self.length_lr, self.length_td,
-                        self.length_lr, self.length_td]
-        points = np.empty((0, self.dim))
-        for i in range(len(line_points)): # take each point
-            for k in range(len(corners)-1): # check on which side it should be
-                if line_points[i] < sum(side_lengths[:k+1]):
-                    norm = side_lengths[k]
-                    coord = line_points[i] - sum(side_lengths[:k])
-                    new_point = corners[k] + coord/norm * (corners[k+1]-corners[k])
-                    points = np.append(points, [new_point], axis=0)
-                    break
+                        self.length_lr, self.length_td]                 
+        return corners, side_lengths
+
+    def _normal_sampling_boundary(self, n, mean, cov):
+        corners, side_lengths = self._create_corner_and_length_array()        
+        posi = self._find_position_on_boundary(mean, corners, side_lengths)
+        line_points = np.random.normal(posi, cov, size=(n, 1)) 
+        self._transform_line_points_to_zero_and_max_length(line_points, self.surface)
+        points = Triangle._distribute_line_to_boundary(self, line_points,
+                                                       corners,
+                                                       side_lengths)
         return points.astype(np.float32)
 
+    def _find_position_on_boundary(self, point, corners, side_lengths):
+        # Walk on each boundary part and check if the point lays on this
+        # part
+        side_index = -1
+        dist_point_to_corner = np.zeros((len(corners), 1))
+        dist_point_to_corner[0] = np.linalg.norm(point-corners[0])
+        for i in range(len(corners) - 1):
+            dist_point_to_corner[i+1] = np.linalg.norm(point-corners[i+1])
+            if (dist_point_to_corner[i] + dist_point_to_corner[i+1]
+                - side_lengths[i] <= 3*self.tol):
+                side_index = i
+                break
+        if side_index == -1:
+            raise ValueError(f"""The point {point} is not on the boundary""")
+        return sum(side_lengths[:side_index]) + dist_point_to_corner[i]
+
+    def _transform_line_points_to_zero_and_max_length(self, line_points, max_len):
+        # after the normal distribution some points could be smaller then 
+        # 0 or bigger then the perimeter. Therefore add or substract
+        # the perimeter.
+        smaller_0 = np.where(line_points < 0)[0]
+        while not len(smaller_0) == 0:
+            line_points[smaller_0] += max_len
+            smaller_0 = np.where(line_points < 0)[0]
+        bigger_perim = np.where(line_points > max_len)[0]
+        while not len(bigger_perim) == 0:
+            line_points[bigger_perim] -= max_len
+            bigger_perim = np.where(line_points > max_len)[0]
+
     def boundary_normal(self, points):
-        '''Computes the boundary normal.
-
-        Parameters
-        ----------
-        points : list of lists
-            A list containing all points where the normal vector has to be computed,e.g.
-            [[x1,y1],[x2,y2],...].
-
-        Returns
-        ----------
-        np.array
-            Every entry of the output contains the normal vector at the point,
-            specified in the input array.
-        '''
         if not all(self.is_on_boundary(points)):
             print('Warning: some points are not at the boundary!')
 
@@ -335,6 +355,16 @@ class Circle(Domain):
         inside = np.nonzero(self.is_inside(points))[0]
         return points[inside]
 
+    def _lhs_sampling_inside(self, n):
+        scaled_n = 4*int(n/np.pi)
+        points = super()._lhs_sampling_inside(scaled_n) 
+        points = 2*self.radius * (points - np.array([0.5, 0.5])) + self.center
+        inside = self.is_inside(points)
+        points = points[np.where(inside)[0]]
+        points = super()._check_inside_grid_enough_points(n, points)
+        points = super()._cut_points(n, points)
+        return points.astype(np.float32)
+
     def outline(self):
         """Creates a outline of the domain.
 
@@ -358,21 +388,16 @@ class Circle(Domain):
         points = np.column_stack((self.radius*np.cos(phi), self.radius*np.sin(phi)))
         return np.add(self.center, points).astype(np.float32)
 
+    def _normal_sampling_boundary(self, n, mean, cov):
+        mean -= self.center
+        angle = np.arccos(mean[0]/np.linalg.norm(mean))
+        if mean[1] < 0:
+            angle = 2*np.pi - angle
+        phi = np.random.normal(angle, cov, size=(n, 1)) 
+        points = np.column_stack((self.radius*np.cos(phi), self.radius*np.sin(phi)))
+        return np.add(self.center, points).astype(np.float32)
+
     def boundary_normal(self, points):
-        '''Computes the boundary normal.
-
-        Parameters
-        ----------
-        points : list of lists
-            A list containing all points where the normal vector has to be computed,e.g.
-            [[x1,y1],[x2,y2],...].
-
-        Returns
-        ----------
-        np.array
-            Every entry of the output contains the normal vector at the point,
-            specified in the input array.
-        '''
         if not all(self.is_on_boundary(points)):
             print('Warning: some points are not at the boundary!')
         normal_vectors = np.subtract(points, self.center) / self.radius
@@ -531,11 +556,7 @@ class Triangle(Domain):
         return np.add(np.add(corners[0], axis_1), axis_2).astype(np.float32)
 
     def _grid_sampling_inside(self, n):
-        bounds = self._compute_bounds()
-        points = self._grid_sampling_with_bbox(n, bounds)
-        points = super()._check_inside_grid_enough_points(n, points)
-        points = super()._cut_points(n, points)
-        return points
+        return self._grid_in_triangle(n, type='grid')
 
     def _compute_bounds(self):
         """computes bounds of the domain
@@ -551,15 +572,27 @@ class Triangle(Domain):
         max_y = np.max(self.corners[:, 1:])
         return [min_x, max_x, min_y, max_y]
 
-    def _grid_sampling_with_bbox(self, n, bounds):
+    def _grid_sampling_with_bbox(self, n, bounds, type='grid'):
         bounding_box = Rectangle([bounds[0], bounds[2]], [bounds[1], bounds[2]],
                                  [bounds[0], bounds[3]])
         scaled_n = int(bounding_box.volume/self.volume * n)
-        points = bounding_box.grid_in_box(scaled_n)
+        if type == 'grid':
+            points = bounding_box.grid_in_box(scaled_n)
+        else: # type=='lhs'
+            points = bounding_box._lhs_sampling_inside(scaled_n)
         inside = self.is_inside(points)
-        index = np.where(np.invert(inside))[0]
-        points = np.delete(points, index, axis=0)
-        return points.astype(np.float32)
+        index = np.where(inside)[0]
+        return points[index].astype(np.float32)
+
+    def _lhs_sampling_inside(self, n):
+        return self._grid_in_triangle(n, type='lhs')
+
+    def _grid_in_triangle(self, n, type):
+        bounds = self._compute_bounds()
+        points = Triangle._grid_sampling_with_bbox(self, n, bounds, type)
+        points = self._check_inside_grid_enough_points(n, points)
+        points = self._cut_points(n, points)
+        return points
 
     def _random_sampling_boundary(self, n):
         line_points = np.random.uniform(0, self.surface, n)
@@ -570,6 +603,18 @@ class Triangle(Domain):
         line_points = np.linspace(0, self.surface, n+1)[:-1]
         return self._distribute_line_to_boundary(line_points, self.corners,
                                                  self.side_lengths)
+
+    def _normal_sampling_boundary(self, n, mean, cov):       
+        posi = Rectangle._find_position_on_boundary(self, mean,
+                                                    self.corners,
+                                                    self.side_lengths)
+        line_points = np.random.normal(posi, cov, size=(n, 1)) 
+        Rectangle._transform_line_points_to_zero_and_max_length(self, line_points,
+                                                                self.surface)
+        points = self._distribute_line_to_boundary(line_points,
+                                                   self.corners,
+                                                   self.side_lengths)
+        return points.astype(np.float32)
 
     def _distribute_line_to_boundary(self, line_points, corners, side_lengths):
         points = np.empty((0, 2))
@@ -585,20 +630,6 @@ class Triangle(Domain):
         return points.astype(np.float32)
 
     def boundary_normal(self, points):
-        '''Computes the boundary normal.
-
-        Parameters
-        ----------
-        points : list of lists
-            A list containing all points where the normal vector has to be computed,e.g.
-            [[x1,y1],[x2,y2],...].
-
-        Returns
-        ----------
-        np.array
-            Every entry of the output contains the normal vector at the point,
-            specified in the input array.
-        '''
         on_bound, index = self._where_on_boundary(points, return_index=True)
         if not all(on_bound):
             print('Warning: some points are not at the boundary!')
@@ -801,11 +832,10 @@ class Polygon2D(Domain):
         return new_points
 
     def _grid_sampling_inside(self, n):
-        bounds = self._compute_bounds()
-        points = Triangle._grid_sampling_with_bbox(self, n, bounds)
-        points = super()._check_inside_grid_enough_points(n, points)
-        points = super()._cut_points(n, points)
-        return points
+        return Triangle._grid_in_triangle(self, n, type='grid')
+
+    def _lhs_sampling_inside(self, n):
+        return Triangle._grid_in_triangle(self, n, type='lhs')
 
     def _random_sampling_boundary(self, n):
         # First greate exterior points
@@ -862,21 +892,38 @@ class Polygon2D(Domain):
         return Triangle._distribute_line_to_boundary(self, line_points, corners, 
                                                      side_lengths)
 
+    def _normal_sampling_boundary(self, n, mean, cov):       
+        corners = self._find_boundary_part(mean)  
+        side_lengths = Triangle._compute_side_lengths(self, corners)
+        posi = Rectangle._find_position_on_boundary(self, mean,
+                                                    corners,
+                                                    side_lengths)
+        line_points = np.random.normal(posi, cov, size=(n, 1))
+        Rectangle._transform_line_points_to_zero_and_max_length(self, line_points, 
+                                                                sum(side_lengths))
+        points = Triangle._distribute_line_to_boundary(self, line_points,
+                                                       corners,
+                                                       side_lengths)
+        return points.astype(np.float32)
+
+    def _find_boundary_part(self, mean):
+        # Finds on which part of the polygon the point is
+        # (inner or exterior)
+        # first check the exterior boundary
+        corners = self.polygon.exterior.coords
+        posi = self._where_on_boundary([mean], corners[:])
+        if posi == -1:
+            #check the inner boundarys:
+            for inner in self.polygon.interiors:
+                corners = inner.coords
+                posi = self._where_on_boundary([mean], corners[:])
+                if posi >= 0:
+                    break
+        if posi == -1:
+            raise ValueError(f"""The point {mean} is not at the boundary""")
+        return np.array(corners)
+
     def boundary_normal(self, points):
-        '''Computes the boundary normal.
-
-        Parameters
-        ----------
-        points : list of lists
-            A list containing all points where the normal vector has to be computed,e.g.
-            [[x1,y1],[x2,y2],...].
-
-        Returns
-        ----------
-        np.array
-            Every entry of the output contains the normal vector at the point
-            specified in the input array.
-        '''
         normals = np.zeros((len(points), self.dim))
         # first check the exterior boundary
         index = self._where_on_boundary(points, self.polygon.exterior.coords[:])

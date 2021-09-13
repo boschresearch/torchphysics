@@ -105,19 +105,27 @@ def test_grid_sampling_inside_rect():
     assert np.linalg.norm(points[0]-points[1]) == np.linalg.norm(points[2]-points[1])
 
 
+def test_normal_sampling_inside_rect():
+    R = Rectangle([0, 0], [2, 1], [-1, 2])
+    v_matrix = [[1, 0], [0, 2]]
+    points = R.sample_inside(250, type='normal', sample_params={'mean': [0, 0],
+                                                                'cov': v_matrix})
+    assert np.shape(points) == (250, 2)
+    assert all(R.is_inside(points))
+
+
+def test_lhs_sampling_inside_rect():
+    R = Rectangle([0, 0], [2, 1], [-1, 2])
+    points = R.sample_inside(50, type='lhs')
+    assert np.shape(points) == (50, 2)
+    assert all(R.is_inside(points))
+
+
 def test_random_sampling_boundary_rect():
-    np.random.seed(0)
     R = Rectangle([0, 0], [2, 1], [-1, 2])
     points = R.sample_boundary(10, type='random')
-    compare = [[0.09762701, 2.5488136], [1.4303787, 0.71518934],
-               [1.2055267, 0.60276335], [0.08976637, 2.5448833],
-               [0.8473096, 0.4236548], [1.943287, 1.113426],
-               [1.7273437, 1.5453126], [1.5223349, 1.9553303],
-               [1.1878313, 2.6243374], [-0.47997716, 0.9599543]]
-    compare = np.array(compare).astype(np.float32)
     assert np.shape(points) == (10, 2)
     assert all(R.is_on_boundary(points))
-    assert all((compare == points).all(axis=1))
 
 
 def test_grid_sampling_boundary_rect():
@@ -126,6 +134,26 @@ def test_grid_sampling_boundary_rect():
     assert np.shape(points) == (10, 2)
     assert all(R.is_on_boundary(points))
     assert np.linalg.norm(points[0]-points[1]) == np.linalg.norm(points[2]-points[1])
+
+
+def test_normal_sampling_boundary_rect():
+    R = Rectangle([0, 0], [2, 0], [0, 2])
+    points = R.sample_boundary(10, type='normal', sample_params={'mean': [0, 0], 
+                                                                 'cov': 0.1})
+    assert np.shape(points) == (10, 2)
+    assert all(R.is_on_boundary(points))
+    points = R.sample_boundary(10, type='normal', sample_params={'mean': [0, 0.05], 
+                                                                 'cov': 0.1})
+    assert np.shape(points) == (10, 2)
+    assert all(R.is_on_boundary(points))
+
+
+def test_find_position_on_boundary_when_point_not_on_boundary():
+    R = Rectangle([0, 0], [2, 1], [-1, 2])
+    with pytest.raises(ValueError):
+        _ = R._find_position_on_boundary([-1, -1], np.array([[0, 0]]), [2])
+    with pytest.raises(ValueError):
+        _ = R._normal_sampling_boundary(20, mean=[-1, -1], cov=3)
 
 
 def test_grid_sampling_boundary_rect_for_side_lengths_zero():
@@ -294,6 +322,13 @@ def test_grid_sampling_inside_circle():
     assert all(C.is_inside(points))
 
 
+def test_lhs_sampling_inside_circle():
+    C = Circle([0, 0], 4)
+    points = C.sample_inside(258, type='lhs')
+    assert np.shape(points) == (258, 2)
+    assert all(C.is_inside(points))
+
+
 def test_random_sampling_boundary_circle():
     np.random.seed(0)
     C = Circle([0, 0], 4.5)
@@ -317,6 +352,18 @@ def test_grid_sampling_boundary_circle():
     for i in range(len(points)-2):
         assert np.isclose(np.linalg.norm(points[i]-points[i+1]),
                           np.linalg.norm(points[i+2]-points[i+1]))
+
+
+def test_normal_sampling_boundary_circle():
+    C = Circle([0, 0], 2)
+    points = C.sample_boundary(150, type='normal', sample_params={'mean': [2, 0], 
+                                                                  'cov': 2})
+    assert np.shape(points) == (150, 2)
+    assert all(C.is_on_boundary(points))
+    points = C.sample_boundary(150, type='normal', sample_params={'mean': [0, -2], 
+                                                                  'cov': 2})
+    assert np.shape(points) == (150, 2)
+    assert all(C.is_on_boundary(points))
 
 
 def test_boundary_normal_circle():
@@ -481,6 +528,13 @@ def test_grid_sampling_inside_pointed_triangle():
     assert all(T.is_inside(points))
 
 
+def test_lhs_sampling_inside_triangle():
+    T = Triangle([0, 0], [1, 5], [-2, 2])
+    points = T.sample_inside(21, type='lhs')
+    assert np.shape(points) == (21, 2)
+    assert all(T.is_inside(points))
+
+
 def test_points_on_boundary_triangle():
     T = Triangle([0, 0], [2, 0], [0, 1])
     points = [[-0.1, 0.1], [0.25, 0.25], [2, 0], [0, 0], [0, 0.5], [0, -0.5]]
@@ -512,7 +566,7 @@ def test_console_output_when_not_on_bound_triangle(capfd):
     assert out == 'Warning: some points are not at the boundary!\n'
 
 
-def test_random_sampling_triangle():
+def test_random_sampling_boundary_triangle():
     T = Triangle([0, 10], [13, 5], [-12, 2])
     points = T.sample_boundary(500)
     assert np.shape(points) == (500, 2)
@@ -523,6 +577,14 @@ def test_grid_sampling_boundary_triangle():
     T = Triangle([0, 10], [13, 5], [-12, 2])
     points = T.sample_boundary(500, type='grid')
     assert np.shape(points) == (500, 2)
+    assert all(T.is_on_boundary(points))
+
+
+def test_normal_sampling_boundary_triangle():
+    T = Triangle([0, 10], [13, 5], [-12, 2])
+    points = T.sample_boundary(50, type='normal', sample_params={'mean':[0, 10], 
+                                                                 'cov': 1})
+    assert np.shape(points) == (50, 2)
     assert all(T.is_on_boundary(points))
 
 
@@ -676,6 +738,42 @@ def test_grid_sampling_on_boundary_poly2D():
     assert all(P.is_on_boundary(points))
 
 
+def test_normal_sampling_on_boundary_poly2D():
+    P = Polygon2D([[0, 10], [0, 0], [10, 0], [10, 10]])
+    points = P.sample_boundary(15, type='normal', sample_params={'mean': [10, 0], 
+                                                                 'cov': 0.2})
+    assert np.shape(points) == (15, 2)
+    assert all(P.is_on_boundary(points))
+
+
+def test_normal_sampling_on_boundary_poly2D_point_not_on_bound():
+    h = s_geo.Polygon(shell=[[0.20, 0.15], [0.5, 0.25], [0.25, 0.5]])
+    p = s_geo.Polygon(shell=[[0, 0], [1, 0], [0, 1]], holes=[h.exterior.coords])
+    P = Polygon2D(shapely_polygon=p)
+    with pytest.raises(ValueError):
+        _ = P.sample_boundary(15, type='normal', sample_params={'mean': [100, 0], 
+                                                                'cov': 0.2})
+
+
+def test_normal_sampling_on_boundary_for_hole_in_poly2D():
+    h = s_geo.Polygon(shell=[[0.20, 0.15], [0.5, 0.25], [0.25, 0.5]])
+    p = s_geo.Polygon(shell=[[0, 0], [1, 0], [0, 1]], holes=[h.exterior.coords])
+    P = Polygon2D(shapely_polygon=p)
+    points = P.sample_boundary(50, type='normal', sample_params={'mean': [0.20, 0.15], 
+                                                                 'cov': 0.01})
+    assert np.shape(points) == (50, 2)
+    assert all(P.is_on_boundary(points))
+
+
+def test_normal_sampling_inside_poly2D():
+    P = Polygon2D([[0, 10], [0, 0], [10, 0], [10, 10]])
+    points = P.sample_inside(15, type='normal', sample_params={'mean': [10, 0], 
+                                                               'cov': 0.2})
+    assert np.shape(points) == (15, 2)
+    assert all(P.is_inside(points))
+
+
+
 def test_random_sampling_on_boundary_for_hole_in_poly2D():
     h = s_geo.Polygon(shell=[[0.20, 0.15], [0.5, 0.25], [0.25, 0.5]])
     p = s_geo.Polygon(shell=[[0, 0], [1, 0], [0, 1]], holes=[h.exterior.coords])
@@ -714,6 +812,13 @@ def test_random_sampling_inside_poly2D_2():
                    [1, 0.85], [1, 0.1], [0.4, 0.1], [0.4, 0], [2, 0], 
                    [2, 1], [0, 1]])
     points = P.sample_inside(50)
+    assert np.shape(points) == (50, 2)
+    assert all(P.is_inside(points))
+
+
+def test_lhs_sampling_inside_poly2D():
+    P = Polygon2D([[0, 10], [0, 0], [10, 0], [10, 10]])
+    points = P.sample_inside(50, type='lhs')
     assert np.shape(points) == (50, 2)
     assert all(P.is_inside(points))
 

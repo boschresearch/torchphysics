@@ -1,6 +1,6 @@
 import abc
 import numpy as np
-
+import numbers
 
 class Domain():
     '''Parent class for all domains.
@@ -29,7 +29,7 @@ class Domain():
         self.surface = surface
         self.tol = tol
    
-    def sample_boundary(self, n, type='random'):
+    def sample_boundary(self, n, type='random', sample_params=None):
         '''Samples points at the boundary of the domain.
 
         Parameters
@@ -39,9 +39,21 @@ class Domain():
         type : {'random', 'grid'}
             The sampling strategy. All child classes implement at least a random
             and a grid sampling. For additional strategies check the specific class.
-            - 'random' : returns uniformly distributed points on the boundary
-            - 'grid' : creates a grid over the boundary
-
+                - 'random' : returns uniformly distributed points on the boundary
+                - 'grid' : creates a grid over the boundary
+                - 'normal' : Creates a normal distribution of points.
+                             Needs the additional inputs 'mean' and 'cov', for the 
+                             center and variance of the distribution. 
+                             The mean has to be a point on the boundary, while
+                             the variance-matirx has to be one dimension smaller
+                             then the domain.
+        sample_params : dict
+            A dictionary containing additional parameters for specific stragtegies.
+            E.g. for the normal distribution the 'mean' and (co-)variance. Then
+            the input would for example be (for a 2D-Domain):
+            sample_params = {'mean': [0, 1], 'cov': 0.5} 
+            For more information check the wanted methode to see the needed inputs. 
+            
         Returns
         -------
         np.array
@@ -51,24 +63,38 @@ class Domain():
             return self._random_sampling_boundary(n)
         elif type == 'grid':
             return self._grid_sampling_boundary(n)
+        elif type == 'normal':
+            return self._normal_sampling_boundary(n, sample_params['mean'], 
+                                                  sample_params['cov'])
         else:
             raise NotImplementedError
 
-    def sample_inside(self, n, type='random'):
-        '''Samples points in the inside of the domain
+    def sample_inside(self, n, type='random', sample_params=None):
+        '''Samples points inside of the domain
 
         Parameters
         ----------
         n : int
             Desired number of sample points
-        type : {'random', 'grid'}
-            The sampling strategy. All child classes implement at least a random
-            and a grid sampling. For additional strategies check the specific class
-            - 'random' : returns uniformly distributed points in the domain
-            - 'grid' : creates a evenly grid over the domain.
-                       Since it is not always possible to get a grid with excatly n pts
-                       the center of the domain is added to get n points in total
-
+        type : {'random', 'grid', 'normal'}
+            The sampling strategy. All child classes implement at least a random,
+            grid, normal and lhs sampling.
+            For additional strategies check the specific class.
+            - 'random' : Returns uniformly distributed points in the domain
+            - 'grid' : Creates a evenly grid over the domain.
+                       Since it is not always possible to get a grid with excatly 
+                       n points, additional random points will be added.
+            - 'normal' : Creates a normal distribution of points.
+                         Needs the additional inputs 'mean' and 'cov', for the 
+                         center and variance of the distribution. The inputs need to
+                         fit the dimension of the domain.
+            - 'lhs' : Creates a latin hypercube sampling inside the domain.
+        sample_params : dict
+            A dictionary containing additional parameters for specific stragtegies.
+            E.g. for the normal distribution the 'mean' and (co-)variance. Then
+            the input would for example be (for a 2D-Domain):
+            sample_params = {'mean': [0, 1], 'cov': [[1 0], [0, 1]]} 
+            For more information check the wanted methode to see the needed inputs. 
         Returns
         -------
         np.array
@@ -78,8 +104,53 @@ class Domain():
             return self._random_sampling_inside(n)
         elif type == 'grid':
             return self._grid_sampling_inside(n)
+        elif type == 'normal':
+            return self._normal_sampling_inside(n, sample_params['mean'], 
+                                                sample_params['cov'])
+        elif type == 'lhs':
+            return self._lhs_sampling_inside(n)
         else:
             raise NotImplementedError
+
+    def _normal_sampling_inside(self, n, mean, cov):
+        """Uses a rejection sampling to create points with a
+        normal distribution.
+
+        Parameters
+        ----------
+        n : int
+            Desired number of points.
+        mean : list or array
+            The center/mean of the distribution. 
+        cov : number, list or array
+            The (co-)variance of the distribution. For dimensions >= 2,
+            cov has to be a symmetric and positive-semidefinite matrix.
+            If a number is given as an input and the dimension is not 
+            1, the covariance will be set to cov*unit-matrix.
+
+        Returns
+        -------
+        np.array
+            A array containing the points
+        """
+        if isinstance(cov, numbers.Number):
+            cov = cov * np.eye(self.dim)
+        points = np.empty((0, self.dim))
+        while len(points) < n:
+            new_points = np.random.multivariate_normal(mean, cov, size=n-len(points))
+            inside = self.is_inside(new_points)
+            points = np.append(points, new_points[np.where(inside)[0]], axis=0)
+        return points.astype(np.float32)
+
+    def _lhs_sampling_inside(self, n):
+        lhs_axis = np.empty((n, self.dim))
+        # divide each axis and compute lhs
+        for i in range(self.dim):
+            divide_axis = np.linspace(0, 1, n, endpoint=False)
+            random_points = np.random.uniform(0, 1/n, n)
+            new_axis = np.add(divide_axis, random_points)
+            lhs_axis[:, i] = np.random.permutation(new_axis)
+        return lhs_axis.astype(np.float32)
 
     def _cut_points(self, n, points):
         """Cuts away some random points,
@@ -135,7 +206,46 @@ class Domain():
         return
 
     @abc.abstractmethod
+    def _normal_sampling_boundary(self, n, mean, cov):
+        """Uses a rejection sampling to create points with a
+        normal distribution.
+
+        Parameters
+        ----------
+        n : int
+            Desired number of points.
+        mean : list or array
+            The center/mean of the distribution. 
+        cov : number, list or array
+            The (co-)variance of the distribution. For dimensions n >= 3,
+            cov has to be a symmetric and positive-semidefinite matrix of dim.
+            n-1. If a number is given as an input and the dimension is not 
+            2, the covariance will be set to cov*unit-matrix.
+
+        Returns
+        -------
+        np.array
+            A array containing the points
+        """
+        raise NotImplementedError
+
+
+    @abc.abstractmethod
     def boundary_normal(self, points):
+        """Computes the boundary normal.
+
+        Parameters
+        ----------
+        points : list of lists
+            A list containing all points where the normal vector has to be computed,
+            e.g. in 2D: [[x1,y1],[x2,y2],...].
+
+        Returns
+        ----------
+        np.array
+            Every entry of the output contains the normal vector at the point,
+            specified in the input array.
+        """
         return
 
     @abc.abstractmethod

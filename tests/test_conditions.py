@@ -38,9 +38,8 @@ def test_none_methode_condition():
 
 
 def test_none_methode_datacreator():
-    creator = dc.DataCreator(None, 1)
+    creator = dc.DataCreator(None, 1, '', {})
     assert creator.get_data() is None
-    assert creator.divide_dataset_for_int() is None
 
 
 def test_new_condition_not_registered():
@@ -107,8 +106,17 @@ def test_create_diffeqcondition():
     assert cond.track_gradients
     assert not cond.data_plot_variables
     assert cond.setting is None
-    assert cond.datacreator.dataset_size == 10000
+    assert cond.datacreator_list[0].dataset_size == 10000
     assert cond.pde == condition_function
+
+
+def test_add_data_points_to_diffeqcondition():
+    cond = condi.DiffEqCondition(pde=condition_function,
+                                 norm=torch.nn.MSELoss())
+    cond.add_sample_points(sampling_strategy='grid', dataset_size=50)
+    assert len(cond.datacreator_list) == 2
+    assert cond.datacreator_list[1].dataset_size == 50
+    assert cond.datacreator_list[1].sampling_strategy == 'grid'    
 
 
 def test_forward_diffeqcondition_with_MSE():
@@ -176,6 +184,20 @@ def test_data_sampling_with_int_random_diffeqcondition():
     assert not x.domain.is_inside(data['t']).all()
 
 
+def test_data_sampling_with_two_datacreators_diffeqcondition():
+    cond = condi.DiffEqCondition(pde=condition_function,
+                                 norm=torch.nn.MSELoss(),
+                                 dataset_size=500,
+                                 sampling_strategy='random')
+    x = Variable(name='x', domain=Interval(0, 1))
+    setting = Setting(variables={'x': x})
+    cond.add_sample_points(sampling_strategy='grid', dataset_size=50)
+    cond.setting = setting
+    data = cond.get_data()
+    assert np.shape(data['x']) == (550, 1)
+    assert x.domain.is_inside(data['x']).all()
+
+
 def test_data_sampling_with_int_grid_diffeqcondition():
     cond = condi.DiffEqCondition(pde=condition_function,
                                  norm=torch.nn.MSELoss(),
@@ -214,12 +236,11 @@ def test_data_sampling_with_int_grid_divide_2D_1D_diffeqcondition():
 def test_data_sampling_with_wrong_input_diffeqcondition():
     cond = condi.DiffEqCondition(pde=condition_function,
                                  norm=torch.nn.MSELoss(),
-                                 dataset_size=42,
+                                 dataset_size='42',
                                  sampling_strategy='grid')
     x = Variable(name='x', domain=Rectangle([0, 0], [1, 0], [0, 1]))
     t = Variable(name='t', domain=Interval(-1, 1))
     setting = Setting(variables={'x': x, 't': t})
-    cond.datacreator.dataset_size = '42'
     cond.setting = setting
     with pytest.raises(TypeError):
         _ = cond.get_data()
@@ -229,7 +250,7 @@ def test_data_sampling_with_list_diffeqcondition():
     cond = condi.DiffEqCondition(pde=condition_function,
                                  norm=torch.nn.MSELoss(),
                                  dataset_size=[10, 10, 5],
-                                 sampling_strategy='random')
+                                 sampling_strategy=['random', 'random', 'random'])
     x = Variable(name='x', domain=Interval(0, 1))
     t = Variable(name='t', domain=Interval(-1, 1))
     D = Variable(name='D', domain=Interval(2, 3))
@@ -246,11 +267,23 @@ def test_data_sampling_with_list_diffeqcondition():
     assert not D.domain.is_inside(data['t']).all()
 
 
+def test_data_sampling_with_wrong_inputs_diffeqcondition():
+    cond = condi.DiffEqCondition(pde=condition_function,
+                                 norm=torch.nn.MSELoss(),
+                                 dataset_size=[10],
+                                 sampling_strategy=34)
+    x = Variable(name='x', domain=Interval(0, 1))
+    setting = Setting(variables={'x': x})
+    cond.setting = setting
+    with pytest.raises(TypeError):
+        _ = cond.get_data()
+
+
 def test_data_sampling_with_dic_diffeqcondition():
     cond = condi.DiffEqCondition(pde=condition_function,
                                  norm=torch.nn.MSELoss(),
                                  dataset_size={'x': 5, 't': 10},
-                                 sampling_strategy='grid')
+                                 sampling_strategy={'x': 'grid', 't': 'grid'})
     x = Variable(name='x', domain=Rectangle([0, 0], [1, 0], [0, 1]))
     t = Variable(name='t', domain=Interval(-1, 1))
     setting = Setting(variables={'x': x, 't': t})
@@ -290,9 +323,9 @@ def test_serialize_diffeqcondition():
                                  dataset_size=500,
                                  sampling_strategy='grid')
     dct = cond.serialize()
-    assert dct['sampling_strategy'] == 'grid'
+    assert dct['sampling_strategy'] == ['grid']
     assert dct['pde'] == 'condition_function'
-    assert dct['dataset_size'] == 500
+    assert dct['dataset_size'] == [500]
 
 
 def test_get_data_plot_varibales_diffeqcondition():
@@ -424,11 +457,11 @@ def test_create_dirichlet_condition():
     assert cond.dirichlet_fun == dirichlet_fun
     assert cond.name == 'test diri'
     assert isinstance(cond.norm, torch.nn.MSELoss)
-    assert cond.datacreator.sampling_strategy == 'grid'
-    assert cond.datacreator.boundary_sampling_strategy == 'random'
+    assert cond.datacreator_list[0].sampling_strategy == 'grid'
+    assert cond.datacreator_list[0].boundary_sampling_strategy == 'random'
     assert cond.boundary_variable is None
     assert cond.weight == 1.5
-    assert cond.datacreator.dataset_size == 50
+    assert cond.datacreator_list[0].dataset_size == 50
     assert cond.data_plot_variables
 
 
@@ -436,9 +469,9 @@ def test_serialize_dirichlet_condition():
     cond = create_dirichlet()
     dct = cond.serialize()
     assert dct['dirichlet_fun'] == 'dirichlet_fun'
-    assert dct['dataset_size'] == 50
-    assert dct['sampling_strategy'] == 'grid'
-    assert dct['boundary_sampling_strategy'] == 'random'
+    assert dct['dataset_size'] == [50]
+    assert dct['sampling_strategy'] == ['grid']
+    assert dct['boundary_sampling_strategy'] == ['random']
 
 
 def test_get_data_dirichlet_condition_not_registered():
@@ -471,21 +504,6 @@ def test_forward_dirichlet_condition():
     out = cond.forward(model_function, data)
     assert out.item() == 1
     assert isinstance(out, torch.Tensor)
-
-
-def test_boundary_data_meshing():
-    input_dic = {'x': np.array([[1], [2]]), 't': np.array([[1, 1], [3, 0]])}
-    data_points = np.array([[0], [1]])
-    creator = dc.BoundaryDataCreator(variables={'x': 1, 't': 1, 'r': 1},
-                                     dataset_size=10,
-                                     sampling_strategy='random',
-                                     boundary_sampling_strategy='random')
-    creator.boundary_variable = 'r'
-    mesh_data = creator.mesh_inner_and_boundary_data(input_dic, data_points)
-    solution = np.array([[1, 1, 1, 0], [2, 3, 0, 0], [1, 1, 1, 1], [2, 3, 0, 1]])
-    assert np.equal(mesh_data['x'], solution[:, :1]).all()
-    assert np.equal(mesh_data['t'], solution[:, 1:3]).all()
-    assert np.equal(mesh_data['r'], solution[:, 3:]).all()
 
 
 def test_boundary_data_creation_random_random_int():
@@ -531,8 +549,8 @@ def test_boundary_data_creation_random_grid_int():
                                      boundary_sampling_strategy='grid')
     creator.boundary_variable = 't'
     data = creator.get_data()
-    assert np.shape(data['x']) == (25, 1)
-    assert np.shape(data['t']) == (25, 1)
+    assert np.shape(data['x']) == (26, 1)
+    assert np.shape(data['t']) == (26, 1)
     assert x.domain.is_inside(data['x']).all()
     assert t.domain.is_inside(data['t']).all()
     for i in range(len(data['t'])):
@@ -576,39 +594,12 @@ def test_boundary_data_creation_random_lower_bound_int():
     assert not x.domain.is_inside(data['t']).all()
 
 
-def test_boundary_data_creation_grid_lower_upper_bound_int():
-    x = Variable(name='x', domain=Interval(0, 1))
-    t = Variable(name='t', domain=Interval(-1, -0.1))
-    creator = dc.BoundaryDataCreator(variables={'x': x, 't': t},
-                                     dataset_size=30,
-                                     sampling_strategy='grid',
-                                     boundary_sampling_strategy='lower_bound_only')
-    creator.boundary_variable = 't'
-    data = creator.get_data()
-    assert np.shape(data['x']) == (30, 1)
-    assert np.shape(data['t']) == (30, 1)
-    assert x.domain.is_inside(data['x']).all()
-    assert t.domain.is_inside(data['t']).all()
-    for i in range(len(data['t'])):
-        assert data['t'][i] == -1
-    assert not x.domain.is_inside(data['t']).all()
-    creator.boundary_sampling_strategy = 'upper_bound_only'
-    data = creator.get_data()
-    assert np.shape(data['x']) == (30, 1)
-    assert np.shape(data['t']) == (30, 1)
-    assert x.domain.is_inside(data['x']).all()
-    assert t.domain.is_inside(data['t']).all()
-    for i in range(len(data['t'])):
-        assert data['t'][i] == -0.1
-    assert not x.domain.is_inside(data['t']).all()
-
-
 def test_boundary_data_creation_with_list():
     x = Variable(name='x', domain=Interval(0, 1))
     t = Variable(name='t', domain=Interval(-1, -0.1))
     creator = dc.BoundaryDataCreator(variables={'x': x, 't': t},
                                      dataset_size=[30, 2],
-                                     sampling_strategy='grid',
+                                     sampling_strategy=['grid'],
                                      boundary_sampling_strategy='grid')
     creator.boundary_variable = 't'
     data = creator.get_data()
@@ -626,7 +617,7 @@ def test_boundary_data_creation_with_dic():
     t = Variable(name='t', domain=Interval(-1, -0.1))
     creator = dc.BoundaryDataCreator(variables={'x': x, 't': t},
                                      dataset_size={'x': 10, 't': 1},
-                                     sampling_strategy='grid',
+                                     sampling_strategy={'x': 'grid'},
                                      boundary_sampling_strategy='lower_bound_only')
     creator.boundary_variable = 't'
     data = creator.get_data()
@@ -637,6 +628,17 @@ def test_boundary_data_creation_with_dic():
     for i in range(len(data['t'])):
         assert data['t'][i] == -1
     assert not x.domain.is_inside(data['t']).all()
+
+
+def test_boundary_data_creation_with_wrong_type():
+    x = Variable(name='x', domain=Interval(0, 1))
+    t = Variable(name='t', domain=Interval(-1, -0.1))
+    creator = dc.BoundaryDataCreator(variables={'x': x, 't': t},
+                                     dataset_size={'x': 10, 't': 1},
+                                     sampling_strategy=23,
+                                     boundary_sampling_strategy='lower_bound_only')
+    with pytest.raises(TypeError):
+        _ = creator.get_data()
 
 
 def test_boundary_data_creation_with_3_inputs():
@@ -685,7 +687,7 @@ def test_boundary_data_creation_with_2D_boundary_grid_grid_int():
     t = Variable(name='t', domain=Interval(-1, -0.1))
     creator = dc.BoundaryDataCreator(variables={'x': x, 't': t},
                                      dataset_size=1000,
-                                     sampling_strategy='grid',
+                                     sampling_strategy={'t': 'grid', 'x': 'grid'},
                                      boundary_sampling_strategy='grid')
     creator.boundary_variable = 'x'
     data = creator.get_data()
@@ -707,8 +709,8 @@ def test_boundary_data_creation_with_2D_boundary_random_grid_int():
                                      boundary_sampling_strategy='grid')
     creator.boundary_variable = 'x'
     data = creator.get_data()
-    assert np.shape(data['x']) == (100, 2)
-    assert np.shape(data['t']) == (100, 1)
+    assert np.shape(data['x']) == (125, 2)
+    assert np.shape(data['t']) == (125, 1)
     assert x.domain.is_on_boundary(data['x']).all()
     assert t.domain.is_inside(data['t']).all()
 
@@ -722,8 +724,8 @@ def test_boundary_data_creation_with_2D_boundary_grid_random_int():
                                      boundary_sampling_strategy='random')
     creator.boundary_variable = 'x'
     data = creator.get_data()
-    assert np.shape(data['x']) == (100, 2)
-    assert np.shape(data['t']) == (100, 1)
+    assert np.shape(data['x']) == (125, 2)
+    assert np.shape(data['t']) == (125, 1)
     assert x.domain.is_on_boundary(data['x']).all()
     assert t.domain.is_inside(data['t']).all()
 
@@ -749,11 +751,11 @@ def test_create_neumann_condition():
     assert cond.neumann_fun == neumann_fun
     assert cond.name == 'test neumann'
     assert isinstance(cond.norm, torch.nn.MSELoss)
-    assert cond.datacreator.sampling_strategy == 'grid'
-    assert cond.datacreator.boundary_sampling_strategy == 'grid'
+    assert cond.datacreator_list[0].sampling_strategy == 'grid'
+    assert cond.datacreator_list[0].boundary_sampling_strategy == 'grid'
     assert cond.boundary_variable is None
     assert cond.weight == 1
-    assert cond.datacreator.dataset_size == 50
+    assert cond.datacreator_list[0].dataset_size == 50
     assert cond.data_plot_variables
 
 
@@ -761,9 +763,9 @@ def test_serialize_neumann_condition():
     cond = create_neumann()
     dct = cond.serialize()
     assert dct['neumann_fun'] == 'neumann_fun'
-    assert dct['dataset_size'] == 50
-    assert dct['sampling_strategy'] == 'grid'
-    assert dct['boundary_sampling_strategy'] == 'grid'
+    assert dct['dataset_size'] == [50]
+    assert dct['sampling_strategy'] == ['grid']
+    assert dct['boundary_sampling_strategy'] == ['grid']
 
 
 def test_get_data_neumann_condition_not_registered():
@@ -829,11 +831,11 @@ def test_create_diffEqBoundary_condition():
     assert cond.bound_condition_fun == dirichlet_fun
     assert cond.name == 'test arbitrary'
     assert isinstance(cond.norm, torch.nn.MSELoss)
-    assert cond.datacreator.sampling_strategy == 'random'
-    assert cond.datacreator.boundary_sampling_strategy == 'lower_bound_only'
+    assert cond.datacreator_list[0].sampling_strategy == 'random'
+    assert cond.datacreator_list[0].boundary_sampling_strategy == 'lower_bound_only'
     assert cond.boundary_variable is None
     assert cond.weight == 1
-    assert cond.datacreator.dataset_size == 5
+    assert cond.datacreator_list[0].dataset_size == 5
     assert cond.data_plot_variables
     assert cond.data_fun is None
 
@@ -842,12 +844,12 @@ def test_serialize_diffEqBoundary_condition():
     cond = create_arbitrary()
     dct = cond.serialize()
     assert dct['bound_condition_fun'] == 'dirichlet_fun'
-    assert dct['dataset_size'] == 5
-    assert dct['sampling_strategy'] == 'random'
-    assert dct['boundary_sampling_strategy'] == 'lower_bound_only'
-    cond.data_fun = neumann_fun
+    assert dct['dataset_size'] == [5]
+    assert dct['sampling_strategy'] == ['random']
+    assert dct['boundary_sampling_strategy'] == ['lower_bound_only']
+    cond.data_fun = dirichlet_fun
     dct = cond.serialize()
-    assert dct['data_fun'] == 'neumann_fun'
+    assert dct['data_fun'] == 'dirichlet_fun'
 
 
 def test_get_data_diffEqBoundary_condition_not_registered():

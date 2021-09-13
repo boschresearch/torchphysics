@@ -43,6 +43,20 @@ def test_serialize_diffeqmodel():
         Dmodel.serialize()
 
 
+def test_normalization_layer():
+    Dmodel = models.fcn.DiffEqModel(variable_dims={'x': 2, 't': 1}, 
+                                    solution_dims={'u': 2}, 
+                                    normalization_dict={'x': [[2, 2], [9, 2]], 
+                                                        't': [4, 0]})
+    assert isinstance(Dmodel.normalize, torch.nn.Linear)
+    assert Dmodel.normalize.weight[0][0] == 1
+    assert Dmodel.normalize.weight[1][1] == 1
+    assert Dmodel.normalize.weight[2][2] == 1/2
+    assert Dmodel.normalize.bias[0] == -9
+    assert Dmodel.normalize.bias[1] == -2
+    assert Dmodel.normalize.bias[2] == 0
+
+
 # Test SimpleFCN:
 def _create_fcn(in_dim={'x': 2, 't':1}):
     fcn = models.fcn.SimpleFCN(variable_dims=in_dim, 

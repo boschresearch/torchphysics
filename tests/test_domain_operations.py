@@ -137,6 +137,15 @@ def test_grid_sampling_inside_cut():
     assert C.is_inside(points).all()
 
 
+def test_lhs_sampling_inside_cut():
+    R, C = _create_domains()
+    cut = Cut(R, C)    
+    points = cut.sample_inside(40, type='lhs')
+    assert np.shape(points) == (40, 2)
+    assert cut.is_inside(points).all()
+    assert isinstance(points[0][0], np.float32)
+
+
 def test_grid_sampling_inside_other_cut():
     R, C = _create_domains()
     cut = Cut(C, R)    
@@ -182,6 +191,16 @@ def test_grid_sampling_boundary_cut():
     on_c = C.is_on_boundary(points)
     on_r = R.is_on_boundary(points)
     assert np.logical_or(on_c, on_r).all()
+
+
+def test_normal_sampling_boundary_cut():
+    R, C = _create_domains()
+    cut = Cut(R, C)    
+    points = cut.sample_boundary(10, type='normal', sample_params={'mean': [1, 1], 
+                                                                   'cov': 0.1})
+    assert all(cut.is_on_boundary(points))
+    assert np.shape(points) == (10, 2)
+    assert isinstance(points[0][0], np.float32)   
 
 
 def test_grid_for_plots_cut():
@@ -405,6 +424,13 @@ def test_grid_sampling_inside_union():
     assert np.logical_or(in_c, in_r).all()
 
 
+def test_lhs_sampling_in_union_of_interval():
+    U = Union(Interval(0, 1), Interval(3, 5))
+    points = U.sample_inside(42, type='lhs')
+    assert np.shape(points) == (42, 1)
+    assert U.is_inside(points).all()    
+
+
 def test_random_sampling_boundary_union():
     R, C = _create_domains()
     U = Union(R, C)    
@@ -416,7 +442,7 @@ def test_random_sampling_boundary_union():
     assert np.logical_or(on_c, on_r).all()
 
 
-def test_grid_sampling_boundary_cut():
+def test_grid_sampling_boundary_union():
     R, C = _create_domains()
     U = Union(R, C)    
     points = U.sample_boundary(30, type='grid')
@@ -425,6 +451,15 @@ def test_grid_sampling_boundary_cut():
     on_c = C.is_on_boundary(points)
     on_r = R.is_on_boundary(points)
     assert np.logical_or(on_c, on_r).all()
+
+
+def test_normal_sampling_boundary_union():
+    R, C = _create_domains()
+    U = Union(R, C)    
+    points = U.sample_boundary(30, type='normal', sample_params={'mean': [0.5, 0],
+                                                                 'cov': 0.1})
+    assert np.shape(points) == (30, 2)
+    assert U.is_on_boundary(points).all()
 
 
 def test_grid_for_plots_union():
@@ -657,6 +692,16 @@ def test_grid_sampling_boundary_intersection():
     on_R = R.is_on_boundary(points)
     on_C = C.is_on_boundary(points)
     assert np.logical_or(on_R, on_C).all()  
+
+
+def test_normal_sampling_boundary_intersection():
+    R, C = _create_domains()
+    U = Intersection(R, C)    
+    mean = [0.5*np.cos(0.01), 0.5*np.sin(0.01)]
+    points = U.sample_boundary(30, type='normal', sample_params={'mean': mean,
+                                                                 'cov': 0.2})
+    assert np.shape(points) == (30, 2)
+    assert U.is_on_boundary(points).all()
 
 
 def test_boundary_normal_intersection():

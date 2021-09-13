@@ -63,7 +63,30 @@ class Interval(Domain):
         return ((np.isclose(points[:], self.low_bound, atol=self.tol)) 
                 | (np.isclose(points[:], self.up_bound, atol=self.tol))).reshape(-1, 1)
  
-    def sample_boundary(self, n, type='random'):
+    def sample_inside(self, n, type='random', sample_params=None):
+        '''Samples points inside of the domain
+
+        Parameters
+        ----------
+        n : int
+            Desired number of sample points
+        type : {'random', 'grid', 'normal', 'spaced_grid'}
+            Additional sampling strat:
+            - 'spaced_grid' : Creates a points grid where more points are 
+                              accumulated at one corner.
+                              Needs the extra input:
+                              sample_params={'exponent': ...}.
+
+        Returns
+        -------
+        np.array
+            A array containing the points
+        '''
+        if type=='spaced_grid':
+            return self._spaced_grid_sampling_inside(n, sample_params['exponent'])
+        return super().sample_inside(n, type=type, sample_params=sample_params)
+
+    def sample_boundary(self, n, type='random', sample_params=None):
         '''Samples points at the boundary of the domain
 
         Parameters
@@ -93,9 +116,44 @@ class Interval(Domain):
                                  self.up_bound,
                                  n).astype(np.float32).reshape(-1, 1)
 
+    def _normal_sampling_inside(self, n, mean, cov):
+        points = np.empty((0, self.dim))
+        while len(points) < n:
+            new_points = np.random.normal(mean, cov, size=(n-len(points), 1))
+            inside = self.is_inside(new_points)
+            points = np.append(points, new_points[np.where(inside)[0]], axis=0)
+        return points.astype(np.float32)
+
+    def _lhs_sampling_inside(self, n):
+        points = super()._lhs_sampling_inside(n)
+        points = self.volume * points + self.low_bound
+        return points.astype(np.float32)
+
     def _grid_sampling_inside(self, n):
         return np.linspace(self.low_bound, self.up_bound,
                            n+2)[1:-1].astype(np.float32).reshape(-1, 1)
+
+    def _spaced_grid_sampling_inside(self, n, exponent):
+        """Creates a non-uniform point grid where more points 
+        are accumulated at one corner of the interval.
+
+        n : int
+            Number of points.
+        exponent : Number
+            Determines how non-uniform the points are and at which corner they
+            are accumulated.
+            exponent < 1: More points at the upper bound.
+            exponent > 1: More points at the lower bound.
+            On the unit interval the sampling would be equal to a grid 
+            that is transformed over grid point^(exponent)
+        """
+        points = np.linspace(0, 1, n+2)[1:-1].astype(np.float32)
+        if exponent > 1:
+            points = points**exponent
+        else:
+            points = 1 - points**(1/exponent)
+        points = points * self.volume + self.low_bound
+        return points.reshape(-1, 1)
 
     def _random_sampling_boundary(self, n):
         return np.random.choice([self.low_bound, self.up_bound],

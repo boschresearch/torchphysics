@@ -22,9 +22,11 @@ def test_interval_has_correct_bounds():
     assert I.low_bound == 1
     assert I.up_bound == 3.5
 
+
 def test_wrong_bounds_raise_error():
     with pytest.raises(ValueError):
         _ = Interval(2, 0)
+
 
 def test_points_inside_and_outside():
     I = Interval(0, 1)
@@ -33,18 +35,22 @@ def test_points_inside_and_outside():
     assert I.is_inside(inside)
     assert not I.is_inside(outside)
 
+
 def test_points_at_boundary():
     I = Interval(0.5, 2.5)
     assert I.is_on_boundary(0.5)
     assert not I.is_on_boundary(-2)
 
+
 def test_set_error_toleranz():
     I = Interval(0, 1, tol=2)
     assert I.tol == 2
 
+
 def test_dimension():
     I = Interval(0, 1)
     assert I.dim == 1
+
 
 def test_output_type():
     I = Interval(0, 1)
@@ -61,6 +67,7 @@ def test_output_type():
     assert isinstance(b_lower[0][0], np.float32)
     assert isinstance(b_upper[0][0], np.float32)
 
+
 def test_random_sampling_inside():
     np.random.seed(0)
     I = Interval(0, 1)
@@ -73,6 +80,7 @@ def test_random_sampling_inside():
     assert all(I.is_inside(p))
     assert all(compare == p)
 
+
 def test_grid_sampling_inside():
     I = Interval(0.2, 5)
     p = I.sample_inside(47, type='grid')
@@ -80,10 +88,43 @@ def test_grid_sampling_inside():
     assert all(I.is_inside(p))
     assert np.abs(p[1]-p[0]) == np.abs(p[2]-p[1])
 
+
+def test_spaced_grid_sampling_inside():
+    I = Interval(0.2, 5)
+    p = I.sample_inside(47, type='spaced_grid', sample_params={'exponent': 3})
+    assert len(p) == 47
+    assert all(I.is_inside(p))
+    assert isinstance(p[0][0], np.float32)
+
+
+def test_spaced_grid_sampling_inside_exponent_smaller_1():
+    I = Interval(0.2, 5)
+    p = I.sample_inside(47, type='spaced_grid', sample_params={'exponent': 1/3})
+    assert len(p) == 47
+    assert all(I.is_inside(p))
+
+
+def test_normal_sampling_inside():
+    I = Interval(0, 3)
+    p = I.sample_inside(50, type='normal', sample_params={'mean': 0, 'cov': 0.5})
+    assert len(p) == 50
+    assert all(I.is_inside(p))
+    assert isinstance(p[0][0], np.float32)
+
+
+def test_lhs_sampling_inside():
+    I = Interval(0, 3)
+    p = I.sample_inside(50, type='lhs')
+    assert len(p) == 50
+    assert all(I.is_inside(p))
+    assert isinstance(p[0][0], np.float32)    
+
+
 def test_error_sampling_inside_no_typ():
     I = Interval(0.2, 5)
     with pytest.raises(NotImplementedError):
         I.sample_inside(1, type=' ')
+
 
 def test_random_sampling_boundary():
     np.random.seed(0)
@@ -95,6 +136,7 @@ def test_random_sampling_boundary():
     assert all(I.is_on_boundary(p))
     assert all(compare == p)
 
+
 def test_grid_sampling_boundary():
     I = Interval(0, 6)
     p = I.sample_boundary(200, type='grid')
@@ -103,6 +145,7 @@ def test_grid_sampling_boundary():
     index = np.where(np.isclose(p, 0))
     assert len(index[0]) == 100 
 
+
 def test_lower_bound_sampling():
     I = Interval(-1, 2)
     p = I.sample_boundary(150, type='lower_bound_only')
@@ -110,12 +153,14 @@ def test_lower_bound_sampling():
     assert all(I.is_on_boundary(p))
     assert all(np.isclose(p, -1))
 
+
 def test_upper_bound_sampling():
     I = Interval(-1, 2)
     p = I.sample_boundary(150, type='upper_bound_only')
     assert len(p) == 150
     assert all(I.is_on_boundary(p))
     assert all(np.isclose(p, 2))
+
 
 def test_grid_for_plot():
     I = Interval(-1, 2)
@@ -135,11 +180,13 @@ def test_serialize_interval():
     assert dct['low_bound'] == -1
     assert dct['up_bound'] == 2
 
+
 def test_get_bounds_interval():
     I = Interval(-1, 2)
     bounds = I._compute_bounds()
     assert bounds[0] == -1
     assert bounds[1] == 2
+
 
 def test_bounday_normals_interval():
     I = Interval(-5, 21)
