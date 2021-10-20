@@ -155,7 +155,7 @@ def test_configure_optimizer_of_pinn_module_with_scheduler():
     assert isinstance(opti[0], torch.optim.Optimizer)
     for p in opti[0].param_groups:
         assert p['lr'] == 3
-    assert isinstance(scheduler[0], torch.optim.lr_scheduler._LRScheduler)#
+    assert isinstance(scheduler[0]['scheduler'], torch.optim.lr_scheduler._LRScheduler)#
 
 """Test dont work in GitHub....
 def test_training_step_of_pinn_module():
