@@ -1,5 +1,5 @@
 import sys
-from .solver import PINNModule
+from .solver import PINNModule, AdaptiveWeightModule
 from .setting import Setting
 
 if sys.version_info[:2] >= (3, 8):
