@@ -23,7 +23,10 @@ The definition of spaces were part of the `previous tutorial`_.
 
 .. _`previous tutorial`: space_tutorial.rst
 
+Following Code as a Notebook_, if you want to try out something yourself.
 To create the interval [0, 5]:
+
+.. _Notebook: ../examples/tutorial/domain_creation.ipynb
 
 .. code-block:: python
 
@@ -72,9 +75,9 @@ Until now we only created simple geometries. For complex domains
 
 The only important aspect is that for union, intersection and cut the 
 domains have to belong to the same space. The returning object is a child of
- *Domains* and implements all previously mentioned methods. 
- The operation can be used for an arbitrary number of times, 
- but for complex domains, the creation of training points will possibly become costly and slow. 
+*Domains* and implements all previously mentioned methods. 
+The operation can be used for an arbitrary number of times, 
+but for complex domains, the creation of training points will possibly become costly and slow. 
 
 .. code-block:: python
 
@@ -88,6 +91,11 @@ one has to set it over the **set_volume** methode.
 
 Again we can have a look at the corresponding geometries: 
 
+.. image:: pictures/operation.png
+  :width: 400
+  :align: center
+  :alt: Picture of the above operation domains
+
 For the product, we create the Cartesian product of an interval and circle to get a cylinder:
 
 .. code-block:: python
@@ -96,3 +104,9 @@ For the product, we create the Cartesian product of an interval and circle to ge
 
 The product domain will lay in the product of the spaces.
 For example, the above cylinder lays now in the space :math:`X \cdot T`.
+Here we only show the outer surface:
+
+.. image:: pictures/cylinder.png
+  :width: 200
+  :align: center
+  :alt: Picture of the above cylinder
