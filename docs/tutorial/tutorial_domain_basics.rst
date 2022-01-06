@@ -23,7 +23,7 @@ The definition of spaces were part of the `previous tutorial`_.
 
 .. _`previous tutorial`: space_tutorial.rst
 
-Following Code as a Notebook_, if you want to try out something yourself.
+The following code as a Notebook_, if you want to try out something yourself.
 To create the interval [0, 5]:
 
 .. _Notebook: ../examples/tutorial/domain_creation.ipynb
@@ -68,10 +68,10 @@ Domain Operations
 Until now we only created simple geometries. For complex domains
  the following operations are implemented:
 
-- **Union** :math:`A \cup B`, implemented with: **'+'**
-- **Intersection** :math:`A \cap B`, implemented with: **'&'**
-- **Cut** :math:`A \setminus B`, implemented with: **'-'**
-- **Cartesian product** :math:`A \times B`, implemented with: **':math:`\cdot`'**
+- **Union** :math: `A \cup B`, implemented with: **'+'**
+- **Intersection** :math: `A \cap B`, implemented with: **'&'**
+- **Cut** :math: `A \setminus B`, implemented with: **'-'**
+- **Cartesian product** :math: `A \times B`, implemented with: **':math: `\cdot`'**
 
 The only important aspect is that for union, intersection and cut the 
 domains have to belong to the same space. The returning object is a child of
@@ -92,7 +92,7 @@ one has to set it over the **set_volume** methode.
 Again we can have a look at the corresponding geometries: 
 
 .. image:: pictures/operation.png
-  :width: 400
+  :width: 600
   :align: center
   :alt: Picture of the above operation domains
 
@@ -110,3 +110,9 @@ Here we only show the outer surface:
   :width: 200
   :align: center
   :alt: Picture of the above cylinder
+
+
+Changing Domains
+----------------
+The last aspect, is the possibity of variable domains. E.g a domain that grows in time or 
+a rotating circle. 
