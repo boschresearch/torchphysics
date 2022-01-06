@@ -124,14 +124,14 @@ change with the trained solution is not possible, for now.
 The creation of the domains stays the same, one has to only replace the desired parameters.
 
 .. code-block:: python
-
-   C = tp.domains.Circle(X, [0, 0], lambda t: t/5)
+   
+   C = tp.domains.Circle(X, [0, 0], lambda t: t/5)
 
 These domains can be used like all the other domains to create a product domain or apply an operation.
 
 .. code-block:: python
-
-   new_domain = R - C
+    
+   new_domain = R - C
 
 If we now plot the product with the interval :math:'I', we get:
 
