@@ -65,13 +65,13 @@ The definition of other basic domains, follow the same way.
 Domain Operations
 -----------------
 
-Until now we only created simple geometries. For complex domains
- the following operations are implemented:
+Until now we only created simple geometries. For complex domains 
+the following operations are implemented:
 
-- **Union** :math: `A \cup B`, implemented with: **'+'**
-- **Intersection** :math: `A \cap B`, implemented with: **'&'**
-- **Cut** :math: `A \setminus B`, implemented with: **'-'**
-- **Cartesian product** :math: `A \times B`, implemented with: **':math: `\cdot`'**
+- **Union** :math:`A \cup B`, implemented with: **'+'**
+- **Intersection** :math:`A \cap B`, implemented with: **'&'**
+- **Cut** :math:`A \setminus B`, implemented with: **'-'**
+- **Cartesian product** :math:`A \times B`, implemented with: **':math: `\cdot`'**
 
 The only important aspect is that for union, intersection and cut the 
 domains have to belong to the same space. The returning object is a child of
@@ -114,5 +114,35 @@ Here we only show the outer surface:
 
 Changing Domains
 ----------------
-The last aspect, is the possibity of variable domains. E.g a domain that grows in time or 
-a rotating circle. 
+The last aspect, is the possibility of variable domains. E.g. a domain that grows in time or 
+a rotating circle. To this end, all parameters that to define a domain can also be function.
+For example, the radius of the circle or the origin of a parallelogram.
+
+Right now, a domain can only depend on the variables of another domain. So a domain that should
+change with the trained solution is not possible, for now.
+
+The creation of the domains stays the same, one has to only replace the desired parameters.
+
+.. code-block:: python
+
+   C = tp.domains.Circle(X, [0, 0], lambda t: t/5)
+
+These domains can be used like all the other domains to create a product domain or apply an operation.
+
+.. code-block:: python
+
+   new_domain = R - C
+
+If we now plot the product with the interval :math:'I', we get:
+
+.. image:: pictures/complex_domain.png
+  :width: 200
+  :align: center
+  :alt: Picture of the above domain
+
+These are all basic about the creation of different domains, next up is either the 
+`creation of polygons and the loading from external objects`_, or the 
+`creation  of training/validation points`_
+
+.. _`creation of polygons and the loading from external objects`: external_domains.rst
+.. _`creation of training/validation points`: sampler_tutorial.rst
