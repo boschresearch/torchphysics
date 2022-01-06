@@ -20,7 +20,7 @@ def function(a):
 
 def test_laplacian_for_one_input():
     a = torch.tensor([[1.0, 1.0]], requires_grad=True)
-    output = function(a[0])
+    output = a**2
     l = laplacian(output, a)
     assert l.shape[0] == 1
     assert l.shape[1] == 1
@@ -38,7 +38,6 @@ def test_laplacian_for_many_inputs():
     assert np.all(l.detach().numpy() == [4, 4, 4, 4])
 
 
-
 def test_laplacian_in_1D():
     a = torch.tensor([[1.0], [2.0], [1.3]], requires_grad=True)
     output = torch.zeros(a.shape[0])
@@ -48,7 +47,6 @@ def test_laplacian_in_1D():
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [2, 2, 2])
-
 
 
 def test_laplacian_in_3D():
@@ -89,7 +87,7 @@ def test_laplacian_with_grad_input_2():
     output = f(inp)
     jacobi = jac(output, inp)
     assert jacobi.shape == (4, 2, 3)
-    l_1 = laplacian(output, x, jacobi[:, 0, :2])
+    l_1 = laplacian(output, x, grad=jacobi[:, 0, :2])
     l_2 = laplacian(output[:, 0], x)
     assert torch.equal(l_1, l_2)
 
@@ -204,6 +202,19 @@ def test_laplacian_with_tanh():
     assert np.allclose(l.detach().numpy(), [[-0.0087], [-1.7189]], atol=1e-04)  
 
 
+def test_laplacian_for_two_variables_at_the_same_time():
+    x = torch.tensor([[1.0, 2.0], [2.0, 1.0]], requires_grad=True)
+    y = torch.tensor([[1.0], [2.0]], requires_grad=True)
+    def function1(x, y):
+        return x[0]**2 * x[1]**3 + y[0]**2
+    output = torch.zeros(x.shape[0])
+    for i in range(x.shape[0]):
+        output[i] = function1(x[i], y[i])
+    l = laplacian(output, x, y)
+    assert l.shape[0] == x.shape[0]
+    assert l.shape[1] == 1
+    assert np.allclose(l.detach().numpy(), [[30], [28]])          
+
 # Test gradient
 def test_gradient_for_one_input():
     a = torch.tensor([[1.0, 1.0]], requires_grad=True)
@@ -265,12 +276,25 @@ def test_gradient_mixed_input():
     assert np.equal(g.detach().numpy(), [[3], [3/4]]).all() 
 
 
+def test_gradient_for_two_variables_at_the_same_time():
+    x = torch.tensor([[1.0, 2.0], [2.0, 1.0]], requires_grad=True)
+    y = torch.tensor([[1.0], [2.0]], requires_grad=True)
+    def function1(x, y):
+        return x[0]**2 * x[1]**3 + y[0]**2
+    output = torch.zeros(x.shape[0])
+    for i in range(x.shape[0]):
+        output[i] = function1(x[i], y[i])
+    g = grad(output, x, y)
+    assert g.shape[0] == x.shape[0]
+    assert g.shape[1] == 3
+    assert np.allclose(g.detach().numpy(), [[16, 12, 2], [4, 12, 4]])     
+
 # Test normal derivative
 def test_normal_derivative_for_one_input():
     a = torch.tensor([[1.0, 1.0]], requires_grad=True)
     output = function(a[0])
     normal = torch.tensor([[1.0, 0]])
-    n = normal_derivative(output, a, normal)
+    n = normal_derivative(output, normal, a)
     assert n.shape[0] == 1
     assert n.shape[1] == 1
     assert np.equal(n.detach().numpy(), [2]).all()
@@ -282,7 +306,7 @@ def test_normal_derivative_for_many_inputs():
     for i in range(a.shape[0]):
         output[i] = function(a[i])
     normals = torch.tensor([[1.0, 0], [1.0, 0], [np.cos(np.pi/4), np.sin(np.pi/4)]])
-    n = normal_derivative(output, a, normals)
+    n = normal_derivative(output, normals, a)
     assert n.shape[0] == 3
     assert n.shape[1] == 1
     assert np.allclose(n.detach().numpy(), [[2], [0],
@@ -295,7 +319,7 @@ def test_normal_derivative_3D():
     for i in range(a.shape[0]):
         output[i] = function(a[i])
     normals = torch.tensor([[1.0, 0, 0], [1.0, 0, 1.0]])
-    n = normal_derivative(output, a, normals)
+    n = normal_derivative(output, normals, a)
     assert n.shape[0] == 2
     assert n.shape[1] == 1
     assert np.allclose(n.detach().numpy(), [[2], [4]])
@@ -310,11 +334,11 @@ def test_normal_derivative_complexer_function():
     for i in range(a.shape[0]):
         output[i] = function1(a[i], b[i])
     normals = torch.tensor([[1.0, 0], [1.0/np.sqrt(2), 1.0/np.sqrt(2)]])
-    n = normal_derivative(output, a, normals)
+    n = normal_derivative(output, normals, a)
     assert n.shape[0] == a.shape[0]
     assert n.shape[1] == 1
     assert np.allclose(n.detach().numpy(), [[2], [1/np.sqrt(2)*(4+np.cos(0))]])
-    n = normal_derivative(output, b, normals)
+    n = normal_derivative(output, normals, b)
     assert n.shape[0] == b.shape[0]
     assert n.shape[1] == 1
     assert np.allclose(n.detach().numpy(), [[3], [27/np.sqrt(2)]])
@@ -387,6 +411,18 @@ def test_div_for_complexer_function_2():
     assert np.isclose(d[2], 2*(2+np.cos(10)))
 
 
+def test_div_for_two_variables_at_the_same_time():
+    def f(x, y):
+        return torch.cat((x, y), dim=1)
+    a = torch.tensor([[1.0, 1.0], [2.0, 1.0]], requires_grad=True)
+    b = torch.tensor([[1.0], [2.0]], requires_grad=True)
+    output = f(a, b)
+    d = div(output, a, b)
+    assert d.shape[0] == a.shape[0]
+    assert d.shape[1] == 1
+    assert np.allclose(d.detach().numpy(), [[3], [3]])  
+
+
 # Test Jacobi-Matrix
 def jac_function(x):
     out = x**2
@@ -457,6 +493,17 @@ def test_jac_for_complexer_function_2():
                              [9*np.exp(2), 0, 6*np.exp(2)]]).all()
 
 
+def test_jac_for_two_variables_at_the_same_time():
+    def f(x, y):
+        return torch.cat((x, y), dim=1)
+    a = torch.tensor([[1.0, 1.0], [2.0, 1.0]], requires_grad=True)
+    b = torch.tensor([[1.0], [2.0]], requires_grad=True)
+    output = f(a, b)
+    d = jac(output, a, b)
+    assert d.shape == (2, 3, 3)
+    assert np.allclose(d.detach().numpy(), [np.eye(3), np.eye(3)])  
+
+
 # Test rot
 def rot_function(x):
     out = torch.zeros((len(x), 3))
@@ -509,6 +556,23 @@ def test_rot_for_complexer_function_2():
     a = torch.tensor([[-1, 1, 2.0], [1.0, 1.0, 0]], requires_grad=True)
     output = rot_function(a)
     d = rot(output, a)
+    assert d.shape == (2, 3)
+    d = d.detach().numpy()
+    assert np.isclose(d[0], [1, np.cos(2)-1, 2-2*np.cos(2)]).all()
+    assert np.isclose(d[1], [1, np.cos(0)-1, -2]).all()
+
+
+def test_rot_for_two_variables_at_the_same_time():
+    def rot_function(x, y):
+        out = torch.zeros((len(x), 3))
+        out[:, :1]  = torch.sin(x[:,1:]*y[:,:1])
+        out[:, 1:2] = -x[:,:1]**2
+        out[:, 2:]  = x[:,:1] + x[:,1:]
+        return out   
+    a = torch.tensor([[-1.0, 1.0], [1.0, 1.0]], requires_grad=True)
+    b = torch.tensor([[2.0], [0.0]], requires_grad=True)
+    output = rot_function(a, b)
+    d = rot(output, a, b)
     assert d.shape == (2, 3)
     d = d.detach().numpy()
     assert np.isclose(d[0], [1, np.cos(2)-1, 2-2*np.cos(2)]).all()
@@ -600,7 +664,7 @@ def convec_function(x):
 def test_convective_one_input():
     a = torch.tensor([[1.0, 1.0, 2.0]], requires_grad=True)
     output = convec_function(a)
-    d = convective(output, a, output)
+    d = convective(output, output, a)
     assert d.shape == (1, 3)
     d = d.detach().numpy()
     assert np.isclose(d[0], [2, 1, 4]).all()
@@ -609,7 +673,7 @@ def test_convective_one_input():
 def test_convective_many_inputs():
     a = torch.tensor([[1, 1, 2.0], [0, 1.0, 0], [1.0, 3.0, 4]], requires_grad=True)
     output = convec_function(a)
-    d = convective(output, a, output)
+    d = convective(output, output, a)
     assert d.shape == (3, 3)
     d = d.detach().numpy()
     assert np.isclose(d[0], [2, 1, 4]).all()
@@ -637,6 +701,22 @@ def test_convective_in_2D():
         return out
     output = func(a)
     d = convective(output, a, a)
+    assert d.shape == (2, 2)
+    d = d.detach().numpy()
+    assert np.isclose(d[0], [2, 1]).all()
+    assert np.isclose(d[1], [0, 1]).all()
+
+
+def test_convective_in_for_two_variables_at_the_same_time():
+    a = torch.tensor([[1.0], [0]], requires_grad=True)
+    b = torch.tensor([[1.0], [1.0]], requires_grad=True)
+    def func(x, y):
+        out = torch.zeros((len(x), 2))
+        out[:, :1] += x[:, :1]**2 
+        out[:, 1:2] += y[:, :1]
+        return out
+    output = func(a, b)
+    d = convective(output, torch.cat((a, b), dim=1), a, b)
     assert d.shape == (2, 2)
     d = d.detach().numpy()
     assert np.isclose(d[0], [2, 1]).all()

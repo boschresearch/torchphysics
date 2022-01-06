@@ -5,6 +5,11 @@ from .differentialoperators import (laplacian,
                                     jac,
                                     partial,
                                     convective,
+                                    rot, 
                                     normal_derivative)
 
-from .helper import apply_to_batch, prepare_user_fun_input, is_batch
+from .data import PointsDataset, PointsDataLoader
+
+from .user_fun import UserFunction
+from .plotting import plot, Plotter, animate, scatter
+from .evaluation import compute_min_and_max

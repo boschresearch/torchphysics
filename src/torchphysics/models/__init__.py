@@ -1,5 +1,8 @@
 """contains PyTorch models which can be trained to
 approximate the solution of a differential equation"""
 
-from .diffeqmodel import DiffEqModel
-from .fcn import SimpleFCN
+from .parameter import Parameter
+from .model import (Model, NormalizationLayer, AdaptiveWeightLayer,
+                    Sequential, Parallel)
+from .fcn import FCN
+from .deepritz import DeepRitzNet
