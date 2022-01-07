@@ -1,7 +1,7 @@
 import torch
 import pytest
 import numpy as np
-from torchphysics.utils.differentialequations import \
+from torchphysics.utils.pinn.differentialequations import \
     (HeatEquation, BurgersEquation, IncompressibleNavierStokesEquation)
 
 # Test HeatEquation

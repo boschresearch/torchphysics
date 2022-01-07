@@ -3,15 +3,15 @@
 import torch
 
 
-def laplacian(model_out, deriv_variable_input, grad=None):
+def laplacian(model_out, *derivative_variable, grad=None):
     '''Computes the laplacian of a network with respect to the given variable
 
     Parameters
     ----------
     model_out : torch.tensor
         The (scalar) output tensor of the neural network
-    deriv_variable_input : torch.tensor
-        The input tensor of the variable in which respect the derivatives have to
+    derivative_variable : torch.tensor
+        The input tensor of the variables in which respect the derivatives have to
         be computed
     grad : torch.tensor
         If the gradient has already been computed somewhere else, it is more
@@ -23,31 +23,31 @@ def laplacian(model_out, deriv_variable_input, grad=None):
         A Tensor, where every row contains the value of the sum of the second
         derivatives (laplace) w.r.t the row of the input variable.
     '''
-    laplacian = torch.zeros((deriv_variable_input.shape[0], 1),
-                            device=deriv_variable_input.device)
-    if grad is None:
-        grad = torch.autograd.grad(model_out.sum(), deriv_variable_input,
-                                   create_graph=True)[0]
-    # We have to check if the model is linear w.r.t. the variable, or else we get an err
-    # when we compute the second derivative. If it is linear we can just return zeros
-    if grad.grad_fn is None:
-        return laplacian
-    for i in range(deriv_variable_input.shape[1]):
-        D2u = torch.autograd.grad(grad.narrow(1, i, 1).sum(),
-                                  deriv_variable_input, create_graph=True)[0]
-        laplacian += D2u.narrow(1, i, 1)
+    laplacian = torch.zeros((model_out.shape[0], 1),
+                             device=model_out.device)
+    for vari in derivative_variable:
+        if grad is None or len(derivative_variable) > 1:
+            grad = torch.autograd.grad(model_out.sum(), vari, create_graph=True)[0]
+        # We have to check if the model is linear w.r.t. the variable, or else we get an err
+        # when we compute the second derivative. If it is linear we can just return zeros
+        if grad.grad_fn is None:
+            continue
+        for i in range(vari.shape[1]):
+            D2u = torch.autograd.grad(grad.narrow(1, i, 1).sum(),
+                                      vari, create_graph=True)[0]
+            laplacian += D2u.narrow(1, i, 1)
     return laplacian
 
 
-def grad(model_out, deriv_variable_input):
+def grad(model_out, *derivative_variable):
     '''Computes the gradient of a network with respect to the given variable.
 
     Parameters
     ----------
     model_out : torch.tensor
         The (scalar) output tensor of the neural network
-    deriv_variable_input : torch.tensor
-        The input tensor of the variable in which respect the derivatives have to
+    derivative_variable : torch.tensor
+        The input tensor of the variables in which respect the derivatives have to
         be computed
 
     Returns
@@ -56,12 +56,15 @@ def grad(model_out, deriv_variable_input):
         A Tensor, where every row contains the values of the the first
         derivatives (gradient) w.r.t the row of the input variable.
     '''
-    grad = torch.autograd.grad(
-        model_out.sum(), deriv_variable_input, create_graph=True)[0]
-    return grad
+    grad = []
+    for vari in derivative_variable:
+        new_grad = torch.autograd.grad(model_out.sum(), vari,
+                                       create_graph=True)[0]
+        grad.append(new_grad)
+    return torch.column_stack(grad)
 
 
-def normal_derivative(model_out, deriv_variable_input, normals):
+def normal_derivative(model_out, normals, *derivative_variable):
     '''Computes the normal derivativ of a network with respect to the given variable
     and normal vectors.
 
@@ -69,8 +72,8 @@ def normal_derivative(model_out, deriv_variable_input, normals):
     ----------
     model_out : torch.tensor
         The (scalar) output tensor of the neural network
-    deriv_variable_input : torch.tensor
-        The input tensor of the variable in which respect the derivatives have to
+    derivative_variable : torch.tensor
+        The input tensor of the variables in which respect the derivatives have to
         be computed
     normals : torch.tensor
         The normal vectors at the points where the derivative has to be computed.
@@ -82,20 +85,20 @@ def normal_derivative(model_out, deriv_variable_input, normals):
         A Tensor, where every row contains the values of the normal
         derivatives w.r.t the row of the input variable.
     '''
-    gradient = grad(model_out, deriv_variable_input)
+    gradient = grad(model_out, *derivative_variable)
     normal_derivatives = gradient*normals
     return normal_derivatives.sum(dim=1, keepdim=True)
 
 
-def div(model_out, deriv_variable_input):
+def div(model_out, *derivative_variable):
     '''Computes the divergence of a network with respect to the given variable.
 
     Parameters
     ----------
     model_out : torch.tensor
         The output tensor of the neural network
-    deriv_variable_input : torch.tensor
-        The input tensor of the variable in which respect the derivatives have to
+    derivative_variable : torch.tensor
+        The input tensor of the variables in which respect the derivatives have to
         be computed
 
     Returns
@@ -104,16 +107,19 @@ def div(model_out, deriv_variable_input):
         A Tensor, where every row contains the values of the divergence
         of the model w.r.t the row of the input variable.
     '''
-    divergence = torch.zeros((deriv_variable_input.shape[0], 1),
-                             device=deriv_variable_input.device)
-    for i in range(deriv_variable_input.shape[1]):
-        Du = torch.autograd.grad(model_out.narrow(1, i, 1).sum(),
-                                 deriv_variable_input, create_graph=True)[0]
-        divergence += Du.narrow(1, i, 1)
+    divergence = torch.zeros((derivative_variable[0].shape[0], 1),
+                             device=derivative_variable[0].device)
+    var_dim = 0
+    for vari in derivative_variable:
+        for i in range(vari.shape[1]):
+            Du = torch.autograd.grad(model_out.narrow(1, var_dim + i, 1).sum(),
+                                     vari, create_graph=True)[0]
+            divergence += Du.narrow(1, i, 1)
+        var_dim += i + 1
     return divergence
 
 
-def jac(model_out, deriv_variable_input):
+def jac(model_out, *derivative_variable):
     '''Computes the jacobian of a network output with
     respect to the given input.
 
@@ -121,7 +127,7 @@ def jac(model_out, deriv_variable_input):
     ----------
     model_out : torch.tensor
         The output tensor in which respect the jacobian should be computed.
-    deriv_variable_input : torch.tensor
+    derivative_variable : torch.tensor
         The input tensor in which respect the jacobian should be computed.
 
     Returns
@@ -131,14 +137,16 @@ def jac(model_out, deriv_variable_input):
     '''
     Du_rows = []
     for i in range(model_out.shape[1]):
-        Du_rows.append(torch.autograd.grad(model_out[:, i].sum(),
-                                           deriv_variable_input,
-                                           create_graph=True)[0])
+        Du_i = []
+        for vari in derivative_variable:
+            Du_i.append(torch.autograd.grad(model_out[:, i].sum(),
+                                            vari, create_graph=True)[0])
+        Du_rows.append(torch.cat(Du_i, dim=1))
     Du = torch.stack(Du_rows, dim=1)
     return Du
 
 
-def rot(model_out, deriv_variable_input):
+def rot(model_out, *derivative_variable):
     '''Computes the rotation/curl of a 3-dimensional vector field (given by a
     network output) with respect to the given input.
 
@@ -147,7 +155,7 @@ def rot(model_out, deriv_variable_input):
     model_out : torch.tensor
         The output tensor of shape (b, 3) in which respect the roation should be
         computed.
-    deriv_variable_input : torch.tensor
+    derivative_variable : torch.tensor
         The input tensor of shape (b, 3) in which respect the rotation should be
         computed.
 
@@ -158,20 +166,20 @@ def rot(model_out, deriv_variable_input):
         given batch element.
     '''
     """
-    assert model_out.shape[1] == 3 and deriv_variable_input.shape[1] == 3, ""
+    assert model_out.shape[1] == 3 and derivative_variable.shape[1] == 3, ""
         Rotation: the given in- and output should both be batches of
         3 dimensional data.
         ""
     """
-    jacobian = jac(model_out, deriv_variable_input)
-    rotation = torch.zeros((len(deriv_variable_input), 3))
+    jacobian = jac(model_out, *derivative_variable)
+    rotation = torch.zeros((len(derivative_variable[0]), 3))
     rotation[:, 0] = jacobian[:, 2, 1] - jacobian[:, 1, 2] 
     rotation[:, 1] = jacobian[:, 0, 2] - jacobian[:, 2, 0] 
     rotation[:, 2] = jacobian[:, 1, 0] - jacobian[:, 0, 1] 
     return rotation
 
 
-def partial(model_out, *deriv_variable_inputs):
+def partial(model_out, *derivative_variables):
     '''Computes the (n-th, possibly mixed) partial derivative of a network output with
     respect to the given variables.
 
@@ -179,7 +187,7 @@ def partial(model_out, *deriv_variable_inputs):
     ----------
     model_out : torch.tensor
         The output tensor of the neural network
-    deriv_variable_inputs : torch.tensor(s)
+    derivative_variables : torch.tensor(s)
         The input tensors in which respect the derivatives should be computed. If n
         tensors are given, the n-th (mixed) derivative will be computed.
 
@@ -190,7 +198,7 @@ def partial(model_out, *deriv_variable_inputs):
         derivative of the model w.r.t the row of the input variable.
     '''
     du = model_out
-    for inp in deriv_variable_inputs:
+    for inp in derivative_variables:
         du = torch.autograd.grad(du.sum(),
                                  inp,
                                  create_graph=True)[0]
@@ -199,7 +207,7 @@ def partial(model_out, *deriv_variable_inputs):
     return du
 
 
-def convective(deriv_out, deriv_variable_input, convective_field):
+def convective(deriv_out, convective_field, *derivative_variable):
     '''Computes the convective term :math:`(v \\cdot \\nabla)u` that appears e.g. in
     material derivatives. Note: This is not the whole material derivative.
 
@@ -208,11 +216,11 @@ def convective(deriv_out, deriv_variable_input, convective_field):
     deriv_out : torch.tensor
         The vector or scalar field :math:`u` that is convected and should be
         differentiated.
-    deriv_variable_input : torch.tensor
-        The spatial variable in which respect deriv_out should be differentiated.
     convective_field: torch.tensor
         The flow vector field :math:`v`. Should have the same dimension as
-        deriv_variable_input.
+        derivative_variable.
+    derivative_variable : torch.tensor
+        The spatial variable in which respect deriv_out should be differentiated.
 
     Returns
     ----------
@@ -220,5 +228,5 @@ def convective(deriv_out, deriv_variable_input, convective_field):
         A vector or scalar (+batch-dimension) Tensor, that contains the convective
         derivative.
     '''
-    jac_x = jac(deriv_out, deriv_variable_input)
+    jac_x = jac(deriv_out, *derivative_variable)
     return torch.bmm(jac_x, convective_field.unsqueeze(dim=2)).squeeze(dim=2)
