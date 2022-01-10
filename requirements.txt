@@ -5,3 +5,4 @@ matplotlib>=3.4.2
 trimesh>=3.9.19
 shapely>=1.7.1
 scipy>=1.6.3
+networkx>=2.5.1 
