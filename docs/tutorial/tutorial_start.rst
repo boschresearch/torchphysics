@@ -11,7 +11,7 @@ solve a PDE.
 
 The structure is best illustrated by the following graph:
 
-.. image:: torchphysics_structure.png
+.. image:: pictures/torchphysics_structure.png
   :width: 500
   :align: center
   :alt: Graph of the work flow in TorchPhysics
