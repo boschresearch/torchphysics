@@ -9,8 +9,8 @@ the following methods and properties:
 - **volume**, **set_volume**: to compute or set the volume of the domain
 - **bounding_box**: to get a bounding box of the given domain
 - **boundary**: returns the boundary of the domain, this object itself is a domain and 
-                implements the same methods. The boundary also knows the normal 
-                vectors. But a boundary itself has **no** boundary!
+   implements the same methods. The boundary also knows the normal 
+   vectors. But a boundary itself has **no** boundary!
 
 For explicit documentation of each method and all implemented domains, see the docs_. 
 Some pre implemented domains are: *Point, Interval, Parallelogram, Circle...*
@@ -71,7 +71,7 @@ the following operations are implemented:
 - **Union** :math:`A \cup B`, implemented with: **'+'**
 - **Intersection** :math:`A \cap B`, implemented with: **'&'**
 - **Cut** :math:`A \setminus B`, implemented with: **'-'**
-- **Cartesian product** :math:`A \times B`, implemented with: **':math:`\cdot`'**
+- **Cartesian product** :math:`A \times B`, implemented with: '*'
 
 The only important aspect is that for union, intersection and cut the 
 domains have to belong to the same space. The returning object is a child of
