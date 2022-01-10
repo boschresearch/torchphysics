@@ -23,10 +23,10 @@ The definition of spaces were part of the `previous tutorial`_.
 
 .. _`previous tutorial`: space_tutorial.rst
 
-The following code as a Notebook_, if you want to try out something yourself.
+You can find The following code as a notebook here_, if you want to try out something yourself.
 To create the interval [0, 5]:
 
-.. _Notebook: ../examples/tutorial/domain_creation.ipynb
+.. _here: notebooks/domain_creation.ipynb
 
 .. code-block:: python
 
@@ -71,7 +71,7 @@ the following operations are implemented:
 - **Union** :math:`A \cup B`, implemented with: **'+'**
 - **Intersection** :math:`A \cap B`, implemented with: **'&'**
 - **Cut** :math:`A \setminus B`, implemented with: **'-'**
-- **Cartesian product** :math:`A \times B`, implemented with: **':math: `\cdot`'**
+- **Cartesian product** :math:`A \times B`, implemented with: **':math:`\cdot`'**
 
 The only important aspect is that for union, intersection and cut the 
 domains have to belong to the same space. The returning object is a child of
@@ -133,7 +133,7 @@ These domains can be used like all the other domains to create a product domain 
     
    new_domain = R - C
 
-If we now plot the product with the interval :math:'I', we get:
+If we now plot the product with the interval :math:`I`, we get:
 
 .. image:: pictures/complex_domain.png
   :width: 200
@@ -141,8 +141,8 @@ If we now plot the product with the interval :math:'I', we get:
   :alt: Picture of the above domain
 
 These are all basic about the creation of different domains, next up is either the 
-`creation of polygons and the loading from external objects`_, or the 
+`creation of polygons and the loading of external objects`_, or the 
 `creation  of training/validation points`_
 
-.. _`creation of polygons and the loading from external objects`: external_domains.rst
+.. _`creation of polygons and the loading of external objects`: external_domains.rst
 .. _`creation of training/validation points`: sampler_tutorial.rst
