@@ -9,8 +9,8 @@ the following methods and properties:
 - **volume**, **set_volume**: to compute or set the volume of the domain
 - **bounding_box**: to get a bounding box of the given domain
 - **boundary**: returns the boundary of the domain, this object itself is a domain and 
-   implements the same methods. The boundary also knows the normal 
-   vectors. But a boundary itself has **no** boundary!
+  implements the same methods. The boundary also knows the normal 
+  vectors. But a boundary itself has **no** boundary!
 
 For explicit documentation of each method and all implemented domains, see the docs_. 
 Some pre implemented domains are: *Point, Interval, Parallelogram, Circle...*
