@@ -5,11 +5,11 @@ After the definition of the domains, the next part is the creation of training/v
 on these domains. This task is handled by the *PointSampler*-class. Different kinds of sampling
 are implemented, for example:
 
-  - *RandomUniformSampler*: samples uniform randomly distributed points, in the given domain.
-    To assure a efficent sampling, every domain implements are method to create random points.
-  - *GridSampler*: samples a uniform point grid, in the given domain. Just like the 
-    *RandomUniformSampler* loosely coupled with the domains, for efficiency.
-  - *GaussianSampler*: creates points with a normal/Gaussian distribution.
+- *RandomUniformSampler*: samples uniform randomly distributed points, in the given domain.
+  To assure a efficent sampling, every domain implements are method to create random points.
+- *GridSampler*: samples a uniform point grid, in the given domain. Just like the 
+  *RandomUniformSampler* loosely coupled with the domains, for efficiency.
+- *GaussianSampler*: creates points with a normal/Gaussian distribution.
 
 And many more, see `sampler-docs`_. The samplers lay all under *torchphysics.samplers*
 
@@ -17,10 +17,10 @@ And many more, see `sampler-docs`_. The samplers lay all under *torchphysics.sam
 
 In general, a sampler gets the following arguments:
 
-  - *domain*: the domain in which the points should be created
-  - *n_points* or *density*: to set the number of wanted points. Either a fixed number can be
-    chosen or the density of the points.
-  - *filter*: A function that filters out special points, for example for local boundary conditions.
+- *domain*: the domain in which the points should be created
+- *n_points* or *density*: to set the number of wanted points. Either a fixed number can be
+  chosen or the density of the points.
+- *filter*: A function that filters out special points, for example for local boundary conditions.
 
 The *PointSamplers* were used to create the plots in previous tutorials. Random points can be
 created with:
@@ -68,19 +68,19 @@ Sampler Operations
 ------------------
 Different samplers can be combined by the following ways:
 
-  - *ConcatSampler*, with **'+'**. This will concatenate the output of two samplers. 
-    For this, both samplers have to create points in the same space, but not essentially in
-    the same domain. Useful if locally, different kinds of sampling should be used for
-    the same condition. The number of points will be the sum of the points of each sampler.
-  - *AppendSampler*, with **.append**. This will create a *column stack* of the two sampler outputs.
-    For this both samplers have to create the same number of points but in different spaces. 
-    Useful if the points of both samplers have no real correlation between each other.
-  - *ProductSampler*, with '*'. Mathematically, this will create the Cartesian product of
-    the sampler outputs. Numerically, this creates the mesh grid of the points. Therefore
-    the number of points will be the product of the number of both samplers.
-    The *ProductSampler* notices if one domain depends on the other one and will create
-    the points accordingly.
-
+- *ConcatSampler*, with **'+'**. This will concatenate the output of two samplers. 
+  For this, both samplers have to create points in the same space, but not essentially in
+  the same domain. Useful if locally, different kinds of sampling should be used for
+  the same condition. The number of points will be the sum of the points of each sampler.
+- *AppendSampler*, with **.append**. This will create a *column stack* of the two sampler outputs.
+  For this both samplers have to create the same number of points but in different spaces. 
+  Useful if the points of both samplers have no real correlation between each other.
+- *ProductSampler*, with '*'. Mathematically, this will create the Cartesian product of
+  the sampler outputs. Numerically, this creates the mesh grid of the points. Therefore
+  the number of points will be the product of the number of both samplers.
+  The *ProductSampler* notices if one domain depends on the other one and will create
+  the points accordingly.
+  
 For example, this:
 
 .. code-block:: python 
@@ -101,7 +101,7 @@ The following gives a sampler, that creates grid points on the curved surface of
 Everything can be visualized over the **scatter** method.
 Some possible combinations and results are in the following picture: 
 
-.. image:: pictures/sampler_combis.png
+.. image:: pictures/sampler_combis.PNG
   :width: 600
   :align: center
   :alt: Picture of some samplers
