@@ -48,7 +48,7 @@ Utils
   be shown more detailed, are:
 
   - Here_ the usage of the pre implemented differential operators
-  - maybe plotting...
+  - `Creating plots`_ of the trained solutions.
 
 Solver
   Handles the training of the defined model, by applying the previously created conditions.
@@ -64,8 +64,9 @@ can be found under the `example-folder`_
 .. _`Polygons and external objects`: external_domains.rst
 .. _`PointSampler tutorial`: sampler_tutorial.rst
 .. _`model creation tutorial`: model_creation.rst
-.. _`condition tutorial`: missing
+.. _`condition tutorial`: condition_tutorial.rst
 .. _docs: missing
 .. _Here: differentialoperators.rst
-.. _`solving a simple PDE`: missing
+.. _`Creating plots`: plotting.rst
+.. _`solving a simple PDE`: solve_pde.rst
 .. _`example-folder`: https://github.com/boschresearch/torchphysics/tree/main/examples

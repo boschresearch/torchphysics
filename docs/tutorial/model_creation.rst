@@ -44,7 +44,7 @@ In the following the application of the normalization:
   # we first need a domain to know how to scale the points
   T = tp.domains.Triangle(X, origin=[0, 0], corner_1=[1, 0], corner_2=[2.0, 0])
   normal_layer = tp.models.NormalizationLayer(T) # pass in the domain
-  seq_model = tp.models.Sequential(normal_layer, model) # the evaluation will from left to right
+  seq_model = tp.models.Sequential(normal_layer, model) # the evaluation will be from left to right
 
 
 Using your own neural network
