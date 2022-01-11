@@ -39,14 +39,14 @@ Models/Parameters
 
 Conditions 
   Combine the created *Domains*, *PointSampler* and *Models* to apply the conditions
-  induced by the differential equation. See `condition tutorial`_ to see how to create different
+  induced by the differential equation. See `condition tutorial`_ on how to create different
   kinds of conditions for all parts of the problem.
 
 Utils
   Implement a variety of helper functions to make the definition and evaluation of 
-  problems easier. To get an overview of all methods, see the docs_. Two parts will
-  be shown more detailed:
-  
+  problems easier. To get an overview of all methods, see the docs_. Two parts that will
+  be shown more detailed, are:
+
   - Here_ the usage of the pre implemented differential operators
   - maybe plotting...
 
@@ -55,13 +55,17 @@ Solver
   The usage of the solver, will be shown in a complete probleme, where all the above points
   are used. This is shown in `solving a simple PDE`_.
 
+These are all the basics of TorchPhysics. You should now have a rough understanding of the 
+structure of this library. Some additional applications (inverse problems, training input params, ...)
+can be found under the `example-folder`_
 
 .. _`spaces and points tutorial`: missing
 .. _`Domain basics`: tutorial_domain_basics.rst
 .. _`Polygons and external objects`: external_domains.rst
 .. _`PointSampler tutorial`: sampler_tutorial.rst
-.. _`model creation tutorial`: missing
+.. _`model creation tutorial`: model_creation.rst
 .. _`condition tutorial`: missing
 .. _docs: missing
 .. _Here: differentialoperators.rst
 .. _`solving a simple PDE`: missing
+.. _`example-folder`: https://github.com/boschresearch/torchphysics/tree/main/examples
