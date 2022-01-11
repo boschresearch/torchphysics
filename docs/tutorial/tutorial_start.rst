@@ -25,6 +25,7 @@ Spaces
 
 Domains 
   Handle the creation of the underlying geometry of the problem. See:
+  
   - `Domain basics`_ to learn everything about the definition and functionalities 
   - `Polygons and external objects`_ to create 2D or 3D polygons and import external files
 
@@ -45,6 +46,7 @@ Utils
   Implement a variety of helper functions to make the definition and evaluation of 
   problems easier. To get an overview of all methods, see the docs_. Two parts will
   be shown more detailed:
+  
   - Here_ the usage of the pre implemented differential operators
   - maybe plotting...
 
