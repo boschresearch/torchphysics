@@ -2,10 +2,10 @@
 Solving a simple PDE
 ====================
 The following problem also exists as a notebook_. Here we assume that you know all the
-basic concepts that were part of the previous tutorials and will only give short explanations
+basic concepts, that were part of the previous tutorials and will only give short explanations
 to every step.
 
-.. _notebook: notebooks.solving_pde.ipynb
+.. _notebook: notebooks.solve_pde.ipynb
 
 Our aim is to solve the following PDE:
 
@@ -55,7 +55,7 @@ differential equation itself and the boundary condition. We start with the bound
     # the point sampler, for the trainig points:
     # here we use grid points any other sampler could also be used
     bound_sampler = tp.samplers.GridSampler(square.boundary, n_points=5000)
-    bound_sampler = bound_sampler.make_static() # grid always the same, therfore static to one single computation
+    bound_sampler = bound_sampler.make_static() # grid always the same, therfore static for one single computation
     # wrap everything together in the condition
     bound_cond = tp.conditions.PINNCondition(module=model, sampler=bound_sampler, 
                                              residual_fn=bound_residual, weight=10)
