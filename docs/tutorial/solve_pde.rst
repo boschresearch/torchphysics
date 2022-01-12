@@ -5,7 +5,7 @@ The following problem also exists as a notebook_. Here we assume that you know a
 basic concepts, that were part of the previous tutorials and will only give short explanations
 to every step.
 
-.. _notebook: notebooks.solve_pde.ipynb
+.. _notebook: notebooks/solve_pde.ipynb
 
 Our aim is to solve the following PDE:
 
