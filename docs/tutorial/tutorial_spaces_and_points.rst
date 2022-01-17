@@ -38,6 +38,7 @@ and one can access its variables as an (unordered) set:
 
 Furthermore, we can check subspace-relations and whether the space contains a variable using
 the ``in``-operator:
+
 .. code-block:: python
 
    >>> 'x' in G
@@ -61,6 +62,7 @@ free to skip this part of the tutorial for now.
 of multiple points. The second axis collects the space dimensionalities.
 
 A set of points can be created by their coordinates:
+
 .. code-block:: python
 
    x = torch.randn(10, 2)
@@ -68,6 +70,7 @@ A set of points can be created by their coordinates:
    points = tp.spaces.Points.from_coordinates({'x': x, 't': t})
 
 All ``Points`` have a space and therefore also a dimensionality and a variable set:
+
 .. code-block:: python
 
    >>> points.space
