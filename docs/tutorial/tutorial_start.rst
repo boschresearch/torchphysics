@@ -59,7 +59,7 @@ These are all the basics of TorchPhysics. You should now have a rough understand
 structure of this library. Some additional applications (inverse problems, training input params, ...)
 can be found under the `example-folder`_
 
-.. _`spaces and points tutorial`: missing
+.. _`spaces and points tutorial`: tutorial_spaces_and_points.rst
 .. _`Domain basics`: tutorial_domain_basics.rst
 .. _`Polygons and external objects`: external_domains.rst
 .. _`PointSampler tutorial`: sampler_tutorial.rst
