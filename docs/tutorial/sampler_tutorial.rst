@@ -116,6 +116,6 @@ found in the `sampler-docs`_.
 
 
 Now you know all about the creation of points and can either go to the conditions or
-definition of neural networks. Click here_ to go back to the main tutorial site. 
+definition of neural networks. Click here_ to go back to the main tutorial page. 
 
 .. _here: tutorial_start.rst

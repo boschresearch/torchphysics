@@ -68,7 +68,7 @@ But there are two points that have to be remembered for this:
             # here your computations....
             return Points(your_model_output, self.output_space)
 
-.. _`space tutorial`: missing
+.. _`space tutorial`: tutorial_spaces_and_points.rst
 
 These are all the basics to creation of neural networks and parameters, next up are either 
 the *conditions* or you can have a look at the *utils*, here_ you can go back to the main site.

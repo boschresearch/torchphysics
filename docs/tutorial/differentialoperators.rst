@@ -74,6 +74,6 @@ E.g. for :math:`\partial_{x_1}^2f + \partial_{x_2}^2f + \partial_t^2f` one can u
 
   laplace_t = tp.utils.laplacian(out, x, t) # <- here both variables
 
-All other operators work in the same way. Here_ you can go back to the main tutorial site.
+All other operators work in the same way. Here_ you can go back to the main tutorial page.
 
 .. _Here: tutorial_start.rst

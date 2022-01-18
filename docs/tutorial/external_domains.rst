@@ -58,7 +58,7 @@ If you have the package Trimesh_ installed, you can find the class *TrimeshPolyh
 
 For this class, there are also two different ways to create a polyhedron. 
 The first one is to define the vertices and say which vertices create a side of the object. 
-For example, a simplex is created with:
+For example:
 
 .. code-block:: python
 
@@ -70,7 +70,7 @@ For example, a simplex is created with:
 .. image:: pictures/simplex.png
   :width: 200
   :align: center
-  :alt: Picture of the above simplex
+  :alt: Picture of the above domain
 
 
 External Objects
