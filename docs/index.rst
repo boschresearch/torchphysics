@@ -41,7 +41,7 @@ Tutorial
 .. toctree::
     :maxdepth: 3
 
-    Main <tutorial/tutorail_start>
+    Main <tutorial/tutorial_start>
 
 
 API 
