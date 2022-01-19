@@ -98,4 +98,4 @@ You should now have a basic understanding of spaces and points in TorchPhysics. 
 on specific features, also take a look at the generated docs.
 The next step in this tutorial are `basics on domains`_.
 
-.. _`basics on domains`: tutorial_domain_basics.rst
+.. _`basics on domains`: tutorial_domain_basics.html

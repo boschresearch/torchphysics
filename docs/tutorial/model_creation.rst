@@ -6,7 +6,7 @@ What basics network structures are implemented, can be found under the `model-do
 All networks can found under ``torchphysics.models``. For example, a simple fully 
 connected neural network can be created with:
 
-.. _`model-docs`: missing
+.. _`model-docs`: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.models.html
 
 .. code-block:: python
 
@@ -68,9 +68,9 @@ But there are two points that have to be remembered for this:
             # here your computations....
             return Points(your_model_output, self.output_space)
 
-.. _`space tutorial`: tutorial_spaces_and_points.rst
+.. _`space tutorial`: tutorial_spaces_and_points.html
 
 These are all the basics to creation of neural networks and parameters, next up are either 
 the **Conditions** or you can have a look at the **utils**, here_ you can go back to the main site.
 
-.. _here: tutorial_start.rst 
+.. _here: tutorial_start.html

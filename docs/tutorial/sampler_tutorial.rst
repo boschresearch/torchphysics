@@ -13,7 +13,7 @@ are implemented, for example:
 
 And many more, see `sampler-docs`_. The samplers lay all under ``torchphysics.samplers``.
 
-.. _`sampler-docs`: does_not_exist
+.. _`sampler-docs`: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.problem.samplers.html
 
 In general, a sampler gets the following arguments:
 
@@ -118,4 +118,4 @@ found in the `sampler-docs`_.
 Now you know all about the creation of points and can either go to the conditions or
 definition of neural networks. Click here_ to go back to the main tutorial page. 
 
-.. _here: tutorial_start.rst
+.. _here: tutorial_start.html

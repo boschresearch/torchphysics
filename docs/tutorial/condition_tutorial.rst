@@ -8,7 +8,7 @@ Many kinds of conditions are pre implemented, they can be found under
 the docs_. Depending on the used type, the condition get different inputs. The five arguments 
 that almost all conditions need, are:
 
-.. _docs: missing
+.. _docs: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.problem.conditions.html
 
 module
     Your model that should be trained, with the condition you are creating. The definition
@@ -40,8 +40,8 @@ just a ``torch.nn.Module``.
 
 All conditions can also be applied for validation or testing.
 
-.. _`previous tutorial`: model_creation.rst
-.. _`sampler tutorial`: sampler_tutorial.rst
+.. _`previous tutorial`: model_creation.html
+.. _`sampler tutorial`: sampler_tutorial.html
 
 
 Defining a Residual-Function
@@ -97,7 +97,7 @@ In the same way, other conditions can be created. As an example, let us assume w
 Since ``D`` is also input of the model, we have to now pass it to our residual.
 For the Laplacian different operators are implemented, see the `operator tutorial`_ for a small example.
 
-.. _`operator tutorial`: differentialoperators.rst
+.. _`operator tutorial`: differentialoperators.html
 
 .. code-block:: python
 
@@ -110,4 +110,4 @@ The same things as before hold.
 These are the basics of the ``Condition``-class, next up would be either some **utils** or 
 connecting everything to solve a PDE. Here_ you can go back to the main page.
 
-.. _Here: tutorail_start.rst
+.. _Here: tutorail_start.html

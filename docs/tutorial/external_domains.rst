@@ -18,7 +18,7 @@ The following code exist in this notebook_.
 
 .. _Shapely: https://github.com/shapely/shapely
 .. _Trimesh: https://github.com/mikedh/trimesh
-.. _notebook: notebooks/polygons_external_objects.ipynb
+.. _notebook: https://github.com/boschresearch/torchphysics/blob/main/examples/tutorial/polygons_external_objects.ipynb
 
 Polygons
 --------
@@ -41,7 +41,7 @@ Like mentioned before, all properties of the pre implemented domains work also f
 Therefore, we can have a look at the polygon we created. Again we need 
 the **PointSamplers** which are part of the `next tutorial`_. 
 
-.. _`next tutorial`: sampler_tutorial.rst
+.. _`next tutorial`: sampler_tutorial.html
 
 
 .. image:: pictures/polygon.png

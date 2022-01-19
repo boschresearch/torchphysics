@@ -59,14 +59,14 @@ These are all the basics of TorchPhysics. You should now have a rough understand
 structure of this library. Some additional applications (inverse problems, training input params, ...)
 can be found under the `example-folder`_
 
-.. _`spaces and points tutorial`: tutorial_spaces_and_points.rst
-.. _`Domain basics`: tutorial_domain_basics.rst
-.. _`Polygons and external objects`: external_domains.rst
-.. _`PointSampler tutorial`: sampler_tutorial.rst
-.. _`model creation tutorial`: model_creation.rst
-.. _`condition tutorial`: condition_tutorial.rst
-.. _docs: missing
-.. _Here: differentialoperators.rst
-.. _`Creating plots`: plotting.rst
-.. _`solving a simple PDE`: solve_pde.rst
+.. _`spaces and points tutorial`: tutorial_spaces_and_points.html
+.. _`Domain basics`: tutorial_domain_basics.html
+.. _`Polygons and external objects`: external_domains.html
+.. _`PointSampler tutorial`: sampler_tutorial.html
+.. _`model creation tutorial`: model_creation.html
+.. _`condition tutorial`: condition_tutorial.html
+.. _docs: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.utils.html
+.. _Here: differentialoperators.html
+.. _`Creating plots`: plotting.html
+.. _`solving a simple PDE`: solve_pde.html
 .. _`example-folder`: https://github.com/boschresearch/torchphysics/tree/main/examples

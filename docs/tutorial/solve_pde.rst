@@ -5,7 +5,7 @@ The following problem also exists as a notebook_. Here we assume that you know a
 basic concepts, that were part of the previous tutorials and will only give short explanations
 to every step.
 
-.. _notebook: notebooks/solve_pde.ipynb
+.. _notebook: https://github.com/boschresearch/torchphysics/blob/main/examples/tutorial/solve_pde.ipynb
 
 Our aim is to solve the following PDE:
 
@@ -16,7 +16,7 @@ Our aim is to solve the following PDE:
    u &= \sin(\frac{\pi}{2} x_1)\cos(2\pi x_2) \text{ on } \partial \Omega
    \end{align}
 
-For comparison, the analytic solution is $u(x_1, x_2) = \sin(\frac{\pi}{2} x_1)\cos(2\pi x_2)$.
+For comparison, the analytic solution is :math:`u(x_1, x_2) = \sin(\frac{\pi}{2} x_1)\cos(2\pi x_2)`.
 
 We start by defining the spaces for the input and output values.
 

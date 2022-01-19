@@ -2,7 +2,8 @@
 TorchPhysics
 ============
 
-Welcome to **TorchPhysics**.
+Welcome to **TorchPhysics**, a Python library of deep learning methods 
+for solving differential equations
 
 
 Contents
@@ -12,18 +13,11 @@ Contents
    :maxdepth: 2
 
    Overview <readme>
+   Tutorial <tutorial/tutorial_start>
+   API Reference <api/modules>
+   Changelog <changelog>
    License <license>
    Authors <authors>
-   Changelog <changelog>
-   Module Reference <api/modules>
-
-Tutorial
-========
-
-.. toctree::
-    :maxdepth: 3
-
-    Main <tutorial/tutorial_start>
 
 
 Indices and tables

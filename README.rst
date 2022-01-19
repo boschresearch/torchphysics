@@ -61,9 +61,9 @@ to have a look at the following sections:
 - `Examples: Different applications with detailed explanations`_
 - Documentation_
 
-.. _`Tutorial: Understanding the structure of TorchPhysics`: docs/tutorial/tutorial_start.rst
-.. _`Examples: Different applications with detailed explanations`: examples
-.. _Documentation: does_not_exist_yet
+.. _`Tutorial: Understanding the structure of TorchPhysics`: https://torchphysics.readthedocs.io/en/latest/tutorial/tutorial_start.html
+.. _`Examples: Different applications with detailed explanations`: https://github.com/boschresearch/torchphysics/tree/main/examples
+.. _Documentation: https://torchphysics.readthedocs.io/en/latest/api/modules.html
 
 
 Installation

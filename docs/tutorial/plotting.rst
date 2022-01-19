@@ -70,6 +70,6 @@ of the solution.
 The usage, on an explicit example, can be found under the tutorial: `solving a pde`_.
 
 
-.. _`model creation`: model_creation.rst
-.. _here: condition_tutorial.rst
-.. _`solving a pde`: solve_pde.rst
+.. _`model creation`: model_creation.html
+.. _here: condition_tutorial.html
+.. _`solving a pde`: solve_pde.html

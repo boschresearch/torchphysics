@@ -16,18 +16,18 @@ For explicit documentation of each method and all implemented domains, see the d
 All domains can be found under ``torchphysics.domains``.
 Some pre implemented domains are: ``Point, Interval, Parallelogram, Circle...``
 
-.. _docs: does_not_exist
+.. _docs: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.problem.domains.html
 
 Here we focus now on the creation of different domains. To create a domain,
 we need a space to which the domain belongs. 
 The definition of spaces were part of the `previous tutorial`_.
 
-.. _`previous tutorial`: tutorial_spaces_and_points.rst
+.. _`previous tutorial`: tutorial_spaces_and_points.html
 
 You can find The following code as a notebook here_, if you want to try out something yourself.
 To create the interval [0, 5]:
 
-.. _here: notebooks/domain_creation.ipynb
+.. _here: https://github.com/boschresearch/torchphysics/blob/main/examples/tutorial/domain_creation.ipynb
 
 .. code-block:: python
 
@@ -54,7 +54,7 @@ Now it would be nice to look at the domains directly.
 For this we have to use the **PointSamplers** which are part of the `next tutorial`_. 
 There we will explain how to create the following plots.
 
-.. _`next tutorial`: sampler_tutorial.rst
+.. _`next tutorial`: sampler_tutorial.html
 
 .. image:: pictures/rect_circle_domain.png
   :width: 400
@@ -72,7 +72,7 @@ the following operations are implemented:
 - ``Union`` :math:`A \cup B`, implemented with: ``'+'``
 - ``Intersection`` :math:`A \cap B`, implemented with: ``'&'``
 - ``Cut`` :math:`A \setminus B`, implemented with: ``'-'``
-- ``Cartesian product`` :math:`A \times B`, implemented with: '*'
+- ``Cartesian product`` :math:`A \times B`, implemented with: :math:`\cdot`
 
 The only important aspect is that for union, intersection and cut the 
 domains have to belong to the same space. The returning object is a child of
@@ -145,5 +145,5 @@ These are all basic about the creation of different domains, next up is either t
 `creation of polygons and the loading of external objects`_, or the 
 `creation  of training/validation points`_
 
-.. _`creation of polygons and the loading of external objects`: external_domains.rst
-.. _`creation of training/validation points`: sampler_tutorial.rst
+.. _`creation of polygons and the loading of external objects`: external_domains.html
+.. _`creation of training/validation points`: sampler_tutorial.html
