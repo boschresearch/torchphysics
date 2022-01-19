@@ -1,8 +1,8 @@
-==============
-torchphysics
-==============
+============
+TorchPhysics
+============
 
-This is the documentation of **torchphysics**.
+Welcome to **TorchPhysics**.
 
 .. note::
 
@@ -34,6 +34,24 @@ Contents
    Authors <authors>
    Changelog <changelog>
    Module Reference <api/modules>
+
+Tutorial
+========
+
+.. toctree::
+    :maxdepth: 3
+
+    Main <tutorial/tutorail_start>
+
+
+API 
+===
+
+.. toctree::
+  :maxdepth: 4
+  
+  api/torchphysics.problem.domains
+  api/torchphysics.utils
 
 
 Indices and tables
