@@ -2,15 +2,15 @@
 Plotting
 ========
 To present and evaluated the trained solutions, some helper functions are implemented. 
-These can be found under *torchphysics.utils*. We focus here on the **plot** method.
+These can be found under ``torchphysics.utils``. We focus here on the **plot** method.
 These method gets the following arguments:
 
-- *model*: the model that got trained to learn a solution
-- *plot_function*: a function that specifies what part of the models should be plotted
-- *point_sampler*: a sampler that creates the points for the plot
-- *plot_type*: what kind of plot should be created
+- **model**: the model that got trained to learn a solution
+- **plot_function**: a function that specifies what part of the models should be plotted
+- **point_sampler**: a sampler that creates the points for the plot
+- **plot_type**: what kind of plot should be created
 
-Under the hood, the plotting uses the *matplotlib.pyplot* and essentially follows these steps:
+Under the hood, the plotting uses the ``matplotlib.pyplot`` and essentially follows these steps:
 
 1) Create points with the PointSampler
 2) Evaluate the model
@@ -21,7 +21,7 @@ Under the hood, the plotting uses the *matplotlib.pyplot* and essentially follow
 In the following, the inputs are explained in more detail:
 
 model
-  Just an object of the *Model*-class that was presented in the `model creation`_.
+  Just an object of the ``Model``-class that was presented in the `model creation`_.
 
 plot_function
   A function that can be defined like a condition function, see here_. For example, if 
@@ -50,7 +50,7 @@ plot_function
 point_sampler
   Here any sampler that is implemented can be used. But for plotting and animations some
   special samplers are also implemented, to make things easier. 
-  These are the *PlotSampler* and *AnimationSampler*.
+  These are the ``PlotSampler`` and ``AnimationSampler``.
   Since the plot will in general be created over a given domain, all other input
   variables of the model have to be constant values. 
   So both sampler get a single domain as an input and then create a point grid inside and 

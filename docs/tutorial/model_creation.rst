@@ -3,7 +3,7 @@ Definition of Models and Parameters
 ===================================
 The models are the neural networks that should be trained to fulfill user-defined conditions.
 What basics network structures are implemented, can be found under the `model-docs`_.
-All networks can found under *torchphysics.models*. For example, a simple fully 
+All networks can found under ``torchphysics.models``. For example, a simple fully 
 connected neural network can be created with:
 
 .. _`model-docs`: missing
@@ -52,10 +52,10 @@ Using your own neural network
 Since the models are build upon PyTorch, a custom network can be easily implemented. 
 But there are two points that have to be remembered for this:
 
-1) The network has to have an *input_space* and *output_space*. They should be set in the
+1) The network has to have an ``input_space`` and ``output_space``. They should be set in the
    initialization of the custom neural network. But this applies neurally if you extend the
-   implemented parent class *Model*.
-2) In the forward call a *Point*-object has to be returned. These are the underlying custom
+   implemented parent class ``Model``.
+2) In the forward call a ``Point``-object has to be returned. These are the underlying custom
    tensors of TorchPhysics, like explained in the `space tutorial`_. For this you just have 
    do the following:
 
@@ -71,6 +71,6 @@ But there are two points that have to be remembered for this:
 .. _`space tutorial`: tutorial_spaces_and_points.rst
 
 These are all the basics to creation of neural networks and parameters, next up are either 
-the *conditions* or you can have a look at the *utils*, here_ you can go back to the main site.
+the **Conditions** or you can have a look at the **utils**, here_ you can go back to the main site.
 
 .. _here: tutorial_start.rst 

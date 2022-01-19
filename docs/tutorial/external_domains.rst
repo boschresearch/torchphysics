@@ -2,11 +2,11 @@
 Polygons and External Objects
 =============================
 Thanks to a soft dependency on Shapely_ and Trimesh_ polygons and polyhedrons can be
-created. For this, two additional domains exist: *ShapelyPolygon* and *TrimeshPolyhedron*. 
+created. For this, two additional domains exist: ``ShapelyPolygon`` and ``TrimeshPolyhedron``. 
 They combine the properties of the previously explained domains with the feature of the packages.
 This means you can:
 
-- Call the boundary with **.boundary**
+- Call the boundary with ``.boundary``
 - Compute volume, bounding boxes and normal vectors
 - Create points inside and on the boundary
 - Use the operations *+*, *-* and *&* to create complex domains
@@ -22,7 +22,7 @@ The following code exist in this notebook_.
 
 Polygons
 --------
-If you have the package Shapely_ installed, you can find the class *ShapelyPolygon* under:
+If you have the package Shapely_ installed, you can find the class ``ShapelyPolygon`` under:
 
 .. code-block:: python
 
@@ -39,7 +39,7 @@ shapely-polygon yourself, or you pass all vertices of the polygon to the constru
 
 Like mentioned before, all properties of the pre implemented domains work also for these domains. 
 Therefore, we can have a look at the polygon we created. Again we need 
-the *PointSamplers* which are part of the `next tutorial`_. 
+the **PointSamplers** which are part of the `next tutorial`_. 
 
 .. _`next tutorial`: sampler_tutorial.rst
 
@@ -50,7 +50,7 @@ the *PointSamplers* which are part of the `next tutorial`_.
   :alt: Picture of the above polygon
 
 
-If you have the package Trimesh_ installed, you can find the class *TrimeshPolyhedron* under:
+If you have the package Trimesh_ installed, you can find the class ``TrimeshPolyhedron`` under:
 
 .. code-block:: python
 
@@ -80,7 +80,7 @@ trained. This is already implemented in Trimesh_ and supports STL, ASCII, OBJ an
 more. 
 
 To do this one has to only specify the path to the object and the type of the file,
-in the constructor of the *TrimeshPolyhedron*:
+in the constructor of the ``TrimeshPolyhedron``:
 
 .. code-block:: python
 
@@ -95,7 +95,7 @@ Where we now have used an L-shaped domain, again all previously mentioned method
   :alt: Picture of the above L domain
 
 The last point of this tutorial is the possibility to transform a 
-*TrimeshPolyhedron* to a *ShapelyPolygon*, by either projecting or slicing with a plane. 
+``TrimeshPolyhedron`` to a ``ShapelyPolygon``, by either projecting or slicing with a plane. 
 This is also a functionality implemented in Trimesh. 
 
 This may be useful, if the problem should first be researched in 2D, 
@@ -108,9 +108,11 @@ Here we use slicing, the projection works the same:
   new_space = tp.spaces.R2('x') # the new object is 2D
   p = P.slice_with_plane(new_space=new_space, plane_origin=[0, 0, 0], plane_normal=[0, 0, 1])
 
-The created object *p* is a *ShapelyPolygon*, that can be used like before:
+The created object *p* is a ``ShapelyPolygon``, that can be used like before:
 
 .. image:: pictures/L_slice.png
   :width: 200
   :align: center
   :alt: slice of the above L domain
+
+The `next tutorial`_ is about the point creation.

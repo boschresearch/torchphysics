@@ -4,32 +4,32 @@ Use of Differentialoperators
 To learn a solution of a differential equation, one needs to compute different 
 derivatives of the neural network.
 To make the implementation of a given ODE/PDE easier, different operators are already 
-implemented. They can be found under *torchphysics.utils.differentialoperators*.
-Under the hood, all operators use the *autograd* functionallity of PyTorch.
+implemented. They can be found under ``torchphysics.utils.differentialoperators``.
+Under the hood, all operators use the ``autograd`` functionallity of PyTorch.
 For example the following operators are implemented:
 
 - For scalar outputs:
 
-  - **grad**, to compute the gradient :math:`\nabla u` 
-  - **laplacian**, to compute the laplace operator :math:`\Delta u`
-  - **partial**, to compute a partial derivative :math:`\partial_x u`
-  - **normalderivatives**, to compute the normal derivative :math:`\vec{n} \cdot \nabla u`
+  - ``grad``, to compute the gradient :math:`\nabla u` 
+  - ``laplacian``, to compute the laplace operator :math:`\Delta u`
+  - ``partial``, to compute a partial derivative :math:`\partial_x u`
+  - ``normalderivatives``, to compute the normal derivative :math:`\vec{n} \cdot \nabla u`
 
 - For vector outputs:
 
-  - **div**, to compute the divergence :math:`\text{div}(u)`  or :math:`\nabla \cdot u` 
-  - **rot**, to compute the rotation/curl of a vector field :math:`\nabla \times u`
-  - **jac**, to compute the jacobian matrix
+  - ``div``, to compute the divergence :math:`\text{div}(u)`  or :math:`\nabla \cdot u` 
+  - ``rot``, to compute the rotation/curl of a vector field :math:`\nabla \times u`
+  - ``jac``, to compute the jacobian matrix
 
 All operators can handle the computation on a whole batch of data.
 Of course, the operators for scalar outputs can also be used for vectorial outputs, if one output 
 entry is specified. E.g. :math:`u: \mathbb{R}^3 \to \mathbb{R}^3` then do 
-**laplacian** (:math:`u[:, 0], x`), to get the laplacian of the first entry.
+``laplacian`` (:math:`u[:, 0], x`), to get the laplacian of the first entry.
 The newest version of all implemented operators can be found under the docs_.
 
 .. _docs: missing
 
-Since *autograd* is used, the differential operators can work with neural networks and functions
+Since ``autograd`` is used, the differential operators can work with neural networks and functions
 that work with PyTorch-Tensors. It follow a short example of the usage:
 
 .. code-block:: python 
@@ -45,7 +45,7 @@ that work with PyTorch-Tensors. It follow a short example of the usage:
   # requires_grad=True is needed, so PyTorch knows to create a backwards graph.
   # These tensors could be seen as a batch with three data points.
 
-The important for the implemented operators and *autograd* in general, is that the output
+The important for the implemented operators and ``autograd`` in general, is that the output
 of the function evaluated at the points is needed, not the function itself. This has the advantage 
 that one has to only evaluate the function once and then can create arbitrary derivatives.
 
