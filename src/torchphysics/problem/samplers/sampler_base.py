@@ -321,11 +321,11 @@ class AdaptiveSampler(PointSampler):
     last sampled set of points.
     """
 
-    def sample_points(self, unreduced_loss, params=Points.empty()):
+    def sample_points(self, unreduced_loss, params=Points.empty(), device='cpu'):
         if self.filter_fn:
             out = self._sample_points_with_filter(unreduced_loss=unreduced_loss,
-                                                  params=params)
+                                                  params=params, device=device)
         else:
             out = self._sample_points(unreduced_loss=unreduced_loss,
-                                      params=params)
+                                      params=params, device=device)
         return out
