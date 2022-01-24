@@ -248,8 +248,8 @@ class AdaptiveRejectionSampler(AdaptiveSampler):
         
         self.last_points = None
 
-    def sample_points(self, unreduced_loss=None, params=Points.empty()):
-        new_points = self.random_sampler.sample_points(params)
+    def sample_points(self, unreduced_loss=None, params=Points.empty(), device='cpu'):
+        new_points = self.random_sampler.sample_points(params, device=device)
         if self.last_points is None or unreduced_loss is None:
             self.last_points = new_points
         else:
