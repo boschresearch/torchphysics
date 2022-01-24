@@ -110,4 +110,4 @@ The same things as before hold.
 These are the basics of the ``Condition``-class, next up would be either some **utils** or 
 connecting everything to solve a PDE. Here_ you can go back to the main page.
 
-.. _Here: tutorail_start.html
+.. _Here: tutorial_start.html
