@@ -159,7 +159,7 @@ import pytorch_lightning as pl
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-trainer = pl.Trainer(gpus=0, # or None for CPU
+trainer = pl.Trainer(gpus=1, # or None for CPU
                      max_steps=2000,
                      logger=False,
                      benchmark=True,
@@ -175,4 +175,5 @@ trainer.fit(solver)
 
 anim_sampler = tp.samplers.AnimationSampler(A_x, A_t, 100, n_points=400, data_for_other_variables={'D': 1.0})
 anim = tp.utils.animate(model, lambda u: u[:, 0], anim_sampler, ani_speed=10)
+print("ready with all")
 
