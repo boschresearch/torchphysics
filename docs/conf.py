@@ -93,7 +93,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "torchphysics"
+project = "TorchPhysics"
 copyright = "2021, nick7"
 
 # The version info for the project you're documenting, acts as replacement for
