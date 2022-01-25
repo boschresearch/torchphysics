@@ -122,6 +122,11 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".venv"]
 # The reST default role (used for this markup: `text`) to use for all documents.
 # default_role = None
 
+autodoc_default_options = {
+    'special-members': ['__call__', '__add__']
+}
+
+
 # If true, '()' will be appended to :func: etc. cross-reference text.
 # add_function_parentheses = True
 

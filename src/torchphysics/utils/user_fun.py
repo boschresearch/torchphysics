@@ -10,7 +10,7 @@ from ..problem.spaces.points import Points
 
 
 class UserFunction:
-    """Wraps a function, so that it can be called with abritrary input arguments.
+    """Wraps a function, so that it can be called with arbitrary input arguments.
     
     Parameters
     ----------
@@ -35,16 +35,16 @@ class UserFunction:
             self.defaults = fun.defaults
             self.args = fun.args
         else:
-            self.transform_to_user_function(fun, defaults, args)
+            self._transform_to_user_function(fun, defaults, args)
 
-    def transform_to_user_function(self, fun, defaults, args):
+    def _transform_to_user_function(self, fun, defaults, args):
         self.fun = fun
         self.defaults = defaults
         self.args = args
         if callable(self.fun) and self.defaults == {} and self.args == {}:
-            self.set_input_args_for_function()
+            self._set_input_args_for_function()
 
-    def set_input_args_for_function(self):
+    def _set_input_args_for_function(self):
         f_args = inspect.getfullargspec(self.fun).args
 
         # we check that the function defines all needed parameters
@@ -71,6 +71,24 @@ class UserFunction:
         #    self.defaults.update(f_kwonlydefaults)
 
     def __call__(self, args={}, vectorize=False):
+        """To evalute the function. Will automatically extract the needed arguments 
+        from the input data and will set the possible default values.
+
+        Parameters
+        ----------
+        args : dict or torchphysics.Points
+            The input data, where the function should be evaluated.
+        vectorize : bool, optional
+            If the original function can work with a batch of data, or
+            a loop needs to be used to evaluate the function.
+            default is False, which means that we assume the function
+            can work with a batch of data.
+
+        Returns
+        -------
+        torch.tensor
+            The output values of the function.
+        """
         if isinstance(args, Points):
             args = args.coordinates
         # check that every necessary arg is given
@@ -86,15 +104,29 @@ class UserFunction:
             return self.apply_to_batch(inp)
 
     def evaluate_function(self, **inp):
+        """Evaluates the original input function. Should not be used directly, 
+        rather use the call-methode.
+        """
         if callable(self.fun):
             return self.fun(**inp)
         return self.fun
 
     def apply_to_batch(self, inp):
-        # apply the function to a batch of elements by running a for-loop
+        """Apply the function to a batch of elements by running a for-loop.
+        we assume that all inputs either have batch (i.e. maximum) dimension or
+        are a constant param.
 
-        # we assume that all inputs either have batch (i.e. maximum) dimension or
-        # are a constant param
+        Parameters
+        ----------
+        inp : torchphysics.points
+            The Points-object of the input data
+
+        Returns
+        -------
+        torch.tensor
+            The output values of the function, for each input.
+
+        """
         batch_size = max(len(inp[key]) for key in inp)
         out = []
         for i in range(batch_size):
@@ -139,6 +171,13 @@ class UserFunction:
         return self.fun
 
     def __name__(self):
+        """The name of the function
+
+        Returns
+        -------
+        str
+            The name of the function
+        """
         return self.fun.__name__
 
     def set_default(self, **args):
@@ -165,6 +204,8 @@ class UserFunction:
             self.defaults.pop(key)
 
     def __deepcopy__(self, memo):
+        """Creates a copy of the function
+        """
         cls = self.__class__
         copy_object = cls.__new__(cls, self.fun)
         memo[id(self)] = copy_object
@@ -218,6 +259,22 @@ class DomainUserFunction(UserFunction):
     domains can work with it correctly. 
     """
     def __call__(self, args={}, device='cpu'):
+        """To evalute the function. Will automatically extract the needed arguments 
+        from the input data and will set the possible default values.
+
+        Parameters
+        ----------
+        args : dict or torchphysics.Points
+            The input data, where the function should be evaluated.
+        device : str, optional
+            The device on which the output of th efunction values should lay.
+            Default is 'cpu'.
+
+        Returns
+        -------
+        torch.tensor
+            The output values of the function.
+        """
         if isinstance(args, Points):
             args = args.coordinates
         if len(args) != 0: # set the device correctly
@@ -232,6 +289,17 @@ class DomainUserFunction(UserFunction):
         return self.evaluate_function(device=device, **inp)
 
     def evaluate_function(self, device='cpu', **inp):
+        """Evaluates the original input function. Should not be used directly, 
+        rather use the call-methode.
+
+        Parameters
+        ----------
+        device : str, optional
+            The device on which the output of th efunction values should lay.
+            Default is 'cpu'.
+        inp 
+            The input values.
+        """
         if callable(self.fun):
             fun_eval = self.fun(**inp)
             if not isinstance(fun_eval, torch.Tensor):

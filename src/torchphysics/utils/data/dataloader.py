@@ -35,12 +35,21 @@ class PointsDataset(torch.utils.data.Dataset):
         self.drop_last = drop_last
     
     def __len__(self):
+        """Returns the number of points of this dataset.
+        """
         if self.drop_last:
             return len(self.data_points[0]) // self.batch_size
         else:
             return math.ceil(len(self.data_points[0]) / self.batch_size)
 
     def __getitem__(self, idx):
+        """Returns the item at the given index.
+
+        Parameters
+        ----------
+        idx : int
+            The index of the desired point.
+        """
         l = len(self.data_points[0])
         out = []
         for points in self.data_points:
