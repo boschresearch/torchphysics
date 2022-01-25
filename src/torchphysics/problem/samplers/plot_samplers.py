@@ -2,7 +2,6 @@
 """
 import numpy as np
 import torch
-import numbers
 
 from ..domains.domain import BoundaryDomain
 from ..domains import Interval
@@ -48,6 +47,9 @@ class PlotSampler(PointSampler):
         self.sampler = self.construct_sampler()
 
     def set_data_for_other_variables(self, data_for_other_variables):
+        """Sets the data for all other variables. Essentially copies the
+        values into a correct tensor.
+        """
         if isinstance(data_for_other_variables, Points):
             self.data_for_other_variables = data_for_other_variables
         elif len(data_for_other_variables) == 0:
@@ -57,6 +59,8 @@ class PlotSampler(PointSampler):
             self.data_for_other_variables = Points.from_coordinates(torch_data)
 
     def transform_data_to_torch(self, data_for_other_variables):
+        """Transforms all inputs to a torch.tensor.
+        """
         torch_data = {}
         for vname, data in data_for_other_variables.items():
             # transform data to torch
@@ -72,6 +76,9 @@ class PlotSampler(PointSampler):
         return torch_data
 
     def construct_sampler(self):
+        """Construct the sampler which is used in the plot.
+        Can be overwritten to include your own points structure.
+        """
         if self.n_points:
             return self._plot_sampler_with_n_points()
         else: # density is used
@@ -104,6 +111,9 @@ class PlotSampler(PointSampler):
         return n_root**self.domain.dim
 
     def sample_points(self):
+        """Creates the points for the plot. Does not need additional arguments, since
+        they were set in the init.
+        """
         plot_points = self.sampler.sample_points()
         self.set_length(len(plot_points))
         other_data = self._repeat_params(self.data_for_other_variables, len(self))
@@ -160,16 +170,23 @@ class AnimationSampler(PlotSampler):
 
     @property
     def plot_domain_constant(self):
+        """Returns if the plot domain is a constant domain or changes
+        with respect to other variables.
+        """
         dependent = any(vname in self.domain.necessary_variables \
                         for vname in self.animation_domain.space)
         return not dependent
 
     @property
     def animation_key(self):
+        """Retunrs the name of the animation variable
+        """
         ani_key = list(self.animation_domain.space.keys())[0]
         return ani_key 
 
     def sample_animation_points(self):
+        """Samples points out of the animation domain, e.g. time interval.
+        """
         ani_points = self.animatoin_sampler.sample_points()
         num_of_points = len(ani_points)
         self.frame_number = num_of_points
@@ -177,6 +194,8 @@ class AnimationSampler(PlotSampler):
         return ani_points
 
     def sample_plot_domain_points(self, animation_points):
+        """Samples points in the plot domain, e.g. space.
+        """
         if self.plot_domain_constant:
             plot_points = self.sampler.sample_points()
             num_of_points = len(plot_points)

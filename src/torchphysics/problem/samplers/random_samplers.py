@@ -2,7 +2,6 @@
 """
 import torch
 import numbers
-import math
 
 from .sampler_base import PointSampler, AdaptiveSampler
 from ..domains.domain import BoundaryDomain
@@ -148,7 +147,7 @@ class GaussianSampler(PointSampler):
 
 
 class LHSSampler(PointSampler):
-    """Will create a simple latin hypercube sampling in the given domain.
+    """Will create a simple latin hypercube sampling [1] in the given domain.
     Only works for the inner part of a domain, not the boundary!
 
     Parameters
@@ -163,6 +162,7 @@ class LHSSampler(PointSampler):
     A bounding box is used tp create the lhs-points in the domain.
     Points outside will be rejected and additional random uniform points will be 
     added to get a total number of n_points.
+    ..  [1] https://en.wikipedia.org/wiki/Latin_hypercube_sampling
     """
     def __init__(self, domain, n_points):
         assert not isinstance(domain, BoundaryDomain), \

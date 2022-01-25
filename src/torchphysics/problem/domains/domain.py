@@ -25,7 +25,9 @@ class Domain:
         self._user_volume = None
 
     def set_necessary_variables(self, *domain_params):
-        # create a set of variables/spaces that this domain needs to be properly defined
+        """Registers the variables/spaces that this domain needs to be 
+        properly defined
+        """
         self.necessary_variables = set()
         for d_param in domain_params:
             for k in d_param.necessary_args:
@@ -51,7 +53,7 @@ class Domain:
     @property
     def boundary(self):
         """Returns the boundary of this domain. Does not work on
-        boundaries itself, e.g. Circle.boundary.boundary throws a error.
+        boundaries itself, e.g. Circle.boundary.boundary throws an error.
 
         Returns
         -------
@@ -62,10 +64,12 @@ class Domain:
 
     def set_volume(self, volume):
         """Set the volume of the given domain.
-        
-        volume: callable, number
-            The volume of the domain. Can be a function, if the domain is 
-            dependent on other variables.
+
+        Parameters
+        ----------
+        volume : number or callable
+            The volume of the domain. Can be a function if the volume changes
+            depending on other variables.
 
         Notes
         -----
@@ -81,7 +85,7 @@ class Domain:
         raise NotImplementedError
 
     def volume(self, params=Points.empty()):
-        """Computed the volume of the current domain.
+        """Computes the volume of the current domain.
 
         Parameters
         ----------
@@ -91,9 +95,9 @@ class Domain:
         Returns
         -------
         volume: torch.tensor
-            Returns the volume of the domain. If dependent on other parameters
+            Returns the volume of the domain. If dependent on other parameters,
             the value will be returned as tensor with the shape (len(params), 1).
-            Where each row corresponds to the domain to the given values in the
+            Where each row corresponds to the volume of the given values in the
             params row. 
         """
         if self._user_volume is None:
@@ -160,7 +164,7 @@ class Domain:
 
         Parameters
         ----------
-        points : Points
+        points : torchphysics.problem.Points
             A Points object that should be checked.
 
         Returns
@@ -191,14 +195,14 @@ class Domain:
 
     @abc.abstractmethod
     def sample_grid(self, n=None, d=None, params=Points.empty(), device='cpu'):
-        """Greates a equdistant grid in the domain.
+        """Creates a equdistant grid in the domain.
 
         Parameters
         ----------
-        n : int
-            optional, The number of points that should be created.
-        d : float
-            optional, The density of points that should be created, if
+        n : int, optional
+            The number of points that should be created.
+        d : float, optional
+            The density of points that should be created, if
             n is not defined.
         params : torchphysics.problem.Points, optional
             Additional paramters that are maybe needed to evaluate the domain.
@@ -216,14 +220,14 @@ class Domain:
     @abc.abstractmethod
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(),
                               device='cpu'):
-        """Greates a random uniform points in the domain.
+        """Creates random uniform points in the domain.
 
         Parameters
         ----------
-        n : int
-            optional, The number of points that should be created.
-        d : float
-            optional, The density of points that should be created, if
+        n : int, optional 
+            The number of points that should be created.
+        d : float, optional
+            The density of points that should be created, if
             n is not defined.
         params : torchphysics.problem.Points, optional
             Additional paramters that are maybe needed to evaluate the domain.
@@ -244,13 +248,17 @@ class Domain:
         raise NotImplementedError
 
     def len_of_params(self, params):
-        # finds the number of params, for which points should be sampled
+        """Finds the number of params, for which points should be sampled.
+        """
         num_of_params = 1
         if len(params) > 0:
             num_of_params = len(params)
         return num_of_params
 
     def compute_n_from_density(self, d, params):
+        """Transforms a given point density to a number of points, since
+        all methods from PyTorch only work with a given number.
+        """
         volume = self.volume(params)
         if len(volume) > 1:
             raise ValueError(f"""Sampling with a density is only possible for one

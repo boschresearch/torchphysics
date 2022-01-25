@@ -4,7 +4,6 @@ They supply the necessary training data to the model.
 import abc
 
 import torch
-import numpy as np
 
 from ...models import Parameter, AdaptiveWeightLayer
 from ...utils import UserFunction
@@ -21,6 +20,13 @@ class SquaredError(torch.nn.Module):
         super().__init__()
 
     def forward(self, x):
+        """Computes the squared error of the input.
+
+        Parameters
+        ----------
+        x : torch.tensor
+            The values for which the squared error should be computed.
+        """
         return torch.sum(torch.square(x), dim=1)
 
 
@@ -168,11 +174,7 @@ class ParameterCondition(Condition):
 
 
 class SingleModuleCondition(Condition):
-    """
-
-    def forward(x):
-        return torch.sum(torc
-    A condition that minimizes the reduced loss of a single module.
+    """A condition that minimizes the reduced loss of a single module.
 
     Parameters
     -------
@@ -304,7 +306,7 @@ class DeepRitzCondition(MeanCondition):
     """
     Alias for :class:`MeanCondition`.
 
-        Parameters
+    Parameters
     -------
     module : torchphysics.Model
         The torch module which should be optimized.
