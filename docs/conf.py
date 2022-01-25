@@ -123,7 +123,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".venv"]
 # default_role = None
 
 autodoc_default_options = {
-    'special-members': ['__call__', '__add__']
+    'special-members': '__call__, __add__'
 }
 
 
