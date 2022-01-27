@@ -8,7 +8,7 @@ import torch
 from ...models import Parameter, AdaptiveWeightLayer
 from ...utils import UserFunction
 from ..spaces import Points
-from ..samplers import StaticSampler
+from ..samplers import StaticSampler, GridSampler
 
 
 class SquaredError(torch.nn.Module):
@@ -388,6 +388,133 @@ class PINNCondition(SingleModuleCondition):
         super().__init__(module, sampler, residual_fn, error_fn=SquaredError(),
                          reduce_fn=torch.mean, name=name, track_gradients=track_gradients,
                          data_functions=data_functions, parameter=parameter, weight=weight)
+
+
+class PeriodicCondition(Condition):
+    """
+    
+
+    Parameters
+    -------
+    module : torchphysics.Model
+        The torch module which should be optimized.
+    periodic_interval : torchphysics.domains.Interval
+        The interval on which' boundary the periodic (boundary) condition will be set.
+    non_periodic_sampler : torchphysics.samplers.PointSampler
+        A sampler that creates the points for the axis that are not defined via the
+        periodic_interval
+    residual_fn : callable
+        A user-defined function that computes the residual (unreduced loss) from
+        inputs and outputs of the model, e.g. by using utils.differentialoperators
+        and/or domain.normal. Instead of the name of the axis of the periodic interval,
+        it takes {name}_left and {name}_right as an input. The same holds for all outputs
+        of the network.
+    error_fn : callable
+        Function that will be applied to the output of the residual_fn to compute
+        the unreduced loss. Should reduce only along the 2nd (i.e. space-)axis.
+    reduce_fn : callable
+        Function that will be applied to reduce the loss to a scalar. Defaults to
+        torch.mean
+    data_functions : dict
+        A dictionary of user-defined functions and their names (as keys). Can be
+        used e.g. for right sides in PDEs or functions in boundary conditions.
+    track_gradients : bool
+        Whether gradients w.r.t. the inputs should be tracked during training or
+        not. Defaults to true, since this is needed to compute differential operators
+        in PINNs.
+    parameter : Parameter
+        A Parameter that can be used in the residual_fn and should be learned in
+        parallel, e.g. based on data (in an additional DataCondition).
+    name : str
+        The name of this condition which will be monitored in logging.
+    weight : float
+        The weight multiplied with the loss of this condition during
+        training.
+    """
+
+    def __init__(self, module, periodic_interval, non_periodic_sampler, residual_fn,
+                 error_fn=SquaredError(), reduce_fn=torch.mean,
+                 name='singlemodulecondition', track_gradients=True, data_functions={},
+                 parameter=Parameter.empty(), weight=1.0):
+        super().__init__(name=name, weight=weight, track_gradients=track_gradients)
+        self.module = module
+        self.parameter = parameter
+        self.register_parameter(name + '_params', self.parameter.as_tensor)
+        self.periodic_interval = periodic_interval
+        self.non_periodic_sampler = non_periodic_sampler
+        self.residual_fn = UserFunction(residual_fn)
+        self.error_fn = error_fn
+        self.reduce_fn = reduce_fn
+
+        self.left_sampler = GridSampler(self.periodic_interval.boundary_left,
+                                        n_points=len(self.non_periodic_sampler)).make_static()
+        self.right_sampler = GridSampler(self.periodic_interval.boundary_right,
+                                         n_points=len(self.non_periodic_sampler)).make_static()
+
+        self.left_data_functions = self._setup_data_functions(data_functions,
+                                                              self.left_sampler*self.non_periodic_sampler)
+        self.right_data_functions = self._setup_data_functions(data_functions,
+                                                               self.right_sampler*self.non_periodic_sampler)
+
+        if self.non_periodic_sampler.is_adaptive:
+            self.last_unreduced_loss = None
+
+        self.i = 0
+
+    def forward(self, device='cpu'):
+        if self.non_periodic_sampler.is_adaptive:
+            x_b = self.non_periodic_sampler.sample_points(
+                unreduced_loss=self.last_unreduced_loss,
+                device=device)
+            self.last_unreduced_loss = None
+        else:
+            x_b = self.non_periodic_sampler.sample_points(device=device)
+        
+        x_left = self.left_sampler.sample_points(device=device)
+        x_right = self.right_sampler.sample_points(device=device)
+
+        x_left_coordinates, x_left = self._track_gradients(x_left)
+        x_right_coordinates, x_right = self._track_gradients(x_right)
+        x_b_coordinates, x_b = self._track_gradients(x_b)
+
+
+        data_left = {}
+        data_right = {}
+        for fun in self.left_data_functions:
+            data_left[fun] = self.left_data_functions[fun]({**x_left_coordinates,
+                                                            **x_b_coordinates})
+            data_left[fun] = {f'{k}_left': data_left[fun][k] for k in data_left[fun]}
+        for fun in self.right_data_functions:
+            data_right[fun] = self.right_data_functions[fun]({**x_right_coordinates,
+                                                              **x_b_coordinates})
+            data_right[fun] = {f'{k}_right': data_right[fun][k] for k in data_right[fun]}
+
+        y_left = self.module(x_left.join(x_b))
+        y_right = self.module(x_right.join(x_b))
+
+        y_left_coordinates = y_left.coordinates
+        y_left_coordinates = {f'{k}_left': y_left_coordinates[k] for k in y_left_coordinates}
+        y_right_coordinates = y_right.coordinates
+        y_right_coordinates = {f'{k}_right': y_right_coordinates[k] for k in y_right_coordinates}
+
+
+        x_left_coordinates = {f'{k}_left': x_left_coordinates[k] for k in x_left_coordinates}
+        x_right_coordinates = {f'{k}_right': x_right_coordinates[k] for k in x_right_coordinates}
+
+
+        unreduced_loss = self.error_fn(self.residual_fn({**y_left_coordinates,
+                                                         **y_right_coordinates,
+                                                         **x_left_coordinates,
+                                                         **x_right_coordinates,
+                                                         **x_b_coordinates,
+                                                         **self.parameter.coordinates,
+                                                         **data_right,
+                                                         **data_left}))
+
+        if self.non_periodic_sampler.is_adaptive:
+            self.last_unreduced_loss = unreduced_loss
+
+        return self.reduce_fn(unreduced_loss)
 
 
 class AdaptiveWeightsCondition(SingleModuleCondition):
