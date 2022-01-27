@@ -8,7 +8,7 @@ import torch
 from ...models import Parameter, AdaptiveWeightLayer
 from ...utils import UserFunction
 from ..spaces import Points
-from ..samplers import StaticSampler, GridSampler
+from ..samplers import StaticSampler, GridSampler, EmptySampler
 
 
 class SquaredError(torch.nn.Module):
@@ -226,8 +226,6 @@ class SingleModuleCondition(Condition):
         if self.sampler.is_adaptive:
             self.last_unreduced_loss = None
 
-        self.i = 0
-
     def forward(self, device='cpu'):
         if self.sampler.is_adaptive:
             x = self.sampler.sample_points(unreduced_loss=self.last_unreduced_loss,
@@ -392,7 +390,8 @@ class PINNCondition(SingleModuleCondition):
 
 class PeriodicCondition(Condition):
     """
-    
+    A condition that allows to learn dependencies between points at the ends of a given
+    Interval. Can be used e.g. for a variety of periodic boundary conditions.
 
     Parameters
     -------
@@ -432,10 +431,10 @@ class PeriodicCondition(Condition):
         training.
     """
 
-    def __init__(self, module, periodic_interval, non_periodic_sampler, residual_fn,
-                 error_fn=SquaredError(), reduce_fn=torch.mean,
-                 name='singlemodulecondition', track_gradients=True, data_functions={},
-                 parameter=Parameter.empty(), weight=1.0):
+    def __init__(self, module, periodic_interval, residual_fn,
+                 non_periodic_sampler=EmptySampler(), error_fn=SquaredError(),
+                 reduce_fn=torch.mean, name='periodiccondition', track_gradients=True,
+                 data_functions={}, parameter=Parameter.empty(), weight=1.0):
         super().__init__(name=name, weight=weight, track_gradients=track_gradients)
         self.module = module
         self.parameter = parameter
@@ -446,20 +445,24 @@ class PeriodicCondition(Condition):
         self.error_fn = error_fn
         self.reduce_fn = reduce_fn
 
+        n_points = max(len(self.non_periodic_sampler), 1)
         self.left_sampler = GridSampler(self.periodic_interval.boundary_left,
-                                        n_points=len(self.non_periodic_sampler)).make_static()
+                                        n_points=n_points).make_static()
         self.right_sampler = GridSampler(self.periodic_interval.boundary_right,
-                                         n_points=len(self.non_periodic_sampler)).make_static()
+                                         n_points=n_points).make_static()
 
+        tmp_left_sampler = self.left_sampler*self.non_periodic_sampler
+        tmp_right_sampler = self.right_sampler*self.non_periodic_sampler
+        if self.non_periodic_sampler.is_static:
+            tmp_left_sampler = tmp_left_sampler.make_static()
+            tmp_right_sampler = tmp_right_sampler.make_static()
         self.left_data_functions = self._setup_data_functions(data_functions,
-                                                              self.left_sampler*self.non_periodic_sampler)
+                                                              tmp_left_sampler)
         self.right_data_functions = self._setup_data_functions(data_functions,
-                                                               self.right_sampler*self.non_periodic_sampler)
+                                                               tmp_right_sampler)
 
         if self.non_periodic_sampler.is_adaptive:
             self.last_unreduced_loss = None
-
-        self.i = 0
 
     def forward(self, device='cpu'):
         if self.non_periodic_sampler.is_adaptive:
@@ -483,11 +486,11 @@ class PeriodicCondition(Condition):
         for fun in self.left_data_functions:
             data_left[fun] = self.left_data_functions[fun]({**x_left_coordinates,
                                                             **x_b_coordinates})
-            data_left[fun] = {f'{k}_left': data_left[fun][k] for k in data_left[fun]}
+        data_left = {f'{k}_left': data_left[k] for k in data_left}
         for fun in self.right_data_functions:
             data_right[fun] = self.right_data_functions[fun]({**x_right_coordinates,
                                                               **x_b_coordinates})
-            data_right[fun] = {f'{k}_right': data_right[fun][k] for k in data_right[fun]}
+        data_right = {f'{k}_right': data_right[k] for k in data_right}
 
         y_left = self.module(x_left.join(x_b))
         y_right = self.module(x_right.join(x_b))

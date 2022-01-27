@@ -33,6 +33,17 @@ class PointSampler:
             self.filter_fn = UserFunction(filter_fn)
         else:
             self.filter_fn = None
+    
+    @classmethod
+    def empty(cls, **kwargs):
+        """Creates an empty Sampler object that samples empty points.
+
+        Returns
+        -------
+        EmptySampler
+            The empty sampler-object.
+        """
+        return EmptySampler().make_static()
 
     def set_length(self, length):
         """If a density is used, the number of points will not be known before
@@ -72,9 +83,9 @@ class PointSampler:
         If you know the number of points yourself, you can set this with 
         ``.set_length``.
         """
-        if self.length:
+        if self.length is not None:
             return self.length
-        elif self.n_points:
+        elif self.n_points is not None:
             return self.n_points
         else:
             raise ValueError("""The expected number of samples is not known yet. 
@@ -340,6 +351,17 @@ class StaticSampler(PointSampler):
 
     def make_static(self):
         return self
+
+
+class EmptySampler(PointSampler):
+    """A sampler that creates only empty Points. Can be used as a placeholder."""
+    def __init__(self):
+        super().__init__(n_points=0)
+    
+    def sample_points(self, params=Points.empty(), device='cpu', **kwargs):
+        return Points.empty()
+    
+
 
 
 class AdaptiveSampler(PointSampler):

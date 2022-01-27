@@ -4,7 +4,8 @@ from .sampler_base import (PointSampler,
                            ProductSampler,
                            ConcatSampler,
                            AppendSampler,
-                           StaticSampler)
+                           StaticSampler,
+                           EmptySampler)
 from .random_samplers import (RandomUniformSampler,
                               GaussianSampler,
                               LHSSampler,
