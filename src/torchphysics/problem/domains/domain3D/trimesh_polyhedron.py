@@ -28,11 +28,11 @@ class TrimeshPolyhedron(Domain):
         The file type, e.g. 'stl'. See trimesh.available_formats() for all supported
         file types.
     tol : number, optional
-        The error tolerance for checking if points at the boundary. An used for 
-        projections and sliceing the mesh.
+        The error tolerance for checking if points at the boundary. And used for 
+        projections and slicing the mesh.
 
-    Notes
-    -----
+    Note
+    ----
     This class can not be dependent on other variables.
     '''
     def __init__(self, space, vertices=None, faces=None,

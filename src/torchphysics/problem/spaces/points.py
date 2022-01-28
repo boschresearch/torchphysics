@@ -97,10 +97,14 @@ class Points():
     
     @property
     def dim(self):
+        """Returns the dimension of the points.
+        """
         return self.space.dim
     
     @property
     def variables(self):
+        """Returns variables of the points as an dictionary, e.g {'x': dim_x, 't': dim_t....}.
+        """
         return self.space.variables
     
     @property
@@ -127,13 +131,19 @@ class Points():
 
     @property
     def as_tensor(self):
+        """Retunrs the underlying tensor.
+        """
         return self._t
     
     def __len__(self):
+        """Returns the number of points in this object.
+        """
         return self._t.shape[0]
     
     @property
     def isempty(self):
+        """Checks if no points are saved in this object.
+        """
         return len(self) == 0 and self.space.dim == 0
 
     def __repr__(self):
@@ -185,6 +195,8 @@ class Points():
             yield self[i, :]
 
     def __eq__(self, other):
+        """Compares two Points if they are equal.
+        """
         return self.space == other.space and torch.equal(self._t, other._t)
     
     def __add__(self, other):
@@ -276,10 +288,19 @@ class Points():
     
     @property
     def requires_grad(self):
+        """Returns the '.requires_grad' property of the underlying Tensor.
+        """
         return self._t.requires_grad
 
     @requires_grad.setter
     def requires_grad(self, value):
+        """Sets the '.requires_grad' property of the underlying Tensor.
+
+        Parameter
+        ---------
+        value : bool
+            If gradients are required or not.
+        """
         self._t.requires_grad = value
     
     def cuda(self, *args, **kwargs):
@@ -287,5 +308,7 @@ class Points():
         return self
     
     def to(self, *args, **kwargs):
+        """Moves the underlying Tensor to other hardware parts.
+        """
         self._t = self._t.to(*args, **kwargs)
         return self

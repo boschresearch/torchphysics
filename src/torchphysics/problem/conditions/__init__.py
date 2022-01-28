@@ -5,4 +5,5 @@ from .condition import (Condition,
                         ParameterCondition,
                         MeanCondition,
                         AdaptiveWeightsCondition,
-                        SingleModuleCondition)
+                        SingleModuleCondition,
+                        PeriodicCondition)

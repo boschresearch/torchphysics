@@ -26,6 +26,14 @@ class Space(Counter, OrderedDict):
         return Space(self + other)
 
     def __contains__(self, space):
+        """Checks if the variables of the other space are contained in this
+        space.
+
+        Parameters
+        ----------
+        space : torchphysics.spaces.Space
+            The other Space that should be checked if this is included.
+        """
         if isinstance(space, str):
             return super().__contains__(space)
         if isinstance(space, Space):
@@ -34,6 +42,15 @@ class Space(Counter, OrderedDict):
             return False
     
     def __getitem__(self, val):
+        """Returns a part of the Space dicitionary, specified in the
+        input. Mathematically, this constructs a subspace. 
+
+        Parameters
+        ----------
+        val : str, slice, list or tuple
+            The keys that correspond to the variables that should be used in the 
+            subspace.
+        """
         if isinstance(val, slice):
             keys = list(self.keys())
             new_slice = slice(keys.index(val.start) if val.start is not None else None,

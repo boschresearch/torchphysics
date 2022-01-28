@@ -17,16 +17,20 @@ class Plotter():
 
     Parameters
     ----------
-    plot_function : Callable
+    plot_function : callable
         A function that specfices the part of the model that should be plotted.
         Can be of the same form as the condition-functions.
         E.g. if the solution name is 'u' we can use
+
         |    plot_func(u):
         |        return u[:, 0]
+
         to plot the first entry of 'u'. For the derivative we could write:
+
         |    plot_func(u, x):
         |        return grad(u, x)
-    point_sampler : Sampler
+        
+    point_sampler : torchphysics.samplers.PlotSampler
         A Sampler that creates the points that should be used for the
         plot.
     angle : list, optional
@@ -53,6 +57,18 @@ class Plotter():
         self.plot_type = plot_type
 
     def plot(self, model):
+        """Creates the plot of the model.
+
+        Parameters
+        ----------
+        model : torchphysics.models.Model
+            The Model/neural network that should be used in the plot.  
+
+        Returns
+        -------
+        plt.figure
+            The figure handle of the created plot     
+        """
         return plot(model=model, plot_function=self.plot_function,
                     point_sampler=self.point_sampler, 
                     angle=self.angle, plot_type=self.plot_type)
@@ -65,15 +81,19 @@ def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type=''):
     ----------
     model : torchphysics.models.Model
         The Model/neural network that should be used in the plot.
-    plot_function : Callable
+    plot_function : callable
         A function that specfices the part of the model that should be plotted.
         Of the same form as the condition-functions.
         E.g. if the solution name is 'u', we can use
+
         |    plot_func(u):
         |        return u[:, 0]
+
         to plot the first entry of 'u'. For the derivative we could write:
+
         |    plot_func(u, x):
         |        return grad(u, x)
+
     point_sampler : torchphysics.samplers.PlotSampler
         A Sampler that creates the points that should be used for the
         plot.
@@ -88,6 +108,7 @@ def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type=''):
             - 'quiver_2D' for quiver/vector-field plots, with a 2D-domain
             - 'contour_surface' for contour/colormaps, with a 2D-domain
 
+
     Returns
     -------
     plt.figure
@@ -98,7 +119,10 @@ def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type=''):
     -----
     What this function does is:
     creating points with sampler -> evaluate model -> evalute plot function
-    -> create the plot
+    -> create the plot with matplotlib.pyplot.
+
+    The function is only meant to  give a fast overview over the trained neural network.
+    In general the methode is not optimized for complex domains.
     '''
     if not isinstance(plot_function, UserFunction):
         plot_function = UserFunction(fun=plot_function)
