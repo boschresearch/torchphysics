@@ -8,17 +8,17 @@ from ..differentialoperators import (laplacian,
 
 class HeatEquation(torch.nn.Module):
     """
-    Implementation of the homogenous heat equation: u_t - D*laplace(u) = 0
+    Implementation of the homogenous heat equation: :math:`u_t -  D \\Delta u = 0`.
 
     Parameters
     ----------
-    diffusivity : scalar or Parameter
+    diffusivity : scalar or torchphysics.models.Parameter
         The diffusivity coefficient of the heat equation. Should be either
         a scalar constant, or a Parameter that will be learned based on data.
     spatial_var : str
-        Name of the spatial Variable. Defaults to 'x'.
+        Name of the spatial variable. Defaults to 'x'.
     time_var : str
-        Name of the time Variable. Defaults to 't'.
+        Name of the time variable. Defaults to 't'.
     """
     def __init__(self,
                  diffusivity,
@@ -36,8 +36,8 @@ class HeatEquation(torch.nn.Module):
 
 class BurgersEquation(torch.nn.Module):
     """
-    Implementation of the viscous Burgers equation:
-        u_t + (u*grad)*u - viscosity * laplace(u) = 0 
+    Implementation of the viscous Burgers equation: 
+    :math:`u_t + (u \\cdot \\nabla)\cdot u - viscosity \\Delta u = 0`.
 
     Parameters
     ----------
@@ -46,9 +46,9 @@ class BurgersEquation(torch.nn.Module):
         a scalar constant, or a Parameter that will be learned based on data.
         If 0, the inviscid Burgers equation will be solved.
     spatial_var : str
-        Name of the spatial Variable. Defaults to 'x'.
+        Name of the spatial variable. Defaults to 'x'.
     time_var : str
-        Name of the time Variable. Defaults to 't'.
+        Name of the time variable. Defaults to 't'.
     """
     def __init__(self,
                  viscosity,
@@ -84,9 +84,9 @@ class IncompressibleNavierStokesEquation(torch.nn.Module):
         a scalar constant, or a Parameter that will be learned based on data.
         If 0, the inviscid Burgers equation will be solved.
     spatial_var : str
-        Name of the spatial Variable. Defaults to 'x'.
+        Name of the spatial variable. Defaults to 'x'.
     time_var : str
-        Name of the time Variable. Defaults to 't'.
+        Name of the time variable. Defaults to 't'.
     """
     def __init__(self,
                  viscosity,

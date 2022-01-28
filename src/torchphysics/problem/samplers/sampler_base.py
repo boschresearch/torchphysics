@@ -33,6 +33,17 @@ class PointSampler:
             self.filter_fn = UserFunction(filter_fn)
         else:
             self.filter_fn = None
+    
+    @classmethod
+    def empty(cls, **kwargs):
+        """Creates an empty Sampler object that samples empty points.
+
+        Returns
+        -------
+        EmptySampler
+            The empty sampler-object.
+        """
+        return EmptySampler().make_static()
 
     def set_length(self, length):
         """If a density is used, the number of points will not be known before
@@ -52,15 +63,29 @@ class PointSampler:
         self.length = length
 
     def __iter__(self):
+        """Creates a iterator of this Pointsampler, with *next* the ``sample_points``
+        methode can be called.
+        """
         return self
 
     def __next__(self):
         return self.sample_points()
 
     def __len__(self):
-        if self.length:
+        """Returns the number of points that the sampler will create or
+        has created. 
+
+        Note
+        ----
+        This can be only called if the number of points is set with ``n_points``.
+        Elsewise the the number can only be known after the first call to 
+        ``sample_points`` methode or may even change after each call.
+        If you know the number of points yourself, you can set this with 
+        ``.set_length``.
+        """
+        if self.length is not None:
             return self.length
-        elif self.n_points:
+        elif self.n_points is not None:
             return self.n_points
         else:
             raise ValueError("""The expected number of samples is not known yet. 
@@ -68,7 +93,7 @@ class PointSampler:
                                 property is needed""")
 
     def make_static(self):
-        """Transforms a sampler to an StaticSampler. A StaticSampler only creates
+        """Transforms a sampler to an ``StaticSampler``. A StaticSampler only creates
         points the first time .sample_points() is called. Afterwards the points 
         are saved and will always be returned if .sample_points() is called again.
         Useful if the same points should be used while training/validation
@@ -79,14 +104,20 @@ class PointSampler:
 
     @property
     def is_static(self):
+        """Checks if the Sampler is a ``StaticSampler``, e.g. retuns always the 
+        same points.
+        """
         return isinstance(self, StaticSampler)
 
     @property
     def is_adaptive(self):
+        """Checks if the Sampler is a ``AdaptiveSampler``, e.g. samples points
+        depending on the loss of the previous iteration.
+        """
         return isinstance(self, AdaptiveSampler)
 
     def sample_points(self, params=Points.empty(), device='cpu'):
-        """The method that creates the points.
+        """The method that creates the points. Also implemented in all child classes.
 
         Parameters
         ----------
@@ -119,17 +150,23 @@ class PointSampler:
         raise NotImplementedError
 
     def __mul__(self, other):
+        """Creates a sampler that samples from the 'Cartesian product'
+        of the samples of two samplers, see ``ProductSampler``.
+        """
         assert isinstance(other, PointSampler)
-        # returns a sampler that samples from the 'cartesian product'
-        # of the samples of two samplers
         return ProductSampler(self, other)
 
     def __add__(self, other):
+        """Creates a sampler which samples from two different samples and 
+        concatenates both outputs, see ``ConcatSampler``.
+        """
         assert isinstance(other, PointSampler)
-        # returns a sampler that samples from two samplers
         return ConcatSampler(self, other)
 
     def append(self, other):
+        """Creates a sampler which samples from two different samples and 
+        makes a column stack of both outputs, see ``AppendSampler``.
+        """
         assert isinstance(other, PointSampler)
         return AppendSampler(self, other)
 
@@ -195,7 +232,7 @@ class PointSampler:
 
 class ProductSampler(PointSampler):
     """A sampler that constructs the product of two samplers.
-    Will create a meshgrid of the data points of both samplers.
+    Will create a meshgrid (Cartesian product) of the data points of both samplers.
 
     Parameters
     ----------
@@ -316,12 +353,45 @@ class StaticSampler(PointSampler):
         return self
 
 
+class EmptySampler(PointSampler):
+    """A sampler that creates only empty Points. Can be used as a placeholder."""
+    def __init__(self):
+        super().__init__(n_points=0)
+    
+    def sample_points(self, params=Points.empty(), device='cpu', **kwargs):
+        return Points.empty()
+    
+
+
+
 class AdaptiveSampler(PointSampler):
     """A sampler that requires a current loss for every point of the
     last sampled set of points.
     """
 
     def sample_points(self, unreduced_loss, params=Points.empty(), device='cpu'):
+        """Extends the sample methode of the parent class. Also requieres the 
+        unreduced loss of the previous iteration to create the new points.
+
+        Parameters
+        ----------
+        unreduced_loss : torch.tensor
+            The tensor containing the loss of each training point in the previous 
+            iteration. 
+        params : torchphysics.spaces.Points
+            Additional parameters for the domain.
+        device : str
+            The device on which the points should be created.
+            Default is 'cpu'.
+
+        Returns
+        -------
+        Points:
+            A Points-Object containing the created points and, if parameters were 
+            passed as an input, the parameters. Whereby the input parameters
+            will get repeated, so that each row of the tensor corresponds to  
+            valid point in the given (product) domain.
+        """
         if self.filter_fn:
             out = self._sample_points_with_filter(unreduced_loss=unreduced_loss,
                                                   params=params, device=device)

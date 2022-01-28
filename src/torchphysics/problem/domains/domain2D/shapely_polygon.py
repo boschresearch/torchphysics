@@ -20,8 +20,8 @@ class ShapelyPolygon(Domain):
         Instead of defining the corner points, it is also possible to give a already
         existing shapely.Polygon object. 
 
-    Notes
-    -----
+    Note
+    ----
     This class can not be dependent on other variables.
     """
     def __init__(self, space, vertices=None, shapely_polygon=None):

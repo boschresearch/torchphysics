@@ -10,7 +10,7 @@ from ..spaces import Points
 
 
 class GridSampler(PointSampler):
-    """Will sample random uniform distributed points in the given domain.
+    """Will sample a equidistant point grid in the given domain.
 
     Parameters
     ----------

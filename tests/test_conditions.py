@@ -53,6 +53,36 @@ def test_setup_data_functions_with_static_sampler():
     assert torch.equal(changed_data_fn['f1'](), ps.sample_points())
 
 
+def test_periodiccondition():
+    module = UserFunction(helper_fn)
+    interval = Interval(R1('x'), 0, 1)
+    sampler = GridSampler(Interval(R1('y'), 0, 1), n_points=10).make_static()
+    cond = PeriodicCondition(module,
+                             interval,
+                             lambda u_left, u_right: u_left-u_right,
+                             non_periodic_sampler=sampler
+                             )
+    assert isinstance(cond, torch.nn.Module)
+    assert cond.name == 'periodiccondition'
+    assert cond.module == module
+    out = cond()
+    assert out == 1.0
+
+
+def test_periodiccondition_data_fun_empty_sampler():
+    def data_fun(x):
+        return x**2
+    module = UserFunction(helper_fn)
+    interval = Interval(R1('x'), 0, 1)
+    cond = PeriodicCondition(module,
+                             interval,
+                             lambda u_right, d_right: d_right-u_right,
+                             data_functions={'d': data_fun}
+                             )
+    out = cond()
+    assert out == 0.0
+
+
 def test_create_datacondition():
     module = UserFunction(helper_fn)
     loader = PointsDataLoader((Points(torch.tensor([[0.0], [2.0]]), R1('x')),

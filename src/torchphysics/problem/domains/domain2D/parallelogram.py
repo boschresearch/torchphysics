@@ -13,10 +13,12 @@ class Parallelogram(Domain):
         The space in which this object lays.
     origin, corner_1, corner_2 : array_like or callable
         Three corners of the parallelogram, in the following order
+
         |       corner_2 -------- x
         |      /                 /
         |     /                 /
         |    origin ----- corner_1
+        
         E.g. for the unit square: origin = [0,0], corner_1 = [1,0], corner_2 = [0,1].
     """
     def __init__(self, space, origin, corner_1, corner_2):
