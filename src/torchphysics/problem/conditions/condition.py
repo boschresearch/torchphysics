@@ -407,7 +407,7 @@ class PeriodicCondition(Condition):
         inputs and outputs of the model, e.g. by using utils.differentialoperators
         and/or domain.normal. Instead of the name of the axis of the periodic interval,
         it takes {name}_left and {name}_right as an input. The same holds for all outputs
-        of the network.
+        of the network and the results of the data_functions.
     error_fn : callable
         Function that will be applied to the output of the residual_fn to compute
         the unreduced loss. Should reduce only along the 2nd (i.e. space-)axis.
