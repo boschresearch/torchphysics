@@ -15,10 +15,22 @@ Contents
    Overview <readme>
    Tutorial <tutorial/tutorial_start>
    API Reference <api/modules>
-   Changelog <changelog>
-   License <license>
-   Authors <authors>
 
+API Reference
+=============
+Information to all classes, functions and methods can be found in the following documentation:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API
+
+   Conditions <api/modules/torchphysics/problems/conditions>
+   Domains <api/modules/torchphysics/problems/domains>
+   Models <api/modules/torchphysics/models>
+   Sampler <api/modules/torchphysics/problems/samplers>
+   Solver <api/modules/torchphysics>
+   Spaces <api/modules/torchphysics/problems/spaces>
+   Utils <api/modules/torchphysics/utils>
 
 Indices and tables
 ==================
