@@ -248,7 +248,7 @@ def test_join_empty_points():
 
 def test_repeat_points():
     p1 = Points(torch.tensor([[2], [1.0]]), R1('x'))
-    p = p1.repeat(4, 1)
+    p = p1.repeat(4)
     assert isinstance(p, Points)
     assert len(p) == 8
     assert 'x' in p.space
