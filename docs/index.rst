@@ -24,14 +24,13 @@ Information to all classes, functions and methods can be found in the following 
    :maxdepth: 2
    :caption: API
 
-   Conditions <api/modules/torchphysics/problems/conditions>
-   Domains <api/modules/torchphysics/problems/domains>
-   Models <api/modules/torchphysics/models>
-   Sampler <api/modules/torchphysics/problems/samplers>
-   Solver <api/modules/torchphysics>
-   API Reference <api/modules>
-   Spaces <api/modules/torchphysics/problems/spaces>
-   Utils <api/modules/torchphysics/utils>
+   Conditions <api/torchphysics/problems/conditions>
+   Domains <api/torchphysics/problems/domains>
+   Models <api/torchphysics/models>
+   Sampler <api/torchphysics/problems/samplers>
+   Solver <api/torchphysics>
+   Spaces <api/torchphysics/problems/spaces>
+   Utils <api/torchphysics/utils>
 
 Indices and tables
 ==================
