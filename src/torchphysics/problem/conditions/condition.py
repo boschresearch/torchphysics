@@ -1,6 +1,3 @@
-"""Conditions are the central concept in this package.
-They supply the necessary training data to the model.
-"""
 import abc
 
 import torch

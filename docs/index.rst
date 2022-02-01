@@ -3,22 +3,26 @@ TorchPhysics
 ============
 
 Welcome to **TorchPhysics**, a Python library of deep learning methods 
-for solving differential equations
+for solving differential equations. You can use TorchPhysics to: 
 
+- solve ordinary and partial differential equations 
+- train a neural network to approximate solutions for different parameters
+- solve inverse problems and interpolate external data via the above methods
 
-Contents
-========
+Guide
+=====
 
 .. toctree::
    :maxdepth: 2
 
    Overview <readme>
    Tutorial <tutorial/tutorial_start>
+   Examples <https://github.com/boschresearch/torchphysics/tree/main/examples>
 
 
 API Reference
 =============
-Information to all classes, functions and methods can be found in the following documentation:
+Information for all classes, functions and methods can be found in the following documentation:
 
 .. toctree::
    :maxdepth: 2
