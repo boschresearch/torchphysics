@@ -14,7 +14,7 @@ Contents
 
    Overview <readme>
    Tutorial <tutorial/tutorial_start>
-   API Reference <api/modules>
+
 
 API Reference
 =============
@@ -29,6 +29,7 @@ Information to all classes, functions and methods can be found in the following 
    Models <api/modules/torchphysics/models>
    Sampler <api/modules/torchphysics/problems/samplers>
    Solver <api/modules/torchphysics>
+   API Reference <api/modules>
    Spaces <api/modules/torchphysics/problems/spaces>
    Utils <api/modules/torchphysics/utils>
 
