@@ -6,7 +6,7 @@ operations are implemented:
 - ``Union`` :math:`A \cup B`, implemented with: ``+``
 - ``Intersection`` :math:`A \cap B`, implemented with: ``&``
 - ``Cut`` :math:`A \setminus B`, implemented with: ``-``
-- ``Cartesian product`` :math:`A \times B`, implemented with: :math:`\cdot`
+- ``Cartesian product`` :math:`A \\times B`, implemented with: :math:`\cdot`
 
 If you want to solve an inverse problem, the learnable parameters **do not** get a domain! They have to be 
 defined with the torchphysics.model.Parameters class.
