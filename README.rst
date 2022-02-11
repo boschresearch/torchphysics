@@ -86,7 +86,7 @@ it locally:
 About
 =====
 TorchPhysics was originally developed by Nick Heilenkötter and Tom Freudenberg, 
-as part of seminar project at the `University of Bremen`_, in cooperation with the `Robert Bosch GmbH`_. 
+as part of a seminar project at the `University of Bremen`_, in cooperation with the `Robert Bosch GmbH`_. 
 Special thanks belong to Felix Hildebrand, Uwe Iben, Daniel Christopher Kreuter and Johannes Mueller,
 at the Robert Bosch GmbH, for support and supervision while creating this library.
 
