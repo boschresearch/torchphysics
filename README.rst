@@ -68,14 +68,36 @@ to have a look at the following sections:
 
 Installation
 ============
+TorchPhysics can be installed by using:
+
+.. code-block:: python
+
+  pip install git+https://github.com/boschresearch/torchphysics
+
+If you want to change or add something to the code. You should first copy the Repository and install
+it locally:
+
+.. code-block:: python
+
+  git clone https://github.com/boschresearch/torchphysics 
+  pip install .
 
 
+About
+=====
+TorchPhysics was originally developed by Nick Heilenkötter and Tom Freudenberg, 
+as part of seminar project at the `University of Bremen`_, in cooperation with the `Robert Bosch GmbH`_. 
+Special thanks belong to Felix Hildebrand, Uwe Iben, Daniel Christopher Kreuter and Johannes Mueller,
+at the Robert Bosch GmbH, for support and supervision while creating this library.
+
+.. _`University of Bremen`: https://www.uni-bremen.de/en/
+.. _`Robert Bosch GmbH`: https://www.bosch.de/en/
 
 License
 =======
 TorchPhysics uses a Apache License, see the LICENSE_ file.
 
-.. _LICENSE: LICENSE.txt
+.. _LICENSE: https://github.com/boschresearch/torchphysics/blob/main/LICENSE.txt
 
 
 Bibliography
