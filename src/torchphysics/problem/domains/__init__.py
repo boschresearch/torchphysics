@@ -6,7 +6,7 @@ operations are implemented:
 - ``Union`` :math:`A \cup B`, implemented with: ``+``
 - ``Intersection`` :math:`A \cap B`, implemented with: ``&``
 - ``Cut`` :math:`A \setminus B`, implemented with: ``-``
-- ``Cartesian product`` :math:`A \\times B`, implemented with: :math:`\cdot`
+- ``Cartesian product`` :math:`A \\times B`, implemented with: ``*``
 
 It is possible to pass in functions as parameters of most domains. This leads to geometries that
 can change depending on other variables, e.g. a moving domain in time. 
