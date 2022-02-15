@@ -1,7 +1,3 @@
-"""Conditions are the central concept in this package.
-They supply the necessary training data to the model and can enforce a variety
-of constrains during training by building the parts of the loss function.
-"""
 import abc
 
 import torch
