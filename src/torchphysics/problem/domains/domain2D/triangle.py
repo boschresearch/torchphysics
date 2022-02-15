@@ -40,8 +40,8 @@ class Triangle(Domain):
                 return domain_param[0, :]
         return domain_param
 
-    def _get_volume(self, params=Points.empty()):
-        _, _, _, dir_1, _, dir_3 = self._construct_triangle(params)
+    def _get_volume(self, params=Points.empty(), device='cpu'):
+        _, _, _, dir_1, _, dir_3 = self._construct_triangle(params, device=device)
         # volume equals the determinate of the matrix [dir_1, dir_2] / 2
         volume = -dir_1[:, :1] * dir_3[:, 1:] + dir_1[:, 1:] * dir_3[:, :1]
         return volume / 2.0
@@ -55,8 +55,8 @@ class Triangle(Domain):
         dir_3 = origin - corner_2
         return origin, corner_1, corner_2, dir_1, dir_2, dir_3
 
-    def bounding_box(self, params=Points.empty()):
-        origin, corner_1, corner_2, _, _, _ = self._construct_triangle(params)
+    def bounding_box(self, params=Points.empty(), device='cpu'):
+        origin, corner_1, corner_2, _, _, _ = self._construct_triangle(params, device=device)
         bounds = []
         for i in range(self.dim):
             dim_i_max, dim_i_min = [], []
@@ -65,11 +65,11 @@ class Triangle(Domain):
                 dim_i_min.append(torch.min(corner[:, i]).item())
             bounds.append(min(dim_i_min))
             bounds.append(max(dim_i_max))
-        return bounds
+        return torch.tensor(bounds, device=device)
 
     def _contains(self, points, params=Points.empty()):
         origin, _, _, dir_1, _, dir_3 = \
-            self._construct_triangle(points.join(params))
+            self._construct_triangle(points.join(params), device=points.device)
         points = points[:, list(self.space.variables)].as_tensor
         points -= origin
         bary_x, bary_y = self._solve_lgs(points, dir_1, -dir_3)
@@ -169,15 +169,15 @@ class TriangleBoundary(BoundaryDomain):
         assert isinstance(domain, Triangle)
         super().__init__(domain)
 
-    def _get_volume(self, params=Points.empty()):
-        _, _, _, dir_1, dir_2, dir_3 = self.domain._construct_triangle(params)
+    def _get_volume(self, params=Points.empty(), device='cpu'):
+        _, _, _, dir_1, dir_2, dir_3 = self.domain._construct_triangle(params, device=device)
         side_1, side_2, side_3 = self._compute_side_length(dir_1, dir_2, dir_3)
         side_length = side_1 + side_2 + side_3
         return side_length.reshape(-1, 1)
 
     def _contains(self, points, params=Points.empty()):
         origin, _, _, dir_1, _, dir_3 = \
-            self.domain._construct_triangle(points.join(params))
+            self.domain._construct_triangle(points.join(params), device=points.device)
         points = points[:, list(self.space.variables)].as_tensor
         points -= origin
         bary_x, bary_y = self.domain._solve_lgs(points, dir_1, -dir_3)

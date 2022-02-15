@@ -36,19 +36,19 @@ class CutDomain(Domain):
         in_b = self.domain_b._contains(points, params)
         return torch.logical_and(in_a, torch.logical_not(in_b))
 
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         if not self.contained:
             warnings.warn("""Exact volume of this cut is not known, will use the
                              estimate: volume = domain_a.volume.
                              If you need the exact volume for sampling,
                              use domain.set_volume()""")
-            return self.domain_a.volume(params)
-        volume_a = self.domain_a.volume(params)
-        volume_b = self.domain_b.volume(params)
+            return self.domain_a.volume(params, device=device)
+        volume_a = self.domain_a.volume(params, device=device)
+        volume_b = self.domain_b.volume(params, device=device)
         return volume_a - volume_b
 
-    def bounding_box(self, params=Points.empty()):
-        return self.domain_a.bounding_box(params)
+    def bounding_box(self, params=Points.empty(), device='cpu'):
+        return self.domain_a.bounding_box(params, device=device)
 
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(), 
                               device='cpu'):
@@ -102,15 +102,15 @@ class CutBoundaryDomain(BoundaryDomain):
         on_b_part = torch.logical_and(on_b_part, torch.logical_not(on_a_bound))
         return torch.logical_or(on_a_part, on_b_part)
 
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         if not self.domain.contained:
             warnings.warn("""Exact volume of this domain boundary is not known, 
                              will use the estimate: 
                              volume = domain_a.volume + domain_b.volume.
                              If you need the exact volume for sampling,
                              use domain.set_volume().""")
-        volume_a = self.domain.domain_a.boundary.volume(params)
-        volume_b = self.domain.domain_b.boundary.volume(params)
+        volume_a = self.domain.domain_a.boundary.volume(params, device=device)
+        volume_b = self.domain.domain_b.boundary.volume(params, device=device)
         return volume_a + volume_b
     
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(), 

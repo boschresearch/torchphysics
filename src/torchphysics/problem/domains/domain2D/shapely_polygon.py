@@ -50,13 +50,14 @@ class ShapelyPolygon(Domain):
             inside[i] = self.polygon.contains(point)
         return inside
 
-    def bounding_box(self):
-        bounds = self.polygon.bounds
-        return [bounds[0], bounds[2], bounds[1], bounds[3]]
+    def bounding_box(self, device='cpu'):
+        bounds = torch.tensor(self.polygon.bounds, device=device)
+        bounds[[1,2]] = bounds[[2,1]]
+        return bounds
 
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         volume = self.polygon.area
-        return torch.tensor(volume).reshape(-1, 1)
+        return torch.tensor(volume, device=device).reshape(-1, 1)
 
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(), 
                               device='cpu'):
@@ -124,8 +125,8 @@ class ShapelyPolygon(Domain):
         return Points(points, self.space)
 
     def _create_points_in_bounding_box(self, n, device):
-        bounds = self.bounding_box()
-        origin = torch.tensor([[bounds[0], bounds[2]]], device=device)
+        bounds = self.bounding_box(device=device)
+        origin = bounds[[0,2]]
         dir_1 = torch.tensor([[bounds[1]-bounds[0], 0]], device=device)
         dir_2 = torch.tensor([[0, bounds[3]-bounds[2]]], device=device)
         b_box_volume = (bounds[1]-bounds[0])*(bounds[3]-bounds[2])
@@ -199,9 +200,9 @@ class ShapelyBoundary(BoundaryDomain):
             on_bound[i] = (abs(distance) <= self.tol)
         return on_bound.reshape(-1, 1)
 
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         volume = self.domain.polygon.boundary.length 
-        return torch.tensor(volume).reshape(-1, 1)
+        return torch.tensor(volume, device=device).reshape(-1, 1)
 
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(), 
                               device='cpu'):

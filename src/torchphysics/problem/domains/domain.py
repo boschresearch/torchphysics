@@ -6,7 +6,7 @@ from ..spaces.points import Points
 
 
 class Domain:
-    """The parent class for all build in domains.
+    """The parent class for all built-in domains.
 
     Parameters
     ----------
@@ -78,13 +78,13 @@ class Domain:
         dependent on other variables, the volume can only be approixmated.
         Therefore one can set here a exact expression for the volume, if known. 
         """
-        self._user_volume = UserFunction(volume)
+        self._user_volume = DomainUserFunction(volume)
 
     @abc.abstractmethod
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         raise NotImplementedError
 
-    def volume(self, params=Points.empty()):
+    def volume(self, params=Points.empty(), device='cpu'):
         """Computes the volume of the current domain.
 
         Parameters
@@ -101,9 +101,9 @@ class Domain:
             params row. 
         """
         if self._user_volume is None:
-            return self._get_volume(params)
+            return self._get_volume(params, device=device)
         else:
-            return self._user_volume(params)
+            return self._user_volume(params, device=device)
 
     def __add__(self, other):
         """Creates the union of the two input domains.
@@ -180,13 +180,13 @@ class Domain:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def bounding_box(self, params=Points.empty()):
+    def bounding_box(self, params=Points.empty(), device='cpu'):
         """Computes the bounds of the domain.
 
         Returns
         -------
-        list :
-            A list with the length of 2*self.dim.
+        tensor :
+            A torch.Tensor with the length of 2*self.dim.
             It has the form [axis_1_min, axis_1_max, axis_2_min, axis_2_max, ...], 
             where min and max are the minimum and maximum value that the domain
             reaches in each dimension-axis.
@@ -195,7 +195,7 @@ class Domain:
 
     @abc.abstractmethod
     def sample_grid(self, n=None, d=None, params=Points.empty(), device='cpu'):
-        """Creates a equdistant grid in the domain.
+        """Creates an equdistant grid in the domain.
 
         Parameters
         ----------
@@ -220,7 +220,7 @@ class Domain:
     @abc.abstractmethod
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(),
                               device='cpu'):
-        """Creates random uniform points in the domain.
+        """Creates random uniformly distributed points in the domain.
 
         Parameters
         ----------
@@ -280,7 +280,7 @@ class BoundaryDomain(Domain):
     Parameters
     ----------
     domain : Domain
-        The domain of which this object is the boundary of.
+        The domain of which this object is the boundary.
     """  
     def __init__(self, domain):
         assert isinstance(domain, Domain)
@@ -292,7 +292,7 @@ class BoundaryDomain(Domain):
         evaluated_domain = self.domain(**data)
         return evaluated_domain.boundary
 
-    def bounding_box(self, params=Points.empty()):
+    def bounding_box(self, params=Points.empty(), device='cpu'):
         return self.domain.bounding_box(params)
 
     @abc.abstractmethod

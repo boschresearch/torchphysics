@@ -30,17 +30,17 @@ class Point(Domain):
         inside = torch.isclose(points[:, None], point_params, atol=0.001)
         return torch.all(inside, dim=2).reshape(-1, 1)
 
-    def bounding_box(self, params=Points.empty()):
+    def bounding_box(self, params=Points.empty(), device='cpu'):
         if callable(self.point.fun): # if point moves
-             return self._bounds_for_callable_point(params)
+             return self._bounds_for_callable_point(params, device=device)
         if isinstance(self.point.fun, (torch.Tensor, list)):
-             return self._bounds_for_higher_dimensions()
-        return [self.point.fun - self.bounding_box_tol, 
-                self.point.fun + self.bounding_box_tol]
+             return self._bounds_for_higher_dimensions(device=device)
+        return torch.tensor([self.point.fun - self.bounding_box_tol, 
+                self.point.fun + self.bounding_box_tol], device=device)
 
-    def _bounds_for_callable_point(self, params):
+    def _bounds_for_callable_point(self, params, device='cpu'):
         bounds = []
-        discrete__points = self.point(params).reshape(-1, self.space.dim)
+        discrete__points = self.point(params, device=device).reshape(-1, self.space.dim)
         for i in range(self.space.dim):
             min_ = torch.min(discrete__points[:, i])
             max_ = torch.max(discrete__points[:, i])
@@ -48,9 +48,9 @@ class Point(Domain):
                 min_ -= self.bounding_box_tol
                 max_ += self.bounding_box_tol
             bounds.append(min_.item()), bounds.append(max_.item())
-        return bounds
+        return torch.tensor(bounds, device=device)
 
-    def _bounds_for_higher_dimensions(self):
+    def _bounds_for_higher_dimensions(self, device='cpu'):
         bounds = []
         for i in range(self.space.dim):
             p = self.point.fun[i]
@@ -58,7 +58,7 @@ class Point(Domain):
             # important if we later use these values to normalize the input
             bounds.append(p - self.bounding_box_tol)
             bounds.append(p + self.bounding_box_tol)
-        return bounds
+        return torch.tensor(bounds, device=device)
 
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(), device='cpu'):
         if d:
@@ -73,6 +73,6 @@ class Point(Domain):
         # for one single point grid and random sampling is the same
         return self.sample_random_uniform(n=n, d=d, params=params, device=device)
 
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         no_of_params = self.len_of_params(params)
-        return 1 * torch.ones((no_of_params, 1))
+        return 1 * torch.ones((no_of_params, 1), device=device)

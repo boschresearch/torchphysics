@@ -175,7 +175,7 @@ class LHSSampler(PointSampler):
         sample_points = None
         for i in range(num_of_params):
             ith_params = params[i, ]
-            bounding_box = self.domain.bounding_box(ith_params)
+            bounding_box = self.domain.bounding_box(ith_params, device=device)
             lhs_in_box = self._create_lhs_in_bounding_box(bounding_box, device)
             new_points = self._check_lhs_inside(lhs_in_box, ith_params)
             final_points = self._append_random_points(new_points, ith_params)

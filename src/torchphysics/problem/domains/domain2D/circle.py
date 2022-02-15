@@ -31,20 +31,20 @@ class Circle(Domain):
         return Circle(space=self.space, center=new_center, radius=new_radius)
 
     def _contains(self, points, params=Points.empty()):
-        center, radius = self._compute_center_and_radius(points.join(params))
+        center, radius = self._compute_center_and_radius(points.join(params), points.device)
         points = points[:, list(self.space.variables)].as_tensor
         norm = torch.linalg.norm(points - center, dim=1).reshape(-1, 1)
         return torch.le(norm[:, None], radius).reshape(-1, 1)
 
-    def bounding_box(self, params=Points.empty()):
-        center, radius = self._compute_center_and_radius(params)
+    def bounding_box(self, params=Points.empty(), device='cpu'):
+        center, radius = self._compute_center_and_radius(params, device=device)
         bounds = []
         for i in range(self.dim):
             i_min = torch.min(center[:, i] - radius)
             i_max = torch.max(center[:, i] + radius)
             bounds.append(i_min.item())
             bounds.append(i_max.item())
-        return bounds
+        return torch.tensor(bounds, device=device)
 
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(),
                               device='cpu'):
@@ -88,8 +88,8 @@ class Circle(Domain):
                                      torch.multiply(radius, torch.sin(phi))))
         return points                             
 
-    def _get_volume(self, params=Points.empty()):
-        radius = self.radius(params)
+    def _get_volume(self, params=Points.empty(), device='cpu'):
+        radius = self.radius(params, device=device)
         volume = np.pi * radius**2
         return volume.reshape(-1, 1)
 
@@ -105,7 +105,7 @@ class CircleBoundary(BoundaryDomain):
         super().__init__(domain)
 
     def _contains(self, points, params=Points.empty()):
-        center, radius = self.domain._compute_center_and_radius(points.join(params))
+        center, radius = self.domain._compute_center_and_radius(points.join(params), points.device)
         points = points[:, list(self.space.variables)].as_tensor
         norm = torch.linalg.norm(points - center, dim=1).reshape(-1, 1)
         return torch.isclose(norm[:, None], radius).reshape(-1, 1)
@@ -143,7 +143,7 @@ class CircleBoundary(BoundaryDomain):
         normal = (points - center)
         return torch.divide(normal[:, None], radius).reshape(-1, 2)
 
-    def _get_volume(self, params=Points.empty()):
-        radius = self.domain.radius(params)
+    def _get_volume(self, params=Points.empty(), device='cpu'):
+        radius = self.domain.radius(params, device=device)
         volume = 2 * np.pi * radius
         return volume.reshape(-1, 1)

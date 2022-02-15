@@ -135,6 +135,12 @@ class Points():
         """
         return self._t
     
+    @property
+    def device(self):
+        """Returns the device of the underlying tensor.
+        """
+        return self._t.device
+    
     def __len__(self):
         """Returns the number of points in this object.
         """

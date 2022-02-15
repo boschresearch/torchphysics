@@ -25,14 +25,14 @@ class UnionDomain(Domain):
         self.necessary_variables = domain_a.necessary_variables.copy()
         self.necessary_variables.update(domain_b.necessary_variables)
 
-    def _get_volume(self, params=Points.empty(), return_value_of_a_b=False):
+    def _get_volume(self, params=Points.empty(), return_value_of_a_b=False, device='cpu'):
         if not self.disjoint:
             warnings.warn("""Exact volume of this union is not known, will use the
                              estimate: volume = domain_a.volume + domain_b.volume.
                              If you need the exact volume for sampling,
                              use domain.set_volume()""")
-        volume_a = self.domain_a.volume(params)
-        volume_b = self.domain_b.volume(params)
+        volume_a = self.domain_a.volume(params, device=device)
+        volume_b = self.domain_b.volume(params, device=device)
         if return_value_of_a_b:
             return volume_a + volume_b, volume_a, volume_b
         return volume_a + volume_b
@@ -47,14 +47,14 @@ class UnionDomain(Domain):
         domain_b = self.domain_b(**data)
         return UnionDomain(domain_a, domain_b)
 
-    def bounding_box(self, params=Points.empty()):
-        bounds_a = self.domain_a.bounding_box(params)
-        bounds_b = self.domain_b.bounding_box(params)
+    def bounding_box(self, params=Points.empty(), device='cpu'):
+        bounds_a = self.domain_a.bounding_box(params, device=device)
+        bounds_b = self.domain_b.bounding_box(params, device=device)
         bounds = []
         for i in range(self.space.dim):
             bounds.append(min([bounds_a[2*i], bounds_b[2*i]]))
             bounds.append(max([bounds_a[2*i+1], bounds_b[2*i+1]]))
-        return bounds
+        return torch.tensor(bounds, device=device)
 
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(), 
                               device='cpu'):
@@ -72,7 +72,8 @@ class UnionDomain(Domain):
         in_a = self.domain_a._contains(points=points_b, params=repeated_params)
         # approximate volume of this domain
         volume_approx, volume_a, _ = self._get_volume(return_value_of_a_b=True,
-                                                      params=repeated_params)
+                                                      params=repeated_params,
+                                                      device=device)
         volume_ratio = torch.divide(volume_a, volume_approx)
         # choose points depending of the proportion of the domain w.r.t. the
         # whole domain union
@@ -109,7 +110,8 @@ class UnionDomain(Domain):
 
     def _sample_grid_with_n(self, n, params=Points.empty(), device='cpu'):
         volume_approx, volume_a, _ = self._get_volume(return_value_of_a_b=True,
-                                                      params=params)
+                                                      params=params,
+                                                      device=device)
         scaled_n = int(torch.ceil(n * volume_a/volume_approx))
         points_a = self.domain_a.sample_grid(n=scaled_n, params=params, 
                                              device=device)
@@ -152,14 +154,14 @@ class UnionBoundaryDomain(BoundaryDomain):
         on_b_part = torch.logical_and(on_b_bound, torch.logical_not(in_a))
         return torch.logical_or(on_a_part, torch.logical_or(on_b_part, on_both))
 
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         if not self.domain.disjoint:
             warnings.warn("""Exact volume of this domain is not known, will use the
                              estimate: volume = domain_a.volume + domain_b.volume.
                              If you need the exact volume for sampling,
                              use domain.set_volume()""")
-        volume_a = self.domain.domain_a.boundary.volume(params)
-        volume_b = self.domain.domain_b.boundary.volume(params)
+        volume_a = self.domain.domain_a.boundary.volume(params, device=device)
+        volume_b = self.domain.domain_b.boundary.volume(params, device=device)
         return volume_a + volume_b
     
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(), 
