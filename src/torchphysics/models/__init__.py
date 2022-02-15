@@ -15,3 +15,4 @@ from .model import (Model, NormalizationLayer, AdaptiveWeightLayer,
                     Sequential, Parallel)
 from .fcn import FCN
 from .deepritz import DeepRitzNet
+from .qres import QRES
