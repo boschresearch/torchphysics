@@ -113,32 +113,32 @@ class ProductDomain(Domain):
         assert len(bounds) == 2 * self.dim, """Bounds dont fit the dimension."""
         self.bounds = bounds
 
-    def bounding_box(self, params=Points.empty()):
+    def bounding_box(self, params=Points.empty(), device='cpu'):
         if self.bounds:
             return self.bounds
         elif self._is_constant or self.domain_b.space in params.space:
             # if the domain is constant or additional data for domain a is given
             # we just can create the bounds directly. 
-            bounds_a = self.domain_a.bounding_box(params)
-            bounds_b = self.domain_b.bounding_box(params)
-            bounds_a.extend(bounds_b)
+            bounds_a = self.domain_a.bounding_box(params, device=device)
+            bounds_b = self.domain_b.bounding_box(params, device=device)
+            bounds_a = torch.cat((bounds_a, bounds_b))
         else: # we have to sample some points in b, and approx the bounds.
             warnings.warn(f"""The bounding box of the ProductDomain dependens of the
                               values of domain_b. Therefor will sample
                               {N_APPROX_VOLUME} in domain_b, to compute a 
                               approixmation. If the bounds a known exactly, set 
                               them with .set_bounds().""")
-            bounds_b = self.domain_b.bounding_box(params)
+            bounds_b = self.domain_b.bounding_box(params, device=device)
             b_points = self.domain_b.sample_random_uniform(n=N_APPROX_VOLUME,
                                                            params=params)
             _, new_params = self._repeat_params(n=N_APPROX_VOLUME, params=params)
-            bounds_a = self.domain_a.bounding_box(b_points.join(new_params))
-            bounds_a.extend(bounds_b)
+            bounds_a = self.domain_a.bounding_box(b_points.join(new_params), device=device)
+            bounds_a = torch.cat((bounds_a, bounds_b))
         return bounds_a
     
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         if self._is_constant:
-            return self.domain_a.volume(params) * self.domain_b.volume(params)
+            return self.domain_a.volume(params, device=device) * self.domain_b.volume(params, device=device)
         else:
             warnings.warn(f"""The volume of a ProductDomain where one factor domain depends on the
                               other can only be approximated by evaluating functions at {N_APPROX_VOLUME}
@@ -148,24 +148,24 @@ class ProductDomain(Domain):
             b_points = self.domain_b.sample_random_uniform(n=n, params=new_params)
             if len(self.domain_b.necessary_variables) > 0:
                 # points need to be sampled in every call to this function
-                volume_a = self.domain_a.volume(b_points.join(new_params))
+                volume_a = self.domain_a.volume(b_points.join(new_params), device=device)
                 reshape_volume = volume_a.reshape(N_APPROX_VOLUME, -1)
                 mean_volume = torch.sum(reshape_volume, dim=0) / N_APPROX_VOLUME
-                return mean_volume.reshape(-1, 1) * self.domain_b.volume(params)
+                return mean_volume.reshape(-1, 1) * self.domain_b.volume(params, device=device)
             elif len(self.necessary_variables) > 0:
                 # we can keep the sampled points and evaluate domain_a in a function
-                b_volume = self.domain_b.volume()
+                b_volume = self.domain_b.volume(device=device)
                 def avg_volume(local_params):
                     _, new_params = self._repeat_params(n=N_APPROX_VOLUME, params=local_params)
-                    return torch.sum(self.domain_a.volume(b_points.join(new_params)).reshape(N_APPROX_VOLUME,-1), dim=0)\
-                        / N_APPROX_VOLUME * b_volume
+                    return torch.sum(self.domain_a.volume(b_points.join(new_params), device=device)\
+                        .reshape(N_APPROX_VOLUME,-1), dim=0) / N_APPROX_VOLUME * b_volume
                 args = self.domain_a.necessary_variables - self.domain_b.space.variables
                 self._user_volume = UserFunction(avg_volume, args=args)
                 return avg_volume(params)
             else:
                 # we can compute the volume only once and save it
-                volume = sum((self.domain_a.volume(b_points))/N_APPROX_VOLUME \
-                    * self.domain_b.volume())
+                volume = sum((self.domain_a.volume(b_points, device=device))/N_APPROX_VOLUME \
+                    * self.domain_b.volume(device=device))
                 self.set_volume(volume)
                 return torch.repeat_interleave(volume, max(1, len(params)), dim=0)
             
@@ -179,7 +179,7 @@ class ProductDomain(Domain):
         n_, params = self._repeat_params(n_in, params)
         b_points = self.domain_b.sample_random_uniform(n=n_, params=params,
                                                        device=device)
-        volumes = self.domain_a.volume(params.join(b_points)).squeeze(dim=-1)
+        volumes = self.domain_a.volume(params.join(b_points), device=device).squeeze(dim=-1)
         if list(volumes.shape) == [1]:
             return n_in, b_points, params
         filter_ = torch.max(volumes)*torch.rand_like(volumes, device=device) < volumes
@@ -218,5 +218,5 @@ class ProductDomain(Domain):
             return a_points.join(b_points)
         else:
             assert d is not None
-            n = int(d*self.volume())
+            n = int(d*self.volume(device=device))
             return self.sample_random_uniform(n=n, params=params, device=device)

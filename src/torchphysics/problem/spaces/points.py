@@ -135,6 +135,12 @@ class Points():
         """
         return self._t
     
+    @property
+    def device(self):
+        """Returns the device of the underlying tensor.
+        """
+        return self._t.device
+    
     def __len__(self):
         """Returns the number of points in this object.
         """
@@ -261,16 +267,16 @@ class Points():
         assert self.space.keys().isdisjoint(other.space)
         return Points(torch.cat([self._t, other._t], dim=1), self.space * other.space)
 
-    def repeat(self, *sizes):
-        """Repeats this points data along the specified dimensions. 
+    def repeat(self, n):
+        """Repeats this points data along the first dimension. 
         Uses torch.repeat and will therefore repeat the data 'batchwise'.
 
         Parameters
         ----------
-        *sizes :
-            The number of repeats per dimension. 
+        n :
+            The number of repeats. 
         """
-        return Points(self._t.repeat(*sizes), self.space)
+        return Points(self._t.repeat(n, 1), self.space)
 
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):

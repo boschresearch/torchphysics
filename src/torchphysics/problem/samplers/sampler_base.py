@@ -179,7 +179,7 @@ class PointSampler:
         self.set_length(num_of_points)
         num_of_params = max(1, len(params))
         repeated_params = self._repeat_params(params, num_of_points)
-        repeated_points = points.repeat(num_of_params, 1)
+        repeated_points = points.repeat(num_of_params)
         return repeated_points.join(repeated_params)
 
     def _sample_params_dependent(self, sample_function, params, device):

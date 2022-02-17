@@ -59,14 +59,14 @@ class Interval(Domain):
         points += lb
         return Points(points.reshape(-1, self.space.dim), self.space)
 
-    def bounding_box(self, params=Points.empty()):
-        lb = self.lower_bound(params)
-        ub = self.upper_bound(params)
-        return [torch.min(lb).item(), torch.max(ub).item()]
+    def bounding_box(self, params=Points.empty(), device='cpu'):
+        lb = self.lower_bound(params, device=device)
+        ub = self.upper_bound(params, device=device)
+        return torch.stack((torch.min(lb), torch.max(ub)), dim=0)
 
-    def _get_volume(self, params=Points.empty()):
-        lb = self.lower_bound(params)
-        ub = self.upper_bound(params)
+    def _get_volume(self, params=Points.empty(), device='cpu'):
+        lb = self.lower_bound(params, device=device)
+        ub = self.upper_bound(params, device=device)
         return (ub - lb).reshape(-1, 1)
 
     @property
@@ -132,9 +132,9 @@ class IntervalBoundary(BoundaryDomain):
         close_to_left, _ = self._check_close_left_right(points, params)
         return torch.where(close_to_left, -1, 1).reshape(-1, 1)
 
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         no_of_params = self.len_of_params(params)
-        return 2 * torch.ones((no_of_params, 1))
+        return 2 * torch.ones((no_of_params, 1), device=device)
 
 
 class IntervalSingleBoundaryPoint(BoundaryDomain):
@@ -174,6 +174,6 @@ class IntervalSingleBoundaryPoint(BoundaryDomain):
         points = torch.ones((self.len_of_params(points.join(params)), 1), device=device)
         return points * self.normal_vec
 
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         no_of_params = self.len_of_params(params)
-        return 1 * torch.ones((no_of_params, 1))
+        return 1 * torch.ones((no_of_params, 1), device=device)

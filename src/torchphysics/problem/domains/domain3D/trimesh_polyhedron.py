@@ -139,13 +139,13 @@ class TrimeshPolyhedron(Domain):
     def __call__(self, **data):
         return self
 
-    def bounding_box(self, params=Points.empty()):
+    def bounding_box(self, params=Points.empty(), device='cpu'):
         bound_corners = self.mesh.bounds
-        return bound_corners.T.flatten()
+        return torch.tensor(bound_corners.T.flatten(), device=device)
 
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         volume = self.mesh.volume
-        return torch.tensor(volume).reshape(-1, 1)
+        return torch.tensor(volume, device=device).reshape(-1, 1)
 
     def _contains(self, points, params=Points.empty()):
         if isinstance(points, Points):
@@ -173,7 +173,7 @@ class TrimeshPolyhedron(Domain):
 
     def sample_grid(self, n=None, d=None, params=Points.empty(), device='cpu'):
         n = self._compute_number_of_points(n, d, params)
-        bounds = self.bounding_box(params)
+        bounds = self.bounding_box(params, device=device)
         points = self._point_grid_in_bounding_box(n, bounds, device)
         points_inside = self._get_points_inside(points)
         final_points = Sphere._append_random(self, points_inside, n, params, device)
@@ -181,7 +181,7 @@ class TrimeshPolyhedron(Domain):
 
     def _point_grid_in_bounding_box(self, n, bounds, device):
         b_box_volume = self._get_bounding_box_volume(bounds)
-        volume = self._get_volume().item()
+        volume = self._get_volume(device=device).item()
         scaled_n = int(np.ceil(np.cbrt(n*b_box_volume/volume)))
         x_axis = torch.linspace(bounds[0], bounds[1], scaled_n, device=device)
         y_axis = torch.linspace(bounds[2], bounds[3], scaled_n, device=device)
@@ -218,9 +218,9 @@ class TrimeshBoundary(BoundaryDomain):
         on_bound = (abs_dist <= self.domain.tol)
         return on_bound.reshape(-1,1)
 
-    def _get_volume(self, params=Points.empty()):
+    def _get_volume(self, params=Points.empty(), device='cpu'):
         area = sum(self.domain.mesh.area_faces)
-        return torch.tensor(area).reshape(-1, 1)
+        return torch.tensor(area, device=device).reshape(-1, 1)
 
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(), 
                               device='cpu'):

@@ -47,8 +47,8 @@ class Parallelogram(Domain):
                 return domain_param[0, :]
         return domain_param
 
-    def _get_volume(self, params=Points.empty()):
-        _, _, _, dir_1, dir_2 = self._construct_parallelogram(params)
+    def _get_volume(self, params=Points.empty(), device='cpu'):
+        _, _, _, dir_1, dir_2 = self._construct_parallelogram(params, device=device)
         # volume equals the determinate of the matrix [dir_1, dir_2]
         volume = dir_1[:, :1] * dir_2[:, 1:] - dir_1[:, 1:] * dir_2[:, :1]
         return volume
@@ -61,8 +61,8 @@ class Parallelogram(Domain):
         dir_2 = corner_2 - origin
         return origin, corner_1, corner_2, dir_1, dir_2
 
-    def bounding_box(self, params=Points.empty()):
-        origin, corner_1, corner_2, _, _ = self._construct_parallelogram(params)
+    def bounding_box(self, params=Points.empty(), device='cpu'):
+        origin, corner_1, corner_2, _, _ = self._construct_parallelogram(params, device=device)
         corner_3 = corner_1 + corner_2 - origin
         bounds = []
         for i in range(self.dim):
@@ -72,11 +72,11 @@ class Parallelogram(Domain):
                 dim_i_min.append(torch.min(corner[:, i]).item())
             bounds.append(min(dim_i_min))
             bounds.append(max(dim_i_max))
-        return bounds
+        return torch.tensor(bounds, device=device)
 
     def _contains(self, points, params=Points.empty()):
         origin, _, _, dir_1, dir_2 = \
-            self._construct_parallelogram(points.join(params))
+            self._construct_parallelogram(points.join(params), points.device)
         points = points[:, list(self.space.variables)].as_tensor
         points -= origin
         bary_x, bary_y = self._solve_lgs(points, dir_1, dir_2)
@@ -154,7 +154,7 @@ class ParallelogramBoundary(BoundaryDomain):
 
     def _contains(self, points, params=Points.empty()):
         origin, _, _, dir_1, dir_2 = \
-            self.domain._construct_parallelogram(points.join(params))
+            self.domain._construct_parallelogram(points.join(params), points.device)
         points = points[:, list(self.space.variables)].as_tensor
         points -= origin
         bary_x, bary_y = self.domain._solve_lgs(points, dir_1, dir_2)
@@ -168,8 +168,8 @@ class ParallelogramBoundary(BoundaryDomain):
         close_to_1 = torch.isclose(bary_coord1, torch.tensor(1.0))
         return torch.logical_and(torch.logical_or(close_to_1, close_to_0), between_0_1)
 
-    def _get_volume(self, params=Points.empty()):
-        _, _, _, dir_1, dir_2 = self.domain._construct_parallelogram(params)
+    def _get_volume(self, params=Points.empty(), device='cpu'):
+        _, _, _, dir_1, dir_2 = self.domain._construct_parallelogram(params, device=device)
         side_length1 = torch.linalg.norm(dir_1, dim=1)
         side_length2 = torch.linalg.norm(dir_2, dim=1)
         return 2 * (side_length1 + side_length2).reshape(-1, 1)
