@@ -163,10 +163,10 @@ def test_add_additional_points_if_some_missing_poly2D():
 def test_bounds_for_poly2D():
     P = ShapelyPolygon(R2('x'), [[0, 10], [0, 0], [10, 2], [10, 8]])
     bounds = P.bounding_box()
-    assert bounds == [0, 10, 0, 10]
+    assert torch.allclose(bounds, torch.tensor([0, 10, 0, 10]).float())
     P = ShapelyPolygon(R2('x'), [[0, 10], [0, 0], [10, 2], [10, 8], [5, 20]])
     bounds = P.bounding_box()
-    assert bounds == [0, 10, 0, 20]
+    assert torch.allclose(bounds, torch.tensor([0, 10, 0, 20]).float())
 
 
 def test_grid_sampling_inside_poly2D():

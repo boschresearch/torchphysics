@@ -55,7 +55,8 @@ def test_1D_plot():
     plotter = plt.Plotter(plot_function=plt_func, point_sampler=ps)
     model = FCN(input_space=R1('x'), output_space=R1('u'))
     fig = plotter.plot(model=model)  
-    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_xlim()).float(),
+                          torch.tensor((-0.05, 1.05)))
     assert fig.axes[0].get_xlabel() == 'x'
     pyplot.close(fig)
 
@@ -78,7 +79,8 @@ def test_1D_plot_with_textbox():
     plotter = plt.Plotter(plot_function=plt_func, point_sampler=ps)
     model = FCN(input_space=R1('x')*R1('t'), output_space=R1('u'))
     fig = plotter.plot(model=model)  
-    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_xlim()).float(),
+                          torch.tensor((-0.05, 1.05)))
     assert fig.axes[0].get_xlabel() == 'x'
     pyplot.close(fig)
 
@@ -89,9 +91,11 @@ def test_2D_plot():
     plotter = plt.Plotter(plot_function=plt_func, point_sampler=ps)
     model = FCN(input_space=R1('x')*R1('y'), output_space=R1('u'))
     fig = plotter.plot(model=model)  
-    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_xlim()).float(),
+                          torch.tensor((-0.05, 1.05)))
     assert fig.axes[0].get_xlabel() == 'x'
-    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_ylim()).float(),
+                          torch.tensor((-0.1, 2.1)))
     assert fig.axes[0].get_ylabel() == 'y'
     pyplot.close(fig)
 
@@ -103,9 +107,11 @@ def test_2D_plot_for_booleandomain():
     plotter = plt.Plotter(plot_function=plt_func, point_sampler=ps)
     model = FCN(input_space=R2('x'), output_space=R1('u'))
     fig = plotter.plot(model=model)  
-    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_xlim()).float(),
+                          torch.tensor((-0.05, 1.05)))
     assert fig.axes[0].get_xlabel() == 'x_1'
-    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_ylim()).float(),
+                          torch.tensor((-0.1, 2.1)))
     assert fig.axes[0].get_ylabel() == 'x_2'
     pyplot.close(fig)
 
@@ -142,9 +148,11 @@ def test_2D_quiver():
     plotter = plt.Plotter(plot_function=quiver_plt, point_sampler=ps)
     model = FCN(input_space=R2('x'), output_space=R2('u'))
     fig = plotter.plot(model=model)  
-    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_xlim()).float(),
+                          torch.tensor((-0.05, 1.05)))
     assert fig.axes[0].get_xlabel() == 'x_1'
-    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_ylim()).float(),
+                          torch.tensor((-0.1, 2.1)))
     assert fig.axes[0].get_ylabel() == 'x_2'
     pyplot.close(fig)
 
@@ -157,9 +165,11 @@ def test_2D_quiver_with_textbox():
     plotter = plt.Plotter(plot_function=quiver_plt, point_sampler=ps)
     model = FCN(input_space=R2('x')*R1('t'), output_space=R2('u'))
     fig = plotter.plot(model=model)  
-    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_xlim()).float(),
+                          torch.tensor((-0.05, 1.05)))
     assert fig.axes[0].get_xlabel() == 'x_1'
-    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_ylim()).float(),
+                          torch.tensor((-0.1, 2.1)))
     assert fig.axes[0].get_ylabel() == 'x_2'
     pyplot.close(fig)
 
@@ -170,7 +180,8 @@ def test_3D_curve():
     plotter = plt.Plotter(plot_function=lambda u:u, point_sampler=ps)
     model = FCN(input_space=R1('i')*R1('t'), output_space=R2('u'))  
     fig = plotter.plot(model=model)  
-    assert fig.axes[0].get_xlim() == (-1.15, 2.15)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_xlim()).float(),
+                          torch.tensor((-1.15, 2.15)))
     assert fig.axes[0].get_xlabel() == 'i'
     pyplot.close(fig)
 
@@ -182,9 +193,11 @@ def test_contour_2D():
     plotter = plt.Plotter(plot_function=plt_func, point_sampler=ps,
                           plot_type='contour_surface')
     fig = plotter.plot(model=model)  
-    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_xlim()).float(),
+                          torch.tensor((-0.05, 1.05)))
     assert fig.axes[0].get_xlabel() == 'R_1'
-    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_ylim()).float(),
+                          torch.tensor((-0.1, 2.1)))
     assert fig.axes[0].get_ylabel() == 'R_2'
     pyplot.close(fig)
 
@@ -194,9 +207,11 @@ def test_contour_2D_with_textbox():
     model = FCN(input_space=R2('R')*R2('t'), output_space=R2('u'))    
     ps = PlotSampler(P, n_points=500, data_for_other_variables={'t': [2.0, 0.0]})
     fig  = plt.plot(model, plt_func, ps, plot_type='contour_surface')
-    assert fig.axes[0].get_xlim() == (-0.05, 1.05)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_xlim()).float(),
+                          torch.tensor((-0.05, 1.05)))
     assert fig.axes[0].get_xlabel() == 'R_1'
-    assert fig.axes[0].get_ylim() == (-0.1, 2.1)
+    assert torch.allclose(torch.tensor(fig.axes[0].get_ylim()).float(),
+                          torch.tensor((-0.1, 2.1)))
     assert fig.axes[0].get_ylabel() == 'R_2'
     pyplot.close(fig)
 

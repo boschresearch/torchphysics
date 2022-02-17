@@ -170,7 +170,7 @@ def _random_points_boundary(main_domain, domain_a, domain_b, n, params, device):
         # scale n such that the number of points corresponds to the size 
         # of the boundary
         sclaed_n = _compute_boundary_ratio(main_domain, domain_a,
-                                           domain_b, ith_params, n)
+                                           domain_b, ith_params, n, device=device)
         use_b = False # to switch between sampling on a and b
         while len(ith_points) < n:
             new_points = \
@@ -185,10 +185,10 @@ def _random_points_boundary(main_domain, domain_a, domain_b, n, params, device):
     return random_points
 
 
-def _compute_boundary_ratio(main_domain, domain_a, domain_b, ith_params, n):
-    main_volume = main_domain.volume(params=ith_params)
-    a_volume = domain_a.boundary.volume(params=ith_params)
-    b_volume = domain_b.boundary.volume(params=ith_params)
+def _compute_boundary_ratio(main_domain, domain_a, domain_b, ith_params, n, device='cpu'):
+    main_volume = main_domain.volume(params=ith_params, device=device)
+    a_volume = domain_a.boundary.volume(params=ith_params, device=device)
+    b_volume = domain_b.boundary.volume(params=ith_params, device=device)
     return [int(n * a_volume/main_volume)+1, int(n * b_volume/main_volume)+1]
 
 
@@ -220,8 +220,8 @@ def _boundary_grid_with_n(main_domain, domain_a, domain_b, n, params, device):
     # scale the n so that more or fewer points are sampled and try again
     # to get a better grid. For the scaling we approximate the volume of the 
     # the main domain.
-    a_surface = domain_a.boundary.volume(params)
-    b_surface = domain_b.boundary.volume(params)
+    a_surface = domain_a.boundary.volume(params, device=device)
+    b_surface = domain_b.boundary.volume(params, device=device)
     approx_surface = a_surface * a_correct / n + b_surface * b_correct / n
     scaled_a = int(n * a_surface / approx_surface) + 1 # round up  
     scaled_b = max(int(n * b_surface / approx_surface), 1) # round to floor, but not 0

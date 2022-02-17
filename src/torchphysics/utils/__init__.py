@@ -1,4 +1,12 @@
-"""useful helper methods, e.g. metrics etc"""
+"""Useful helper methods for the definition and evaluation of a problem.
+
+For the creation of conditions, some differential operators are implemented under
+torchphysics.utils.differentialoperators.
+
+For the evaluation of the trained model, some plot and animation functionalities are build in.
+They can give you a rough overview of the determined solution. These lay under
+torchphysics.utils.plotting
+"""
 from .differentialoperators import (laplacian,
                                     grad,
                                     div,

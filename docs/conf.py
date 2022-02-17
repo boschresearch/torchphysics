@@ -47,7 +47,7 @@ try:
     import sphinx
 
     cmd_line_template = (
-        "sphinx-apidoc --implicit-namespaces -f -o {outputdir} {moduledir}"
+        "sphinx-apidoc --implicit-namespaces --module-first -f -o {outputdir} {moduledir}"
     )
     cmd_line = cmd_line_template.format(outputdir=output_dir, moduledir=module_dir)
 

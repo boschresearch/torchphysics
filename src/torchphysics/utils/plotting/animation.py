@@ -155,6 +155,7 @@ def animation_line(outputs, ani_sampler, animation_points, domain_points,
         _compute_animation_params(outputs, ani_sampler, animation_points)
     # construct the figure handle and axis for the animation
     fig = plt.figure()
+    domain_bounds = domain_bounds.detach()
     ax = plt.axes(xlim=(domain_bounds[0], domain_bounds[1]),
                   ylim=(output_min, output_max))
     ax.set_xlabel(domain_name[0])
