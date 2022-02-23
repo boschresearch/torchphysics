@@ -2,13 +2,10 @@
 TorchPhysics
 ============
 
-.. figure:: ../examples/pinn/moving-heat-eq.gif
+.. image:: ../examples/pinn/moving-heat-eq.gif
   :width: 400
   :align: right
   :alt: Solution of the heat equation on a time dependent domain, solved using TorchPhysics
-
-  Exemplary solution of the heat equation on a time dependent domain,
-  solved using TorchPhysics.
 
 Welcome to **TorchPhysics**, a Python library of deep learning methods 
 for solving differential equations. Currently, TorchPhysics implements
