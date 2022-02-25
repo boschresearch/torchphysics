@@ -2,14 +2,14 @@
 Tutorial: Understanding the structure of TorchPhysics
 =====================================================
 In this tutorial, you will learn how the different components of TorchPhysics
-work and at the end will be able to transform a simple differential equation into the
-corresponding problem in TorchPhysics.
+work and interact. In the end, you will be able to transform a simple differential equation
+into the corresponding training setup in TorchPhysics.
 
 We start by explaining the basic structure of this library. Then we will go over each 
-important part in their own tutorial and in the end bring everything together to
-solve a PDE.
+important part in its own tutorial. Finally we will bring everything together to
+solve a PDE using the PINN-approach..
 
-The structure of TorchPhysics is best illustrated by the following graph:
+The structure of TorchPhysics can be illustrated via the following graph:
 
 .. image:: pictures/torchphysics_structure.png
   :width: 500
@@ -20,8 +20,7 @@ The structure of TorchPhysics is best illustrated by the following graph:
 Spaces 
   Define the dimension of the used variables, parameters and model outputs. This is the
   starting point for all problems and shown in the `spaces and points tutorial`_.
-  There it will be also explained, with what kind of objects the library stores and creates
-  points.
+  The tutorial also covers the way the library stores and creates points.
 
 Domains 
   Handle the creation of the underlying geometry of the problem. See:
@@ -30,7 +29,7 @@ Domains
   - `Polygons and external objects`_ to create 2D or 3D polygons and import external files
 
 PointSampler
-  Control the creation of sampling points for the trainings/validation process. The usage
+  Control the creation of sampling points for the training/validation process. The usage
   is explained in the `PointSampler tutorial`_.
 
 Models/Parameters
@@ -47,12 +46,12 @@ Utils
   problems easier. To get an overview of all methods, see the docs_. Two parts that will
   be shown more detailed, are:
 
-  - Here_ the usage of the pre implemented differential operators
+  - The usage of the pre implemented `differential operators`_
   - `Creating plots`_ of the trained solutions.
 
 Solver
   Handles the training of the defined model, by applying the previously created conditions.
-  The usage of the solver, will be shown in a complete probleme, where all the above points
+  The usage of the solver will be shown in a complete problem, where all the above parts of the library
   are used. This is shown in `solving a simple PDE`_.
 
 These are all the basics of TorchPhysics. You should now have a rough understanding of the 
@@ -66,7 +65,7 @@ can be found under the `example-folder`_
 .. _`model creation tutorial`: model_creation.html
 .. _`condition tutorial`: condition_tutorial.html
 .. _docs: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.utils.html
-.. _Here: differentialoperators.html
+.. _`differential operators`: differentialoperators.html
 .. _`Creating plots`: plotting.html
 .. _`solving a simple PDE`: solve_pde.html
 .. _`example-folder`: https://github.com/boschresearch/torchphysics/tree/main/examples
