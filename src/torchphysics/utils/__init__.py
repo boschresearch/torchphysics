@@ -3,7 +3,7 @@
 For the creation of conditions, some differential operators are implemented under
 torchphysics.utils.differentialoperators.
 
-For the evaluation of the trained model, some plot and animation functionalities are build in.
+For the evaluation of the trained model, some plot and animation functionalities are provided.
 They can give you a rough overview of the determined solution. These lay under
 torchphysics.utils.plotting
 """
