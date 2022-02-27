@@ -1,7 +1,7 @@
 =============================
 Polygons and External Objects
 =============================
-Thanks to a soft dependency on Shapely_ and Trimesh_ polygons and polyhedrons can be
+Thanks to a soft dependency on Shapely_ and Trimesh_, polygons and polyhedrons can be
 created. For this, two additional domains exist: ``ShapelyPolygon`` and ``TrimeshPolyhedron``. 
 They combine the properties of the previously explained domains with the feature of the packages.
 This means you can:
@@ -30,7 +30,7 @@ If you have the package Shapely_ installed, you can find the class ``ShapelyPoly
   from torchphysics.problem.domains.domain2D.shapely_polygon import ShapelyPolygon
 
 This class can be constructed through two different ways, either you create your own 
-shapely-polygon yourself, or you pass all vertices of the polygon to the constructor:
+shapely-polygon first, or you pass all vertices of the polygon to the constructor:
 
 .. code-block:: python
 
@@ -100,7 +100,7 @@ This is also a functionality implemented in Trimesh. 
 
 This may be useful, if the problem should first be researched in 2D, 
 which most of the time is less expensive. 
-For this, only have to choose how we want to create the 2D-representation. 
+For this, one only has to choose how we want to create the 2D-representation. 
 Here we use slicing, the projection works the same:
 
 .. code-block:: python

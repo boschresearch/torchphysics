@@ -7,7 +7,7 @@ into the corresponding training setup in TorchPhysics.
 
 We start by explaining the basic structure of this library. Then we will go over each 
 important part in its own tutorial. Finally we will bring everything together to
-solve a PDE using the PINN-approach..
+solve a PDE using the PINN-approach.
 
 The structure of TorchPhysics can be illustrated via the following graph:
 

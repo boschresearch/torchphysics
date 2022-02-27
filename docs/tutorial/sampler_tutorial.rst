@@ -2,7 +2,7 @@
 Point Creation
 ==============
 After the definition of the domains, the next part is the creation of training/validation points
-on these domains. This task is handled by the **PointSampler**-class. Different kinds of sampling
+in these domains. This task is handled by the **PointSampler**-class. Different kinds of sampling
 are implemented, for example:
 
 - ``RandomUniformSampler``: samples uniform randomly distributed points, in the given domain.
@@ -17,7 +17,7 @@ And many more, see `sampler-docs`_. The samplers lay all under ``torchphysics.sa
 
 In general, a sampler gets the following arguments:
 
-- **domain**: the domain in which the points should be created
+- **domain**: the domain in which the points should be created.
 - **n_points** or **density**: to set the number of wanted points. Either a fixed number can be
   chosen or the density of the points.
 - **filter**: A function that filters out special points, for example for local boundary conditions.
@@ -75,7 +75,7 @@ Different samplers can be combined by the following ways:
 - **AppendSampler**, with **.append**. This will create a *column stack* of the two sampler outputs.
   For this both samplers have to create the same number of points but in different spaces. 
   Useful if the points of both samplers have no real correlation between each other.
-- **ProductSampler**, with '*'. Mathematically, this will create the Cartesian product of
+- **ProductSampler**, with :math:`\cdot`. Mathematically, this will create the Cartesian product of
   the sampler outputs. Numerically, this creates the mesh grid of the points. Therefore
   the number of points will be the product of the number of both samplers.
   The ``ProductSampler`` notices if one domain depends on the other one and will create
@@ -110,7 +110,7 @@ Some possible combinations and results are in the following picture:
 Adaptive Sampling
 ------------------
 A last important sampling strategy is the adaptive creation of points. These samplers will
-compute new points depending on the loss of points in the previous training iteration. 
+compute new points depending on the loss, at each point, in the previous training iteration. 
 The usage is the same as for all other samplers. What adaptive strategies are implemented can be 
 found in the `sampler-docs`_.
 
