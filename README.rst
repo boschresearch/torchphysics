@@ -25,7 +25,7 @@ To this end, TorchPhysics aims at a:
 - intuitive and compact way to transfer the mathematical problem into code
 - reliable and well tested code basis 
 
-Some build in features are:
+Some built-in features are:
 
 - mesh free domain generation. With pre implemented domain types: 
   *Point, Interval, Parallelogram, Circle, Triangle and Sphere*
@@ -93,6 +93,15 @@ at the Robert Bosch GmbH, for support and supervision while creating this librar
 .. _`seminar project`: http://www.math.uni-bremen.de/zetem/cms/detail.php?template=modellierungsseminar
 .. _`University of Bremen`: https://www.uni-bremen.de/en/
 .. _`Robert Bosch GmbH`: https://www.bosch.de/en/
+
+Contribute
+==========
+If you are missing a feature or detect a bug or unexpected behaviour while using this library, feel free to open
+an issue or a pull request in GitHub_ or contact the authors. Since we developed the code as a student project
+during a seminar, we cannot guarantee every feature to work properly. However, we are happy about all contributions
+since we aim to develop a reliable code basis and extend the library to include other approaches.
+
+.. _GitHub: https://github.com/boschresearch/torchphysics
 
 License
 =======

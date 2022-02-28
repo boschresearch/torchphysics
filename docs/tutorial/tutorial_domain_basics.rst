@@ -61,7 +61,7 @@ There we will explain how to create the following plots.
   :align: center
   :alt: Picture of unit square and circle
 
-The definition of other basic domains, follow the same way.
+The definition of other basic domains follow the same way.
 
 Domain Operations
 -----------------
@@ -116,7 +116,7 @@ Here we only show the outer surface:
 Changing Domains
 ----------------
 The last aspect, is the possibility of variable domains. E.g. a domain that grows in time or 
-a rotating circle. To this end, all parameters that to define a domain can also be function.
+a rotating circle. To this end, all parameters that define a domain can also be functions.
 For example, the radius of the circle or the origin of a parallelogram.
 
 Right now, a domain can only depend on the variables of another domain. So a domain that should

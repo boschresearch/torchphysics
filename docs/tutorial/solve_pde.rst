@@ -1,7 +1,7 @@
 ====================
 Solving a simple PDE
 ====================
-The following problem also exists as a notebook_. Here we assume that you know all the
+The following problem also exists as an notebook_. Here we assume that you know all the
 basic concepts, that were part of the previous tutorials and will only give short explanations
 to every step.
 
@@ -79,7 +79,7 @@ It follows the differential condition, here we use the pre implemented operators
 The transformation of our PDE into a TorchPhysics problem is finished. So we can start the
 training.
 
-The last step before the training is the creation of a *Solver*. This is an object that inherits from
+The last step, before the training, is the creation of a *Solver*. This is an object that inherits from
 the Pytorch Lightning *LightningModule*. It handles the training and validation loops and takes care of 
 the data loading for GPUs or CPUs. It gets the following inputs:
 

@@ -54,7 +54,7 @@ Points
 ------
 The ``Points`` object is another central part of TorchPhysics. It consists of a PyTorch-tensor
 collecting a set of points in a ``Space``. It is generated e.g. by the samplers during training
-and handed to and from all models as in put and output. However, for standard use-cases, ``Points``
+and handed to and from all models as in- and output. However, for standard use-cases, ``Points``
 mostly stay behind the scenes, so if you don't need custom behaviour when using TorchPhysics, feel
 free to skip this part of the tutorial for now.
 
@@ -78,7 +78,7 @@ All ``Points`` have a space and therefore also a dimensionality and a variable s
    >>> points.dim
    3
 We can access the contents of a ``Points`` object in a single tensor or with the corresponding coordinate
-dict using ``.ast_tensor`` or ``.coordinates`` attribues. ``Points`` also support most torch functions that
+dict using ``.as_tensor`` or ``.coordinates`` attribues. ``Points`` also support most torch functions that
 work on tensors and support slicing via keys along the ordered variable axis, regarding the last key in slicing
 (similar to NumPy or PyTorch-behaviour):
 

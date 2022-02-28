@@ -22,6 +22,13 @@ a way to sample points in arbitrary, easy-to-define, domains flexibly.
 
 Guide
 =====
+All kind of information (features, installation, etc.) to TorchPhysics can be
+found under the **Overview** tab. 
+
+As an introduction to TorchPhysics a **Tutorial** exists. There we will present and 
+explain the most important aspects and structure of this library. Under the
+**Examples** tab additional applications, in form of Jupyter Notebooks,
+can be found.
 
 .. toctree::
    :maxdepth: 2
@@ -33,7 +40,8 @@ Guide
 
 API Reference
 =============
-Information for all classes, functions and methods can be found in the following documentation:
+Information for all classes, functions and methods can be found in
+the following documentation:
 
 .. toctree::
    :maxdepth: 2

@@ -54,16 +54,16 @@ point_sampler
   Since the plot will in general be created over a given domain, all other input
   variables of the model have to be constant values. 
   So both sampler get a single domain as an input and then create a point grid inside and 
-  at the boundary. For all the other variables a dictionary can be passed in the input.
+  at the boundary. For all the other variables a dictionary can be passed as an input.
 
 plot_type
   In general, the method picks the correct type depending on the output of the *plot_function*.
   But for two-dimensional domains, there are two different ways implemented. Either create
   a surface plot, *'surface_2D'*, or a contour plot, *'contour_surface'*.
   Default is the surface plot, if the other one should be used, that has to 
-  specified
+  specified.
 
-The **plot** method just implements some basic presentations and is for complex domains not
+The **plot** method just implements some basic presentations and is for complex domains **not**
 perfectly optimized. Therefore, it should only be seen as a helper function for, a fast overview
 of the solution.
 
