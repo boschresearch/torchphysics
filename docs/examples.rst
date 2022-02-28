@@ -34,18 +34,18 @@ A simple example would be the problem:
 .. math::
 
    \begin{align*}
-      \dot{u} &= k u  \text{ in } [0, 1] \\
+      \partial_x u &= k u  \text{ in } [0, 1] \\
       u(0) &= 1
    \end{align*}
 
 where we want to train a family of solutions for :math:`k \in [0, 2]`. So we essentially
 want to find the function :math:`u(x, k) = e^{kx}`.
-Implemented is this example, in: `simple-parameter-dependency-notebook`_ 
+Implemented is this example in: `simple-parameter-dependency-notebook`_ 
 
-.. _`simple-parameter-dependency-notebook`: https://github.com/boschresearch/torchphysics/blob/main/examples/pinn/exp-function-with-param.ipynb
+.. _`simple-parameter-dependency-notebook`: https://github.com/TomF98/torchphysics/blob/main/examples/pinn/exp-function-with-param.ipynb
 
 This approach is also possible for complexer problems, see for example this notebook_.
-Where we apply this idea to a heat equation.
+Where we apply this idea to the heat equation.
 
 .. _notebook: https://github.com/boschresearch/torchphysics/blob/main/examples/pinn/heat-equation.ipynb
 
