@@ -53,7 +53,7 @@ Since the models are build upon PyTorch, a custom network can be easily implemen
 But there are two points that have to be remembered for this:
 
 1) The network has to have an ``input_space`` and ``output_space``. They should be set in the
-   initialization of the custom neural network. But this applies neurally if you extend the
+   initialization of the custom neural network. But this applies naturally if you extend the
    implemented parent class ``Model``.
 2) In the forward call a ``Point``-object has to be returned. These are the underlying custom
    tensors of TorchPhysics, like explained in the `space tutorial`_. For this you just have 

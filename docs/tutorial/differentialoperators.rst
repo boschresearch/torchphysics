@@ -30,7 +30,7 @@ The newest version of all implemented operators can be found under the docs_.
 .. _docs: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.utils.html
 
 Since ``autograd`` is used, the differential operators can work with neural networks and functions
-that work with PyTorch-Tensors. It follow a short example of the usage:
+that use PyTorch-Tensors. It follow a short example of the usage:
 
 .. code-block:: python 
 
@@ -45,7 +45,7 @@ that work with PyTorch-Tensors. It follow a short example of the usage:
   # requires_grad=True is needed, so PyTorch knows to create a backwards graph.
   # These tensors could be seen as a batch with three data points.
 
-The important for the implemented operators and ``autograd`` in general, is that the output
+The important part for the implemented operators and ``autograd`` in general, is that the output
 of the function evaluated at the points is needed, not the function itself. This has the advantage 
 that one has to only evaluate the function once and then can create arbitrary derivatives.
 

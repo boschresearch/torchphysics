@@ -2,7 +2,7 @@
 Conditions
 ==========
 The **Conditions** are the central concept of TorchPhysics. They transform the conditions of
-the underlying differential equation into the trainings conditions for neural network.
+the underlying differential equation into the trainings conditions for the neural network.
 
 Many kinds of conditions are pre implemented, they can be found under 
 the docs_. Depending on the used type, the condition get different inputs. The five arguments 
@@ -20,7 +20,7 @@ sampler
 
 residual_fn
     A function that computes the residual corresponding to the condition, by using the
-    input and output of the model. How they should be defined are the focus of the following
+    input and output of the model. How they should be defined is the focus of the following
     part.
 
 name 
@@ -67,7 +67,7 @@ need the output ``u`` and the input ``t`` and ``x``. Therefore the corresponding
 
 Here many important things are happening:
 
-1) The input of function ``boundary_residual`` only corresponds to the variables required. 
+1) The inputs of the function ``boundary_residual`` only corresponds to the variables required. 
    The needed variables will then internally be correctly passed to the method. Here it is important
    to use the correct names that were used in the ``Spaces``.
 2) We have the input ``u``, that is already the output of our neural network. So we **do not** need

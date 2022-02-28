@@ -274,7 +274,7 @@ class Domain:
 
 
 class BoundaryDomain(Domain):
-    """The parent class for all build in boundaries.
+    """The parent class for all built-in boundaries.
     Can be used just like the main Domain class.
 
     Parameters
