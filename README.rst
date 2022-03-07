@@ -105,7 +105,7 @@ since we aim to develop a reliable code basis and extend the library to include 
 
 License
 =======
-TorchPhysics uses a Apache License, see the LICENSE_ file.
+TorchPhysics uses an Apache License, see the LICENSE_ file.
 
 .. _LICENSE: https://github.com/boschresearch/torchphysics/blob/main/LICENSE.txt
 

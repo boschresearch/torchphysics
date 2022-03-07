@@ -11,11 +11,11 @@ class DataSampler(PointSampler):
 
     Parameters
     ----------
-    input_data : torchphysics.spaces.Points or dict
-        A points object containing the input data for the model.
-    output_data : torchphysics.spaces.Points or dict
-        The expected model values at the given input data in the
-        correct output space.
+    points : torchphysics.spaces.points or dict
+        The data points that this data sampler should pass to a condition.
+        Either already a torchphysics.spaces.points object or in form of
+        dictionary like: {'x': tensor_for_x, 't': tensor_for_t, .....}.
+        For the dicitionary all tensor need to have the same batch dimension.
     """
 
     def __init__(self, points):
