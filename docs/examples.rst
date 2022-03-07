@@ -16,8 +16,8 @@ One of the simplest applications is the forward solution of a Poisson equation:
 .. math::
 
    \begin{align}
-   \Delta u &= 4.25\pi^2 u \text{ in } \Omega = [0, 1] \times [0, 1] \\
-   u &= \sin(\frac{\pi}{2} x_1)\cos(2\pi x_2) \text{ on } \partial \Omega
+   \Delta u &= 4.25\pi^2 u, \text{ in } \Omega = [0, 1] \times [0, 1] \\
+   u &= \sin(\frac{\pi}{2} x_1)\cos(2\pi x_2), \text{ on } \partial \Omega
    \end{align}
 
 This problem is part of the tutorial and only mentioned for completeness. 
@@ -34,7 +34,7 @@ A simple example would be the problem:
 .. math::
 
    \begin{align*}
-      \partial_x u &= k u  \text{ in } [0, 1] \\
+      \partial_x u &= k u,  \text{ in } [0, 1] \\
       u(0) &= 1
    \end{align*}
 
@@ -56,9 +56,9 @@ For an inverse problem we consider the heat equation:
 .. math::
 
    \begin{align*}
-   \text{div}(D(x)\nabla u(x, t)) &= \partial_t u(x, t) \text{ in } \Omega \times [0, 5]\\
-   u(x, 0) &= 100\sin(\tfrac{\pi}{10}x_1)\sin(\tfrac{\pi}{10}x_2)  \text{ in } \Omega \\
-   u(x, t) &= 0 \text{ on } \partial \Omega \times [0, 5]
+   \text{div}(D(x)\nabla u(x, t)) &= \partial_t u(x, t), \text{ in } \Omega \times [0, 5]\\
+   u(x, 0) &= 100\sin(\tfrac{\pi}{10}x_1)\sin(\tfrac{\pi}{10}x_2),  \text{ in } \Omega \\
+   u(x, t) &= 0, \text{ on } \partial \Omega \times [0, 5]
    \end{align*}  
 
 with :math:`\Omega = [0, 10] \times [0, 10]`. Here :math:`D` can either be 
@@ -82,10 +82,10 @@ we consider the PDE:
 .. math::
 
    \begin{align*}
-      \partial_t u - D\Delta u &= 0  \text{ in } \Omega \times [0, T] \\
-      u(\cdot, 0) &= 0 \text{ in }\Omega \\
-      u &= 0 \text{ on } \Gamma_\text{out}  \times [0, T] \\
-      \vec{n} \nabla u &= q_\text{in} \text{ on } \Gamma_\text{in}(t)  \times [0, T]
+      \partial_t u - D\Delta u &= 0,  \text{ in } \Omega \times [0, T] \\
+      u(\cdot, 0) &= 0, \text{ in }\Omega \\
+      u &= 0, \text{ on } \Gamma_\text{out}  \times [0, T] \\
+      \vec{n} \nabla u &= q_\text{in}, \text{ on } \Gamma_\text{in}(t)  \times [0, T]
    \end{align*} 
 
 Where :math:`\Omega` will be a circle with a moving hole and :math:`\Gamma_\text{in}(t)`
