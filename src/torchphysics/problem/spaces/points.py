@@ -2,12 +2,14 @@
 """
 from typing import Iterable
 import torch
+import numpy as np
 
 from .space import Space
 
 
 class Points():
-    """A set of points in a space, stored as a torch.Tensor.
+    """A set of points in a space, stored as a torch.Tensor. Can contain
+    multiple axis which keep batch-dimensions.
 
     Parameters
     ----------
@@ -24,12 +26,13 @@ class Points():
     we efficently can access and transform the data. But at the same time
     have the knowledge of what points belong to which space/variable.
     """
+
     def __init__(self, data, space, **kwargs):
         self._t = torch.as_tensor(data, **kwargs)
         self.space = space
-        assert len(self._t.shape) == 2
-        assert self._t.shape[1] == self.space.dim
-    
+        assert len(self._t.shape) >= 2
+        assert self._t.shape[-1] == self.space.dim
+
     @classmethod
     def empty(cls, **kwargs):
         """Creates an empty Points object.
@@ -39,8 +42,8 @@ class Points():
         Points
             The empty Points-object.
         """
-        return cls(torch.empty(0,0, **kwargs), Space({}))
-    
+        return cls(torch.empty(0, 0, **kwargs), Space({}))
+
     @classmethod
     def joined(cls, *points_l):
         """Concatenates different Points to one single Points-Object.
@@ -59,14 +62,15 @@ class Points():
         """
         points_out = []
         space_out = Space({})
+        shape = points_l[0].shape
         for points in points_l:
             if points.isempty:
                 continue
             assert space_out.keys().isdisjoint(points.space)
+            assert points.shape == shape
             points_out.append(points._t)
             space_out = space_out * points.space
-        return cls(torch.cat(points_out, dim=1), space_out)
-
+        return cls(torch.cat(points_out, dim=-1), space_out)
 
     @classmethod
     def from_coordinates(cls, coords):
@@ -87,26 +91,26 @@ class Points():
         space = {}
         if coords == {}:
             return cls.empty()
-        n = coords[list(coords.keys())[0]].shape[0]
+        n = coords[list(coords.keys())[0]].shape[:-1]
         for vname in coords:
             coords[vname] = torch.as_tensor(coords[vname])
-            assert coords[vname].shape[0] == n
+            assert coords[vname].shape[:-1] == n
             point_list.append(coords[vname])
-            space[vname] = coords[vname].shape[1]
-        return cls(torch.column_stack(point_list), Space(space))
-    
+            space[vname] = coords[vname].shape[-1]
+        return cls(torch.cat(point_list, dim=-1), Space(space))
+
     @property
     def dim(self):
         """Returns the dimension of the points.
         """
         return self.space.dim
-    
+
     @property
     def variables(self):
-        """Returns variables of the points as an dictionary, e.g {'x': dim_x, 't': dim_t....}.
+        """Returns variables of the points as an unordered set, e.g {'x', 't'}.
         """
         return self.space.variables
-    
+
     @property
     def coordinates(self):
         """
@@ -116,9 +120,9 @@ class Points():
         out = {}
         variable_slice = self._variable_slices
         for var in self.space:
-            out[var] = self._t[:, variable_slice[var]]
+            out[var] = self._t[..., variable_slice[var]]
         return out
-    
+
     @property
     def _variable_slices(self):
         start = 0
@@ -131,80 +135,100 @@ class Points():
 
     @property
     def as_tensor(self):
-        """Retunrs the underlying tensor.
+        """
+        Returns the underlying tensor.
         """
         return self._t
-    
+
     @property
     def device(self):
-        """Returns the device of the underlying tensor.
+        """
+        Returns the device of the underlying tensor.
         """
         return self._t.device
-    
+
     def __len__(self):
-        """Returns the number of points in this object.
         """
-        return self._t.shape[0]
-    
+        Returns the number of points in this object.
+        """
+        return np.prod(self._t.shape[:-1])
+
+    @property
+    def shape(self):
+        """
+        The shape of the batch-dimensions of this points object.
+        """
+        return self._t.shape[:-1]
+
     @property
     def isempty(self):
-        """Checks if no points are saved in this object.
+        """
+        Checks whether no points and no structure are saved in this object.
         """
         return len(self) == 0 and self.space.dim == 0
 
     def __repr__(self):
         return "{}:\n{}".format(self.__class__.__name__, self.coordinates)
-    
+
+    def _compute_slice(self, val):
+        if isinstance(val, tuple):
+            val = list(val)
+        
+        if isinstance(val, (np.ndarray, torch.Tensor)) and val.dtype in (bool, torch.bool):
+            if len(val.shape) == len(self._t.shape):
+                raise IndexError("Boolean slicing in last dimension is not supported.")
+
+        out_space = self.space
+        if isinstance(val, list):
+            if (len(val) == len(self._t.shape)) or (Ellipsis in val and not (val[-1] is Ellipsis)):
+                slc = self._variable_slices
+                rng = list(range(self.dim))
+                if isinstance(val[-1], str):
+                    out_space = Space({val[-1]: self.space[val[-1]]})
+                    val[-1] = slc[val[-1]]
+                else:
+                    out_space = self.space[val[-1]]
+                    out_idxs = []
+                    for var in out_space:
+                        out_idxs += rng[slc[var]]
+                    val[-1] = out_idxs
+
+        return val, out_space
+
     def __getitem__(self, val):
         """
-        Supports usual slice operations like points[1:3,('x','t')]. If a variable
-        is given, this will return a torch.Tensor with the data. If not, it will
-        return a new, sliced, point.
-
-        Notes
-        -----
-        This operation does not support slicing single dimensions from a
-        variable directly, however, this can be done on the output.
+        Supports usual slice operations like points[1:3,('x','t')]. Returns a new,
+        sliced, points object.
         """
-        if not isinstance(val, tuple) and not isinstance(val, list):
-            val = (val,)
-        # first axis
-        if isinstance(val[0], int):
-            # keep tensor dimension
-            out = self._t[val[0]:val[0]+1,:]
-        else:
-            out = self._t[val[0],:]
-        out_space = self.space
+        val, space = self._compute_slice(val)
+        out = self._t[val]
+        if len(out.shape) == 1:
+            out = out.unsqueeze(dim=0)
+        return Points(out, space)
 
-        # second axis
-        if len(val) == 2:
-            slc = self._variable_slices
-            rng = list(range(self.dim))
-            out_idxs = []
-            if val[1] in out_space:
-                out_space = Space({val[1]: out_space[val[1]]})
-            else:
-                out_space = out_space[val[1]]
-            for var in out_space:
-                out_idxs += rng[slc[var]]
-            out = out[:,out_idxs]
+    def __setitem__(self, key, points):
+        """
+        Supports assignment of new point to the points tensor. Points are replaced
+        using the same slicing rules as in `__setitem__`.
+        """
+        val, space = self._compute_slice(key)
+        assert space == points.space
+        self._t[val] = points._t
 
-        return Points(out, out_space)
-    
     def __iter__(self):
         """
-        Iterates through points. It is in general not recommended
+        Iterates through first batch-dim. It is in general not recommended
         to use this operation because it may lead to huge (and therefore
         slow) loops.
         """
-        for i in range(len(self)):
-            yield self[i, :]
+        for i in range(self._t.shape[0]):
+            yield self[i]
 
     def __eq__(self, other):
         """Compares two Points if they are equal.
         """
         return self.space == other.space and torch.equal(self._t, other._t)
-    
+
     def __add__(self, other):
         """Adds the data of two Points, have to lay in the same space.
         """
@@ -242,10 +266,11 @@ class Points():
         assert isinstance(other, Points)
         assert other.space == self.space
         return Points(self._t / other._t, self.space)
-    
+
     def __or__(self, other):
-        """Appends the data points of the second Point behind the 
-        data of the first Point. (torch.cat((data_1, data_2), dim=0))
+        """Appends the data points of the second Points behind the 
+        data of the first Points in the first batch-dim.
+        (torch.cat((data_1, data_2), dim=0))
         """
         assert isinstance(other, Points)
         if self.isempty:
@@ -254,10 +279,10 @@ class Points():
             return self
         assert other.space == self.space
         return Points(torch.cat([self._t, other._t], dim=0), self.space)
-    
+
     def join(self, other):
         """Stacks the data points of the second Point behind the 
-        data of the first Point. (torch.cat((data_1, data_2), dim=1))
+        data of the first Point. (torch.cat((data_1, data_2), dim=-1))
         """
         assert isinstance(other, Points)
         if self.isempty:
@@ -265,10 +290,10 @@ class Points():
         if other.isempty:
             return self
         assert self.space.keys().isdisjoint(other.space)
-        return Points(torch.cat([self._t, other._t], dim=1), self.space * other.space)
+        return Points(torch.cat([self._t, other._t], dim=-1), self.space * other.space)
 
-    def repeat(self, n):
-        """Repeats this points data along the first dimension. 
+    def repeat(self, *n):
+        """Repeats this points data along the first batch-dimension. 
         Uses torch.repeat and will therefore repeat the data 'batchwise'.
 
         Parameters
@@ -276,7 +301,20 @@ class Points():
         n :
             The number of repeats. 
         """
-        return Points(self._t.repeat(n, 1), self.space)
+        return Points(self._t.repeat(*n, *(((len(self._t.shape)-len(n)))*[1])), self.space)
+    
+    def unsqueeze(self, dim):
+        """Adds an additional dimension inside the batch dimensions.
+
+        Parameters
+        ----------
+        dim :
+            Where to add the additional axis (considered only inside batch dimensions).
+        """
+        assert dim < len(self._t.shape)
+        if dim < 0:
+            dim -= 1
+        return Points(self._t.unsqueeze(dim=dim), self.space)
 
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):
@@ -291,7 +329,7 @@ class Points():
         assert len(spaces) > 0
         ret = func(*args_list, **kwargs)
         return ret
-    
+
     @property
     def requires_grad(self):
         """Returns the '.requires_grad' property of the underlying Tensor.
@@ -308,11 +346,11 @@ class Points():
             If gradients are required or not.
         """
         self._t.requires_grad = value
-    
+
     def cuda(self, *args, **kwargs):
         self._t = self._t.cuda(*args, **kwargs)
         return self
-    
+
     def to(self, *args, **kwargs):
         """Moves the underlying Tensor to other hardware parts.
         """

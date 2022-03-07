@@ -15,4 +15,5 @@ from .condition import (Condition,
                         MeanCondition,
                         AdaptiveWeightsCondition,
                         SingleModuleCondition,
-                        PeriodicCondition)
+                        PeriodicCondition,
+                        IntegroPINNCondition)

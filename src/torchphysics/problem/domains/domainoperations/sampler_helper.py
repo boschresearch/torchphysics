@@ -51,7 +51,7 @@ def _random_points_inside(main_domain, domain_a, domain_b, n, params, invert, de
                      This may slow down the training.""")
     random_points = Points.empty()
     for i in range(num_of_params):
-        ith_params = params[i, :]
+        ith_params = params[i, ] if len(params) > 0 else Points.empty()
         number_valid = 0
         scaled_n = n
         while number_valid < n:
@@ -165,7 +165,7 @@ def _random_points_boundary(main_domain, domain_a, domain_b, n, params, device):
     random_points = Points.empty()
     domains = [domain_a, domain_b]
     for i in range(num_of_params):
-        ith_params = params[i, :]
+        ith_params = params[i, ] if len(params) > 0 else Points.empty()
         ith_points = Points.empty()
         # scale n such that the number of points corresponds to the size 
         # of the boundary
