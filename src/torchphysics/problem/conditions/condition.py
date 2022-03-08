@@ -517,6 +517,116 @@ class PeriodicCondition(Condition):
         return self.reduce_fn(unreduced_loss)
 
 
+class IntegroPINNCondition(Condition):
+    """
+    A condition that also allows to include the computation of integrals or convolutions
+    by sampling a second set of points by an additional sampler.
+
+    Parameters
+    -------
+    module : torchphysics.Model
+        The torch module which should be optimized.
+    sampler : torchphysics.samplers.PointSampler
+        A sampler that creates the usual set of points.
+    integral_sampler : torchphysics.samplers.PointSampler
+        A sampler that creates the points that can be used to approximate an integral.
+    residual_fn : callable
+        A user-defined function that computes the residual (unreduced loss) from
+        inputs and outputs of the model, e.g. by using utils.differentialoperators
+        and/or domain.normal. The point set used to approximate the integral  and the
+        output of the model at these points are given as input {name}_integral
+    error_fn : callable
+        Function that will be applied to the output of the residual_fn to compute
+        the unreduced loss. Should reduce only along the 2nd (i.e. space-)axis.
+    reduce_fn : callable
+        Function that will be applied to reduce the loss to a scalar. Defaults to
+        torch.mean
+    data_functions : dict
+        A dictionary of user-defined functions and their names (as keys). Can be
+        used e.g. for right sides in PDEs or functions in boundary conditions.
+    track_gradients : bool
+        Whether gradients w.r.t. the inputs should be tracked during training or
+        not. Defaults to true, since this is needed to compute differential operators
+        in PINNs.
+    parameter : Parameter
+        A Parameter that can be used in the residual_fn and should be learned in
+        parallel, e.g. based on data (in an additional DataCondition).
+    name : str
+        The name of this condition which will be monitored in logging.
+    weight : float
+        The weight multiplied with the loss of this condition during
+        training.
+    """
+
+    def __init__(self, module, sampler, residual_fn,
+                 integral_sampler, error_fn=SquaredError(),
+                 reduce_fn=torch.mean, name='periodiccondition', track_gradients=True,
+                 data_functions={}, parameter=Parameter.empty(), weight=1.0):
+        super().__init__(name=name, weight=weight, track_gradients=track_gradients)
+        self.module = module
+        self.parameter = parameter
+        self.register_parameter(name + '_params', self.parameter.as_tensor)
+        self.residual_fn = UserFunction(residual_fn)
+        self.error_fn = error_fn
+        self.reduce_fn = reduce_fn
+
+        self.sampler = sampler
+        self.integral_sampler = integral_sampler
+
+        self.data_functions = self._setup_data_functions(data_functions,
+                                                         self.sampler)
+
+        if self.sampler.is_adaptive:
+            self.last_unreduced_loss = None
+
+    def forward(self, device='cpu'):
+        if self.sampler.is_adaptive:
+            x = self.sampler.sample_points(
+                unreduced_loss=self.last_unreduced_loss,
+                device=device)
+            self.last_unreduced_loss = None
+        else:
+            x = self.sampler.sample_points(device=device)
+        x_int = self.integral_sampler.sample_points(device=device)
+
+        n_x = len(x)
+        n_x_int = len(x_int)
+
+        x = x.unsqueeze(dim=1)
+        x_int = x_int.unsqueeze(dim=0)
+        x_coordinates, x = self._track_gradients(x)
+        x_int_coordinates, x_int = self._track_gradients(x_int)
+
+        # combine both inputs to be able to compute model(x_int) with all correct
+        # parameters
+        x_combined = x.repeat(1, n_x_int)
+        x_combined[..., list(x_int.space.keys())] = x_int.repeat(n_x, 1)
+
+        data = {}
+        for fun in self.data_functions:
+            data[fun] = self.data_functions[fun](x_coordinates)
+
+        y = self.module(x)
+        y_int = self.module(x_combined)
+
+        y_int_coordinates = y_int.coordinates
+        y_int_coordinates = {f'{k}_integral': y_int_coordinates[k] for k in y_int_coordinates}
+
+        x_int_coordinates = {f'{k}_integral': x_int_coordinates[k] for k in x_int_coordinates}
+
+        unreduced_loss = self.error_fn(self.residual_fn({**y.coordinates,
+                                                         **y_int_coordinates,
+                                                         **x_coordinates,
+                                                         **x_int_coordinates,
+                                                         **self.parameter.coordinates,
+                                                         **data}))
+
+        if self.sampler.is_adaptive:
+            self.last_unreduced_loss = unreduced_loss
+
+        return self.reduce_fn(unreduced_loss)
+
+
 class AdaptiveWeightsCondition(SingleModuleCondition):
     """
     A condition using an AdaptiveWeightLayer [1] to assign adaptive weights to all points

@@ -25,7 +25,7 @@ class PointsDataset(torch.utils.data.Dataset):
             self.data_points = [data_points]
         else:
             assert isinstance(data_points, (tuple, list))
-            self.data_points = data_points
+            self.data_points = list(data_points)
         if shuffle:
             perm = torch.randperm(len(self.data_points[0]))
             for i in range(len(self.data_points)):

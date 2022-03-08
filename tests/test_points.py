@@ -237,6 +237,13 @@ def test_join_points():
     assert len(p) == 2
 
 
+def test_points_setitem():
+    p1 = Points(torch.tensor([[2, 3], [1.0, 4]]), R1('x')*R1('y'))
+    p2 = Points(torch.tensor([[2], [1.0]]), R1('y'))
+    p1[..., 'y'] = p2
+    assert p1 == Points(torch.tensor([[2, 2], [1.0, 1]]), R1('x')*R1('y'))
+
+
 def test_join_empty_points():
     p1 = Points(torch.tensor([[2], [1.0]]), R1('x'))
     p2 = Points.empty()

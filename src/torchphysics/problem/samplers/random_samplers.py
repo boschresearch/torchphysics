@@ -121,7 +121,7 @@ class GaussianSampler(PointSampler):
         for i in range(num_of_params):
             current_num_of_points = 0
             new_sample_points = None
-            ith_params = params[i, ]
+            ith_params = params[i, ] if len(params) > 0 else Points.empty()
             repeat_params = self._repeat_params(ith_params, len(self))
             while current_num_of_points < self.n_points:
                 new_points = torch_dis.sample((self.n_points,))
@@ -174,7 +174,7 @@ class LHSSampler(PointSampler):
         num_of_params = max(1, len(params))
         sample_points = None
         for i in range(num_of_params):
-            ith_params = params[i, ]
+            ith_params = params[i, ] if len(params) > 0 else Points.empty()
             bounding_box = self.domain.bounding_box(ith_params, device=device)
             lhs_in_box = self._create_lhs_in_bounding_box(bounding_box, device)
             new_points = self._check_lhs_inside(lhs_in_box, ith_params)
