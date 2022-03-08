@@ -35,7 +35,7 @@ can be found.
 
    Overview <readme>
    Tutorial <tutorial/tutorial_start>
-   Examples <https://github.com/boschresearch/torchphysics/tree/main/examples>
+   Examples <examples>
 
 
 API Reference

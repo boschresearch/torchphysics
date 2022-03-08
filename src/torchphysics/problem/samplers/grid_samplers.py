@@ -54,7 +54,7 @@ class GridSampler(PointSampler):
         num_of_params = max(1, len(params))
         sample_points = None
         for i in range(num_of_params):
-            ith_params = params[i, ]
+            ith_params = params[i, ] if len(params) > 0 else Points.empty()
             new_points = self._sample_grid(ith_params, sample_function,
                                            self.n_points, device)
             new_better_points = self._resample_grid(new_points, ith_params, 

@@ -195,7 +195,7 @@ class PointSampler:
         return sample_points
 
     def _sample_for_ith_param(self, sample_function, params, i, device):
-        ith_params = params[i, ]
+        ith_params = params[i, ] if len(params) > 0 else Points.empty()
         new_points = sample_function(self.n_points, self.density, ith_params, device)
         num_of_points = len(new_points)
         repeated_params = self._repeat_params(ith_params, num_of_points)
