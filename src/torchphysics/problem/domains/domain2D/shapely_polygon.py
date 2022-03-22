@@ -27,7 +27,7 @@ class ShapelyPolygon(Domain):
     def __init__(self, space, vertices=None, shapely_polygon=None):
         assert space.dim == 2
         super().__init__(space, dim=2)
-        self.necessary_variables = {}
+        self.necessary_variables = self.set_necessary_variables()
         if isinstance(shapely_polygon, s_geo.Polygon):
             self.polygon = shapely_polygon
         elif vertices:
