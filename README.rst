@@ -124,5 +124,5 @@ Bibliography
 .. [2] Bu and Karpatne, “Quadratic Residual Networks: A New Class of Neural Networks for Solving Forward and Inverse Problems in Physics Involving PDEs”, 2021
 .. [3] E and Yu, "The Deep Ritz method: A deep learning-based numerical algorithm for solving variational problems", 2017
 .. [4] Lu, Jin and Karniadakis, “DeepONet: Learning nonlinear operators for identifying differential equations based on the universal approximation theorem of operators”, 2020
-.. [5] Wang, Wang and Perdikaris, “Learning the solution operator of parametric partial differential equations with physics-informed DeepOnets”
+.. [5] Wang, Wang and Perdikaris, “Learning the solution operator of parametric partial differential equations with physics-informed DeepOnets”, 2021
 .. [6] McClenny und Braga-Neto, “Self-Adaptive Physics-Informed NeuralNetworks using a Soft Attention Mechanism”, 2020
