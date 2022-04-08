@@ -180,7 +180,17 @@ class Points():
 
         out_space = self.space
         if isinstance(val, list):
-            if (len(val) == len(self._t.shape)) or (Ellipsis in val and not (val[-1] is Ellipsis)):
+            # check if Ellipsis(...) is inside the slicing input.
+            # Here we have to be carefull if specific indices are passed in, as an 
+            # array/tensor since they do not allow: Ellipse in val check 
+            # because internallythe check Ellipse == val[i] is used
+            slice_is_correct = True
+            for slice_value in val:
+                slice_is_correct = (Ellipsis is slice_value)
+            # check last element is not Ellipsis:
+            slice_is_correct = (slice_is_correct and not slice_value is Ellipsis)
+            # compute slice structure
+            if (len(val) == len(self._t.shape)) or slice_is_correct:
                 slc = self._variable_slices
                 rng = list(range(self.dim))
                 if isinstance(val[-1], str):
