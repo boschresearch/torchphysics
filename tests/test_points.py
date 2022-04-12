@@ -1,5 +1,6 @@
 import torch
 import pytest
+import numpy as np
 
 from torchphysics.problem.spaces import R1, R2, Points
 
@@ -164,7 +165,7 @@ def test_extract_given_indices_with_list():
 def test_extract_given_indices_with_np_array():
     p = Points(torch.tensor([[1, 4.0], [2, 4.0], [23, 4]]), R2('x'))
     p_sliced = Points(torch.tensor([[2, 4.0], [23, 4]]), R2('x'))
-    assert p[[1, 2],] == p_sliced
+    assert p[np.array([1, 2]),] == p_sliced
 
 
 def test_iterate_over_points():
