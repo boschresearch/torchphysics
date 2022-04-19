@@ -1,5 +1,6 @@
 import torch
 import pytest
+import numpy as np
 
 from torchphysics.problem.spaces import R1, R2, Points
 
@@ -19,6 +20,11 @@ def test_get_tensor_from_point():
 def test_length_of_points():
     p = Points(torch.ones((33, 2)), R2('x'))
     assert len(p) == 33 
+
+
+def test_check_device():
+    p = Points(torch.ones((33, 2)), R2('x'))
+    assert p.device.type == 'cpu'
 
 
 def test_create_points_space_has_to_fit_points():
@@ -129,6 +135,37 @@ def test_points_tensor_slice():
     assert p[slc[:,0]] == Points(torch.tensor([[3.0, 4.0]]), R1('x')*R1('t'))
     with pytest.raises(IndexError):
         p[slc]
+
+
+def test_slice_with_ellipsis():
+    p = Points(torch.tensor([[1, 0.0], [2, 4.0], [9, 4]]), R1('x')*R1('t'))
+    assert p == p[..., ]
+
+
+def test_slice_with_ellipsis_and_picking_space():
+    p = Points(torch.tensor([[1, 0.0], [2, 4.0], [9, 4]]), R1('x')*R1('t'))
+    p_sliced = Points(torch.tensor([[1], [2], [9.0]]), R1('x'))
+    assert p_sliced == p[..., 'x']  
+    p_sliced = Points(torch.tensor([[0.0], [4], [4]]), R1('t'))
+    assert p_sliced == p[..., 't'] 
+
+
+def test_extract_given_indices_with_tensor():
+    p = Points(torch.tensor([[1, 0.0], [2, 4.0], [9, 4]]), R2('x'))
+    p_sliced = Points(torch.tensor([[1, 0.0], [9, 4]]), R2('x'))
+    assert p[torch.tensor([0, 2]),] == p_sliced
+
+
+def test_extract_given_indices_with_list():
+    p = Points(torch.tensor([[1, 4.0], [2, 4.0], [9, 4]]), R2('x'))
+    p_sliced = Points(torch.tensor([[1, 4.0], [9, 4]]), R2('x'))
+    assert p[[0, 2],] == p_sliced
+
+
+def test_extract_given_indices_with_np_array():
+    p = Points(torch.tensor([[1, 4.0], [2, 4.0], [23, 4]]), R2('x'))
+    p_sliced = Points(torch.tensor([[2, 4.0], [23, 4]]), R2('x'))
+    assert p[np.array([1, 2]),] == p_sliced
 
 
 def test_iterate_over_points():
@@ -292,3 +329,12 @@ def test_torch_function_for_points_2():
     assert len(p_repeat) == 2
     assert p_repeat[0] == -2.0
     assert p_repeat[1] == -1.0
+
+
+def test_unsqueeze():
+    p = Points(torch.tensor([[1, 0.0], [2, 4.0], [9, 4]]), R1('x')*R1('t'))
+    tensor_0 = torch.tensor([[[1., 0.], [2., 4.], [9., 4.]]]) 
+    assert torch.allclose(p.unsqueeze(0)._t, tensor_0)
+    tensor_1 = torch.tensor([[[1., 0.]], [[2., 4.]], [[9., 4.]]]) 
+    assert torch.allclose(p.unsqueeze(1)._t, tensor_1)
+    assert torch.allclose(p.unsqueeze(-1)._t, tensor_1)
