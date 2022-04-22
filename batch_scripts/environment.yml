@@ -1,4 +1,4 @@
-name: vib-acc
+name: torchphyics
 dependencies:
 - python 
 - numpy>=1.20.2
