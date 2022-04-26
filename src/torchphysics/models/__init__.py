@@ -16,3 +16,4 @@ from .model import (Model, NormalizationLayer, AdaptiveWeightLayer,
 from .fcn import FCN
 from .deepritz import DeepRitzNet
 from .qres import QRES
+from .activation_fn import AdaptiveActivationFunction
