@@ -14,7 +14,9 @@ from .differentialoperators import (laplacian,
                                     partial,
                                     convective,
                                     rot, 
-                                    normal_derivative)
+                                    normal_derivative, 
+                                    sym_grad, 
+                                    matrix_div)
 
 from .data import PointsDataset, PointsDataLoader
 
