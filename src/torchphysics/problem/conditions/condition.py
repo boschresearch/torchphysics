@@ -75,10 +75,12 @@ class Condition(torch.nn.Module):
             for fun in data_functions:
                 points = sampler.sample_points()
                 data_fun_points = data_functions[fun](points)
-                self.register_buffer(fun, data_fun_points)
+                #self.register_buffer(fun, data_fun_points)
                 data_functions[fun] = UserFunction(data_fun_points)
         return data_functions
 
+    def _move_static_data(self, device):
+        pass
 
 class DataCondition(Condition):
     """
@@ -248,6 +250,11 @@ class SingleModuleCondition(Condition):
             self.last_unreduced_loss = unreduced_loss
 
         return self.reduce_fn(unreduced_loss)
+
+    def _move_static_data(self, device):
+        if self.sampler.is_static:
+            for fn in self.data_functions:
+                self.data_functions[fn].fun = self.data_functions[fn].fun.to(device)
 
 
 class MeanCondition(SingleModuleCondition):
@@ -516,6 +523,15 @@ class PeriodicCondition(Condition):
 
         return self.reduce_fn(unreduced_loss)
 
+    def _move_static_data(self, device):
+        if self.non_periodic_sampler.is_static:
+            for fn in self.left_data_functions:
+                self.left_data_functions[fn].fun = \
+                    self.left_data_functions[fn].fun.to(device)
+            for fn in self.right_data_functions:
+                self.right_data_functions[fn].fun = \
+                    self.right_data_functions[fn].fun.to(device)
+
 
 class IntegroPINNCondition(Condition):
     """
@@ -625,6 +641,11 @@ class IntegroPINNCondition(Condition):
             self.last_unreduced_loss = unreduced_loss
 
         return self.reduce_fn(unreduced_loss)
+
+    def _move_static_data(self, device):
+        if self.sampler.is_static:
+            for fn in self.data_functions:
+                self.data_functions[fn].fun = self.data_functions[fn].fun.to(device)
 
 
 class AdaptiveWeightsCondition(SingleModuleCondition):

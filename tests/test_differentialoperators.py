@@ -497,13 +497,17 @@ def test_jac_for_complexer_function_2():
 
 def test_jac_for_two_variables_at_the_same_time():
     def f(x, y):
-        return torch.cat((x, y), dim=1)
-    a = torch.tensor([[1.0, 1.0], [2.0, 1.0]], requires_grad=True)
+        out = torch.zeros((len(x), 2))
+        out[:, :1] = x**2 * y
+        out[:, 1:] = y + torch.exp(x) 
+        return out
+    a = torch.tensor([[0.0], [3.0]], requires_grad=True)
     b = torch.tensor([[1.0], [2.0]], requires_grad=True)
     output = f(a, b)
     d = jac(output, a, b)
-    assert d.shape == (2, 3, 3)
-    assert np.allclose(d.detach().numpy(), [np.eye(3), np.eye(3)])  
+    assert d.shape == (2, 2, 2)
+    assert torch.allclose(d[0], torch.tensor([[0.0, 0.0], [1.0, 1.0]]))
+    assert torch.allclose(d[1], torch.tensor([[12.0, 9.0], [torch.exp(a[1]), 1.0]]))
 
 
 # Test rot
