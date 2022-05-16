@@ -100,7 +100,7 @@ class ShapelyPolygon(Domain):
         # if a barycentric coordinates is bigger then 1, mirror them at the
         # point (0.5, 0.5). Stays uniform.
         index = torch.where(bary_coords.sum(axis=1) > 1)[0]
-        bary_coords[index] = torch.subtract(torch.tensor([[1.0, 1.0]]),
+        bary_coords[index] = torch.subtract(torch.tensor([[1.0, 1.0]], device=device),
                                             bary_coords[index])
         axis_1 = torch.multiply(corners[1]-corners[0], bary_coords[:, :1])
         axis_2 = torch.multiply(corners[2]-corners[0], bary_coords[:, 1:])
