@@ -51,7 +51,7 @@ class Condition(torch.nn.Module):
         self.track_gradients = track_gradients
 
     @abc.abstractmethod
-    def forward(self, device='cpu'):
+    def forward(self, device='cpu', iteration=None):
         """
         The forward run performed by this condition.
 
@@ -122,7 +122,7 @@ class DataCondition(Condition):
         x, y = x.to(device), y.to(device)
         return torch.abs(self.module(x).as_tensor-y.as_tensor)
 
-    def forward(self, device='cpu'):
+    def forward(self, device='cpu', iteration=None):
         if self.use_full_dataset:
             loss = torch.zeros(1, requires_grad=True, device=device)
             for batch in iter(self.dataloader):
@@ -168,7 +168,7 @@ class ParameterCondition(Condition):
         self.register_parameter(name + '_params', self.parameter.as_tensor)
         self.penalty = UserFunction(penalty)
 
-    def forward(self, device='cpu'):
+    def forward(self, device='cpu', iteration=None):
         return self.penalty(self.parameter.coordinates)
 
 
@@ -225,7 +225,7 @@ class SingleModuleCondition(Condition):
         if self.sampler.is_adaptive:
             self.last_unreduced_loss = None
 
-    def forward(self, device='cpu'):
+    def forward(self, device='cpu', iteration=None):
         if self.sampler.is_adaptive:
             x = self.sampler.sample_points(unreduced_loss=self.last_unreduced_loss,
                                            device=device)
@@ -468,7 +468,7 @@ class PeriodicCondition(Condition):
         if self.non_periodic_sampler.is_adaptive:
             self.last_unreduced_loss = None
 
-    def forward(self, device='cpu'):
+    def forward(self, device='cpu', iteration=None):
         if self.non_periodic_sampler.is_adaptive:
             x_b = self.non_periodic_sampler.sample_points(
                 unreduced_loss=self.last_unreduced_loss,
@@ -595,7 +595,7 @@ class IntegroPINNCondition(Condition):
         if self.sampler.is_adaptive:
             self.last_unreduced_loss = None
 
-    def forward(self, device='cpu'):
+    def forward(self, device='cpu', iteration=None):
         if self.sampler.is_adaptive:
             x = self.sampler.sample_points(
                 unreduced_loss=self.last_unreduced_loss,

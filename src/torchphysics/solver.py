@@ -81,7 +81,7 @@ class Solver(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         loss = torch.zeros(1, requires_grad=True, device=self.device)
         for condition in self.train_conditions:
-            cond_loss = condition.weight * condition(device=self.device)
+            cond_loss = condition.weight * condition(device=self.device, iteration=batch_idx)
             self.log(f'train/{condition.name}', cond_loss)
             loss = loss + cond_loss
 
