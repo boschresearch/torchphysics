@@ -17,3 +17,7 @@ from .fcn import FCN
 from .deepritz import DeepRitzNet
 from .qres import QRES
 from .activation_fn import AdaptiveActivationFunction
+
+# DeepONet:
+from .deeponet.deeponet import DeepONet
+from .deeponet.subnets import (TrunkNet, BranchNet, FCBranchNet, FCTrunkNet) 
