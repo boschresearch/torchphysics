@@ -8,7 +8,9 @@ from torchphysics.utils.differentialoperators import (laplacian,
                                                       jac, 
                                                       rot,
                                                       partial, 
-                                                      convective)
+                                                      convective, 
+                                                      sym_grad, 
+                                                      matrix_div)
 
 # Test laplace-operator
 def function(a):
@@ -495,13 +497,17 @@ def test_jac_for_complexer_function_2():
 
 def test_jac_for_two_variables_at_the_same_time():
     def f(x, y):
-        return torch.cat((x, y), dim=1)
-    a = torch.tensor([[1.0, 1.0], [2.0, 1.0]], requires_grad=True)
+        out = torch.zeros((len(x), 2))
+        out[:, :1] = x**2 * y
+        out[:, 1:] = y + torch.exp(x) 
+        return out
+    a = torch.tensor([[0.0], [3.0]], requires_grad=True)
     b = torch.tensor([[1.0], [2.0]], requires_grad=True)
     output = f(a, b)
     d = jac(output, a, b)
-    assert d.shape == (2, 3, 3)
-    assert np.allclose(d.detach().numpy(), [np.eye(3), np.eye(3)])  
+    assert d.shape == (2, 2, 2)
+    assert torch.allclose(d[0], torch.tensor([[0.0, 0.0], [1.0, 1.0]]))
+    assert torch.allclose(d[1], torch.tensor([[12.0, 9.0], [torch.exp(a[1]), 1.0]]))
 
 
 # Test rot
@@ -721,3 +727,90 @@ def test_convective_in_for_two_variables_at_the_same_time():
     d = d.detach().numpy()
     assert np.isclose(d[0], [2, 1]).all()
     assert np.isclose(d[1], [0, 1]).all()
+
+
+def test_sym_grad():
+    a = torch.tensor([[1.0, 2.0], [0, 2.0]], requires_grad=True)
+    def func(x):
+        out = torch.zeros((len(x), 2))
+        out[:, :1] += x[:, :1]*x[:, 1:]
+        out[:, 1:] += 2*x[:, 1:]
+        return out
+    output = func(a)
+    s_grad = sym_grad(output, a)
+    assert s_grad.shape == (2, 2, 2)
+    assert torch.allclose(s_grad[0], torch.tensor([[2.0, 0.5], [0.5, 2.0]]))
+    assert torch.allclose(s_grad[1], torch.tensor([[2.0, 0.0], [0.0, 2.0]]))
+
+
+def test_sym_grad_complexer_fn():
+    a = torch.tensor([[1.0, 2.0], [0, 2.0], [1.0, 3.0]], requires_grad=True)
+    def func(x):
+        out = torch.zeros((len(x), 2))
+        out[:, :1] += x[:, :1]**2 * x[:, 1:] + x[:, :1]
+        out[:, 1:] += x[:, 1:] * torch.sin(x[:, :1])
+        return out
+    output = func(a)
+    s_grad = sym_grad(output, a)
+    assert s_grad.shape == (3, 2, 2)
+    off_diag = 0.5*(1 + 2*np.cos(1.0))
+    assert torch.allclose(s_grad[0], torch.tensor([[5.0, off_diag],
+                                                   [off_diag, np.sin(1.0)]], 
+                                                   dtype=torch.float32))
+    off_diag = 0.5*(2*np.cos(0.0))
+    assert torch.allclose(s_grad[1], torch.tensor([[1.0, off_diag],
+                                                   [off_diag, np.sin(0.0)]], 
+                                                   dtype=torch.float32))
+    off_diag = 0.5*(1.0 + 3*np.cos(1.0))
+    assert torch.allclose(s_grad[2], torch.tensor([[7.0, off_diag],
+                                                   [off_diag, np.sin(1.0)]], 
+                                                   dtype=torch.float32))
+
+
+def test_divergence_for_matrix():
+    a = torch.tensor([[1.0, 2.0], [0, 2.0]], requires_grad=True)
+    def func(x):
+        out = torch.zeros((len(x), 2))
+        out[:, :1] += x[:, :1]*x[:, 1:]**2
+        out[:, 1:] += 2*x[:, 1:] + x[:, :1]**3
+        return out
+    output = func(a)
+    o_jac = jac(output, a)
+    m_div = matrix_div(o_jac, a)
+    assert m_div.shape == (2, 2)
+    assert torch.allclose(m_div[0], torch.tensor([2.0, 6.0]))
+    assert torch.allclose(m_div[1], torch.tensor([0.0, 0.0]))
+
+
+def test_divergence_for_matrix_for_complexer_fn():
+    a = torch.tensor([[1.0, 2.0], [0, 2.0], [1.0, 5.0]], requires_grad=True)
+    def func(x):
+        out = torch.zeros((len(x), 2))
+        out[:, :1] += torch.exp(x[:, :1])*x[:, 1:]**2
+        out[:, 1:] += 2*x[:, 1:] + torch.sin(x[:, :1]**3)
+        return out
+    output = func(a)
+    o_jac = sym_grad(output, a)
+    m_div = matrix_div(o_jac, a)
+    assert m_div.shape == (3, 2)
+    expected_out = torch.zeros_like(a)
+    expected_out[:, :1] = torch.exp(a[:, :1]) * (a[:, 1:]**2 + 1.0)
+    expected_out[:, 1:] = torch.exp(a[:, :1]) * a[:, 1:]  \
+        + 3.0*a[:, :1]*torch.cos(a[:, :1]**3) - 4.5*a[:, :1]**4*torch.sin(a[:, :1]**3)
+    assert torch.allclose(m_div, expected_out)
+
+
+def test_divergence_for_matrix_with_multiple_variables():
+    a = torch.tensor([[1.0], [0]], requires_grad=True)
+    b = torch.tensor([[2.0], [2.0]], requires_grad=True)
+    def func(x, y):
+        out = torch.zeros((len(x), 2))
+        out[:, :1] += x*y**2
+        out[:, 1:] += 2*y + x**3
+        return out
+    output = func(a, b)
+    o_jac = jac(output, a, b)
+    m_div = matrix_div(o_jac, a, b)
+    assert m_div.shape == (2, 2)
+    assert torch.allclose(m_div[0], torch.tensor([2.0, 6.0]))
+    assert torch.allclose(m_div[1], torch.tensor([0.0, 0.0]))

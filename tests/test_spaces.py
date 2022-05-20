@@ -1,6 +1,7 @@
 from collections import Counter, OrderedDict
 
-from torchphysics.problem.spaces.space import Space, R1, R2, R3
+from torchphysics.problem.spaces import Space, R1, R2, R3, FunctionSpace
+from torchphysics.problem.domains import Interval
 
 
 def test_create_space():
@@ -91,3 +92,10 @@ def test_create_R3():
     assert isinstance(r, Counter)
     assert isinstance(r, OrderedDict)
     assert r.dim == 3
+
+def test_functionspace():
+    X = R1('x')
+    Y = R2('y')
+    I = Interval(X, 0, 1)
+    Z = FunctionSpace(I, Y)
+    assert Z.input_space == X

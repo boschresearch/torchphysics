@@ -16,3 +16,4 @@ from .space import (Space,
                     R2,
                     R3)
 from .points import Points
+from .functionspace import FunctionSpace

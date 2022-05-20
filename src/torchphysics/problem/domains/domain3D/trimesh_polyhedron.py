@@ -141,7 +141,8 @@ class TrimeshPolyhedron(Domain):
 
     def bounding_box(self, params=Points.empty(), device='cpu'):
         bound_corners = self.mesh.bounds
-        return torch.tensor(bound_corners.T.flatten(), device=device)
+        return torch.tensor(bound_corners.T.flatten(), device=device, 
+                            dtype=torch.float32)
 
     def _get_volume(self, params=Points.empty(), device='cpu'):
         volume = self.mesh.volume
@@ -163,11 +164,12 @@ class TrimeshPolyhedron(Domain):
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(),
                               device='cpu'):
         n = self._compute_number_of_points(n, d, params)
-        points = torch.empty((0, self.dim), device=device)
+        points = torch.empty((0, self.dim), dtype=torch.float32, device=device)
         computed_points = 0
         while computed_points < n:
             new_points = trimesh.sample.volume_mesh(self.mesh, n-computed_points)
-            points = torch.cat((points, torch.tensor(new_points, device=device)),dim=0)
+            points = torch.cat((points, torch.tensor(new_points, device=device, 
+                                                     dtype=torch.float32)),dim=0)
             computed_points += len(new_points)
         return Points(points, self.space)
 
@@ -226,20 +228,20 @@ class TrimeshBoundary(BoundaryDomain):
                               device='cpu'):
         n = self.domain._compute_number_of_points(n, d, params)
         points = trimesh.sample.sample_surface(self.domain.mesh, n)[0]
-        tensor_points = torch.tensor(points, device=device)
+        tensor_points = torch.tensor(points, device=device, dtype=torch.float32)
         return Points(tensor_points, self.space)
 
     def sample_grid(self, n=None, d=None, params=Points.empty(), device='cpu'):
         n = self.domain._compute_number_of_points(n, d, params)
         points = trimesh.sample.sample_surface_even(self.domain.mesh, n)[0]
-        points = torch.tensor(points, device=device)
+        points = torch.tensor(points, device=device, dtype=torch.float32)
         points = Sphere._append_random(self, points, n, params, device)
         return Points(points, self.space)
 
     def normal(self, points, params=Points.empty(), device='cpu'):
         points, params, device = \
             self._transform_input_for_normals(points, params, device)
-        points = points.as_tensor
+        points = points.as_tensor.detach().cpu()
         index = self.domain.mesh.nearest.on_surface(points)[2]
         mesh_normals = torch.tensor(self.domain.mesh.face_normals, device=device)
         normals = torch.zeros((len(points), 3), device=device)

@@ -5,6 +5,27 @@ from .model import Model
 from ..problem.spaces import Points
 
 
+def _construct_FC_layers(hidden, input_dim, output_dim, activations, xavier_gains):
+    """Constructs the layer structure for a fully connected neural network.
+    """
+    if not isinstance(activations, (list, tuple)):
+        activations = len(hidden) * [activations]
+    if not isinstance(xavier_gains, (list, tuple)):
+        xavier_gains = len(hidden) * [xavier_gains]
+
+    layers = []
+    layers.append(nn.Linear(input_dim, hidden[0]))
+    torch.nn.init.xavier_normal_(layers[-1].weight, gain=xavier_gains[0])
+    layers.append(activations[0])
+    for i in range(len(hidden)-1):
+        layers.append(nn.Linear(hidden[i], hidden[i+1]))
+        torch.nn.init.xavier_normal_(layers[-1].weight, gain=xavier_gains[i+1])
+        layers.append(activations[i+1])
+    layers.append(nn.Linear(hidden[-1], output_dim))
+    torch.nn.init.xavier_normal_(layers[-1].weight, gain=1)
+    return layers
+
+
 class FCN(Model):
     """A simple fully connected neural network.
 
@@ -38,21 +59,9 @@ class FCN(Model):
                  xavier_gains=5/3):
         super().__init__(input_space, output_space)
 
-        if not isinstance(activations, (list, tuple)):
-            activations = len(hidden) * [activations]
-        if not isinstance(xavier_gains, (list, tuple)):
-            xavier_gains = len(hidden) * [xavier_gains]
-
-        layers = []
-        layers.append(nn.Linear(self.input_space.dim, hidden[0]))
-        torch.nn.init.xavier_normal_(layers[-1].weight, gain=xavier_gains[0])
-        layers.append(activations[0])
-        for i in range(len(hidden)-1):
-            layers.append(nn.Linear(hidden[i], hidden[i+1]))
-            torch.nn.init.xavier_normal_(layers[-1].weight, gain=xavier_gains[i+1])
-            layers.append(activations[i+1])
-        layers.append(nn.Linear(hidden[-1], self.output_space.dim))
-        torch.nn.init.xavier_normal_(layers[-1].weight, gain=1)
+        layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_space.dim, 
+                                      output_dim=self.output_space.dim, 
+                                      activations=activations, xavier_gains=xavier_gains)
 
         self.sequential = nn.Sequential(*layers)
 

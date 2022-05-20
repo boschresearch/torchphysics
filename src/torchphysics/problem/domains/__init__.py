@@ -32,3 +32,5 @@ from .domain2D.triangle import Triangle
 # 3D-domains:
 from .domain3D.sphere import Sphere 
 #from .domain3D.trimesh_polyhedron import TrimeshPolyhedron
+# Functiondomains:
+from .functionsets.functionset import FunctionSet, CustomFunctionSet

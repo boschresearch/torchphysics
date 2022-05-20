@@ -213,7 +213,58 @@ class LHSSampler(PointSampler):
         random_points = random_sampler.sample_points(current_params)
         return new_points | random_points
 
-class AdaptiveRejectionSampler(AdaptiveSampler):
+class AdaptiveThresholdRejectionSampler(AdaptiveSampler):
+    """
+    An adaptive sampler that creates more points in regions with high loss.
+    During sampling, points with loss larger than ´min(loss)+resample_ratio*(max(loss)-min(loss))´
+    are kept for the next iteration, while points with small loss are regarded and resampled
+    (random) uniformly in the whole domain.
+
+    Parameters
+    ----------
+    domain : torchphysics.domain.Domain
+        The domain in which the points should be sampled.
+    resample_ratio : float
+        During sampling, points with loss larger than ´min(loss)+resample_ratio*(max(loss)-min(loss))´
+        are kept for the next iteration, while points with small loss are regarded and resampled
+        (random) uniformly in the whole domain.
+    n_points : int, optional
+        The number of points that should be sampled.
+    density : float, optional
+        The desired initial (and average) density of the created points, actual
+        density will change loccally during iterations.
+    filter : callable, optional
+        A function that restricts the possible positions of sample points.
+        A point that is allowed should return True, therefore a point that should be 
+        removed must return False. The filter has to be able to work with a batch
+        of inputs.
+        The Sampler will use a rejection sampling to find the right amount of points.
+
+    """
+    def __init__(self, domain, resample_ratio, n_points=None, density=None,
+                 filter_fn=None):
+        super().__init__(n_points=n_points, density=density, filter_fn=filter_fn)
+        self.domain = domain
+        self.resample_ratio = resample_ratio
+        self.random_sampler = RandomUniformSampler(domain,
+            n_points=n_points,
+            density=density,
+            filter_fn=filter_fn)
+        
+        self.last_points = None
+
+    def sample_points(self, unreduced_loss=None, params=Points.empty(), device='cpu'):
+        new_points = self.random_sampler.sample_points(params, device=device)
+        if self.last_points is None or unreduced_loss is None:
+            self.last_points = new_points
+        else:
+            max_l, min_l = torch.max(unreduced_loss), torch.min(unreduced_loss)
+            filter_tensor = unreduced_loss < min_l + (max_l-min_l)*self.resample_ratio
+            self.last_points._t[filter_tensor,:] = new_points._t[filter_tensor,:]
+        return self.last_points
+
+
+class AdaptiveRandomRejectionSampler(AdaptiveSampler):
     """
     An adaptive sampler that creates more points in regions with high loss.
     During sampling, points with high loss are more likely to be kept for the
@@ -227,7 +278,7 @@ class AdaptiveRejectionSampler(AdaptiveSampler):
     n_points : int, optional
         The number of points that should be sampled.
     density : float, optional
-        The desiered initial (and average) density of the created points, actual
+        The desired initial (and average) density of the created points, actual
         density will change loccally during iterations.
     filter : callable, optional
         A function that restricts the possible positions of sample points.

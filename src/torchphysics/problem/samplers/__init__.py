@@ -32,7 +32,8 @@ from .sampler_base import (PointSampler,
 from .random_samplers import (RandomUniformSampler,
                               GaussianSampler,
                               LHSSampler,
-                              AdaptiveRejectionSampler)
+                              AdaptiveRandomRejectionSampler,
+                              AdaptiveThresholdRejectionSampler)
 from .grid_samplers import GridSampler, ExponentialIntervalSampler
 from .plot_samplers import PlotSampler, AnimationSampler
 from .data_samplers import DataSampler

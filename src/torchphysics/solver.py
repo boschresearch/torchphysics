@@ -71,10 +71,17 @@ class Solver(pl.LightningModule):
                 lr_scheduler[input_name] = self.scheduler[input_name]
         return lr_scheduler
 
+    def on_train_start(self):
+        # move static data to correct device:
+        for condition in self.train_conditions:
+            condition._move_static_data(self.device)
+        for condition in self.val_conditions:
+            condition._move_static_data(self.device)
+
     def training_step(self, batch, batch_idx):
         loss = torch.zeros(1, requires_grad=True, device=self.device)
         for condition in self.train_conditions:
-            cond_loss = condition.weight * condition(device=self.device)
+            cond_loss = condition.weight * condition(device=self.device, iteration=batch_idx)
             self.log(f'train/{condition.name}', cond_loss)
             loss = loss + cond_loss
 
