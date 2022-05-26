@@ -16,6 +16,7 @@ class FunctionSet():
         self.function_space = function_space
         self.parameter_sampler = parameter_sampler
         self.param_batch = None
+        self.current_iteration_num = -1
 
     def __add__(self, other):
         """Combines two function sets.
