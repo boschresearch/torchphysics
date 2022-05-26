@@ -1,6 +1,6 @@
 import torch
 
-from .condition import Condition
+from .condition import Condition, SquaredError
 from ...models import Parameter
 from ...utils import UserFunction
 from ...models import DeepONet
@@ -67,3 +67,15 @@ class DeepONetSingleModuleCondition(Condition):
             self.last_unreduced_loss = unreduced_loss
 
         return self.reduce_fn(unreduced_loss)
+
+
+class PIDeepONetCondition(DeepONetSingleModuleCondition):
+
+    def __init__(self, deeponet_model, function_set, output_sampler, residual_fn, 
+                 name='singlemodulecondition', track_gradients=True, data_functions={},
+                 parameter=Parameter.empty(), weight=1.0):
+        super().__init__(deeponet_model, function_set, output_sampler, 
+                         residual_fn=residual_fn, error_fn=SquaredError(), 
+                         reduce_fn=torch.mean, name=name, 
+                         track_gradients=track_gradients, data_functions=data_functions,
+                         parameter=parameter, weight=weight)
