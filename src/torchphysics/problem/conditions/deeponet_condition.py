@@ -31,7 +31,6 @@ class DeepONetSingleModuleCondition(Condition):
 
     def forward(self, device='cpu', iteration=None):
         # 1) if necessary, sample input function and evaluate branch net
-        input_points_coords = self.net.branch.sample_input_points(device=device) # does this slow down? static sampling should be fast...
         self.net._forward_branch(self.function_set, iteration_num=iteration, device=device)
 
         # 2) sample output points
@@ -55,15 +54,16 @@ class DeepONetSingleModuleCondition(Condition):
         function_set_output = {}
         if self.eval_function_set:
             function_set_output = self.function_set.create_function_batch(x).coordinates
+        # Problem: function set nimmt sowohl x als auch t als Input, also wird an versch. Orten und in versch. Variablen ausgewertet
         
         unreduced_loss = self.error_fn(self.residual_fn({**y.coordinates,
                                                          **x_coordinates,
-                                                         **input_points_coords,
+                                                         #**input_points_coords,
                                                          **function_set_output,
                                                          **self.parameter.coordinates,
                                                          **data}))
 
-        if self.sampler.is_adaptive:
+        if self.output_sampler.is_adaptive:
             self.last_unreduced_loss = unreduced_loss
 
         return self.reduce_fn(unreduced_loss)

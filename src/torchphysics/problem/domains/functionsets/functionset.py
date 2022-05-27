@@ -47,10 +47,14 @@ class FunctionSet():
         """
         n_points = len(points)
         n_params = len(self.param_batch)
-        param_point_meshgrid = Points(torch.repeat_interleave(self.param_batch,
-                                                              n_points, dim=0), 
-                                      self.param_batch.space)
-        return param_point_meshgrid.join(points.repeat(n_params))
+        #param_point_meshgrid = Points(torch.repeat_interleave(self.param_batch,
+        #                                                      n_points, dim=0), 
+        #                              self.param_batch.space)
+        points_repeated = points.as_tensor.unsqueeze(0).repeat(n_params,1,1)
+        params_repeated = self.param_batch.as_tensor.unsqueeze(1).repeat(1,n_points,1)
+        param_point_meshgrid = Points(torch.cat((params_repeated, points_repeated), dim=-1),
+                                      self.param_batch.space*points.space)
+        return param_point_meshgrid#.join(points.repeat(n_params))
 
     @abc.abstractmethod
     def _evaluate_function(self, param_point_meshgrid):

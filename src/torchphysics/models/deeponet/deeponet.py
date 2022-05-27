@@ -29,7 +29,7 @@ class DeepONet(Model):
         if branch_inputs:
             self.fix_branch_input(branch_inputs, device=device)
         trunk_out = self.trunk(trunk_inputs)
-        return Points(torch.mm(self.branch.current_out, trunk_out.T).reshape(-1, 1), 
+        return Points(torch.mm(self.branch.current_out, trunk_out.T).unsqueeze(-1),#TODO, this is temporary and only for 1D outputs 
                       self.output_space)
 
     def _forward_branch(self, function_set, iteration_num=-1, device='cpu'):
@@ -39,7 +39,7 @@ class DeepONet(Model):
         if iteration_num != function_set.current_iteration_num:
             function_set.current_iteration_num = iteration_num
             function_set.sample_params(device=device)
-            discrete_fn_batch = self.branch._discretize_function_set(function_set)
+            discrete_fn_batch = self.branch._discretize_function_set(function_set, device=device)
             self.branch(discrete_fn_batch)
 
     def fix_branch_input(self, function, device='cpu'):

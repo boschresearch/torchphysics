@@ -29,16 +29,11 @@ class BranchNet(Model):
         """
         pass
 
-    def sample_input_points(self, device='cpu'):
-        input_points = self.discretization_sampler.sample_points(device=device)
-        input_points_coordinates, input_points = input_points.track_coord_gradients()
-        self.input_points = input_points
-        return input_points_coordinates
-
-
-    def _discretize_function_set(self, function_set):
-        """Intern disc. of the trainings set.
+    def _discretize_function_set(self, function_set, device):
+        """Internal discretization of the trainings set.
         """
+        input_points = self.discretization_sampler.sample_points(device=device)
+        self.input_points = input_points
         fn_out = function_set.create_function_batch(self.input_points)
         # fn_out will be of the length (len(function_set)*len(discrete_points)).
         # We need the output batchwise like (len(function_set), len(discrete_points)), 
@@ -52,8 +47,7 @@ class BranchNet(Model):
         """
         if isinstance(function, FunctionSet):
             function.sample_params(device=device)
-            self.sample_input_points(device=device)
-            discrete_fn = self._discretize_function_set(function)
+            discrete_fn = self._discretize_function_set(function, device=device)
         elif callable(function):
             function = UserFunction(function)
             discrete_points = self.discretization_sampler.sample_points(device=device)
