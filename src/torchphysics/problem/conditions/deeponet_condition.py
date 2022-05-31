@@ -40,6 +40,7 @@ class DeepONetSingleModuleCondition(Condition):
             self.last_unreduced_loss = None
         else:
             x = self.output_sampler.sample_points(device=device)
+        x = x.unsqueeze(0).repeat(len(self.function_set), 1, 1)
         x_coordinates, x = x.track_coord_gradients()
 
         # 3) evaluate model (only trunk net)
@@ -53,12 +54,10 @@ class DeepONetSingleModuleCondition(Condition):
         # whether the functions are part of the loss
         function_set_output = {}
         if self.eval_function_set:
-            function_set_output = self.function_set.create_function_batch(x).coordinates
-        # Problem: function set nimmt sowohl x als auch t als Input, also wird an versch. Orten und in versch. Variablen ausgewertet
+            function_set_output = self.function_set.create_function_batch(x[0,:,:]).coordinates
         
         unreduced_loss = self.error_fn(self.residual_fn({**y.coordinates,
                                                          **x_coordinates,
-                                                         #**input_points_coords,
                                                          **function_set_output,
                                                          **self.parameter.coordinates,
                                                          **data}))
@@ -72,7 +71,7 @@ class DeepONetSingleModuleCondition(Condition):
 class PIDeepONetCondition(DeepONetSingleModuleCondition):
 
     def __init__(self, deeponet_model, function_set, output_sampler, residual_fn, 
-                 name='singlemodulecondition', track_gradients=True, data_functions={},
+                 name='pinncondition', track_gradients=True, data_functions={},
                  parameter=Parameter.empty(), weight=1.0):
         super().__init__(deeponet_model, function_set, output_sampler, 
                          residual_fn=residual_fn, error_fn=SquaredError(), 

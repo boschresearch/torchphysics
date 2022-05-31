@@ -27,6 +27,11 @@ class FunctionSet():
             return other + self
         else:
             return FunctionSetCollection([self, other])
+    
+    def __len__(self):
+        """Returns the amount of functions sampled in a single call to sample_params.
+        """
+        return len(self.parameter_sampler)
 
     def sample_params(self, device='cpu'):
         """Samples parameters of the function space.
@@ -47,14 +52,11 @@ class FunctionSet():
         """
         n_points = len(points)
         n_params = len(self.param_batch)
-        #param_point_meshgrid = Points(torch.repeat_interleave(self.param_batch,
-        #                                                      n_points, dim=0), 
-        #                              self.param_batch.space)
         points_repeated = points.as_tensor.unsqueeze(0).repeat(n_params,1,1)
         params_repeated = self.param_batch.as_tensor.unsqueeze(1).repeat(1,n_points,1)
         param_point_meshgrid = Points(torch.cat((params_repeated, points_repeated), dim=-1),
                                       self.param_batch.space*points.space)
-        return param_point_meshgrid#.join(points.repeat(n_params))
+        return param_point_meshgrid
 
     @abc.abstractmethod
     def _evaluate_function(self, param_point_meshgrid):
@@ -79,6 +81,9 @@ class FunctionSetCollection(FunctionSet):
         else:
             self.collection.append(other)
         return self
+    
+    def __len__(self):
+        return sum(len(f_s) for f_s in self.collection)
 
     def sample_params(self, device='cpu'):
         for function_set in self.collection:
