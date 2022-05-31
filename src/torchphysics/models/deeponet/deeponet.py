@@ -29,7 +29,7 @@ class DeepONet(Model):
         if branch_inputs:
             self.fix_branch_input(branch_inputs, device=device)
         trunk_out = self.trunk(trunk_inputs)
-        return Points(torch.matmul(self.branch.current_out, trunk_out.transpose(-1,-2)).unsqueeze(-1),
+        return Points(torch.matmul(trunk_out, self.branch.current_out.unsqueeze(-1)).unsqueeze(-1),
                       self.output_space)
 
     def _forward_branch(self, function_set, iteration_num=-1, device='cpu'):
