@@ -18,7 +18,7 @@ from .differentialoperators import (laplacian,
                                     sym_grad, 
                                     matrix_div)
 
-from .data import PointsDataset, PointsDataLoader
+from .data import PointsDataset, PointsDataLoader, DeepONetDataLoader
 
 from .user_fun import UserFunction
 from .plotting import plot, Plotter, animate, scatter

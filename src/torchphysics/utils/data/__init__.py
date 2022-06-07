@@ -1,1 +1,1 @@
-from .dataloader import PointsDataset, PointsDataLoader
+from .dataloader import PointsDataset, PointsDataLoader, DeepONetDataLoader

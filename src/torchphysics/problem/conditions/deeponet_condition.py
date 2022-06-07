@@ -1,6 +1,6 @@
 import torch
 
-from .condition import Condition, SquaredError
+from .condition import Condition, SquaredError, DataCondition
 from ...models import Parameter
 from ...utils import UserFunction
 from ...models import DeepONet
@@ -118,3 +118,45 @@ class PIDeepONetCondition(DeepONetSingleModuleCondition):
                          reduce_fn=torch.mean, name=name, 
                          track_gradients=track_gradients, data_functions=data_functions,
                          parameter=parameter, weight=weight)
+
+
+class DeepONetDataCondition(DataCondition):
+    """
+    A condition that fits a single given module to data (handed through a PyTorch
+    dataloader).
+
+    Parameters
+    ----------
+    module : torchphysics.Model
+        The torch module which should be fitted to data.
+    dataloader : torch.utils.DataLoader
+        A PyTorch dataloader which supplies the iterator to load data-target pairs
+        from some given dataset. Data and target should be handed as points in input
+        or output spaces, i.e. with the correct point object.
+    norm : int or 'inf'
+        The 'norm' which should be computed for evaluation. If 'inf', maximum norm will
+        be used. Else, the result will be taken to the n-th potency (without computing the
+        root!)
+    use_full_dataset : bool
+        Whether to perform single iterations or compute the error on the whole dataset during
+        forward call. The latter can especially be useful during validation.
+    name : str
+        The name of this condition which will be monitored in logging.
+    weight : float
+        The weight multiplied with the loss of this condition during
+        training.
+    """
+
+    def __init__(self, module, dataloader, norm, use_full_dataset=False,
+                 name='datacondition', weight=1.0):
+        super().__init__(module=module, dataloader=dataloader, 
+                         norm=norm, use_full_dataset=use_full_dataset, 
+                         name=name, weight=weight)
+        assert isinstance(self.module, DeepONet)
+
+    def _compute_dist(self, batch, device):
+        branch_in, trunk_in, out = batch
+        branch_in, trunk_in, out = branch_in.to(device), trunk_in.to(device), \
+                                   out.to(device)
+        self.module.branch(branch_in)
+        return torch.abs(self.module(trunk_in).as_tensor-out.as_tensor)

@@ -19,4 +19,5 @@ from .condition import (Condition,
                         IntegroPINNCondition)
 
 from .deeponet_condition import (DeepONetSingleModuleCondition, 
-                                 PIDeepONetCondition)
+                                 PIDeepONetCondition, 
+                                 DeepONetDataCondition)
