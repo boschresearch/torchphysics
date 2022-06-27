@@ -61,12 +61,6 @@ class Condition(torch.nn.Module):
         """
         raise NotImplementedError
 
-    def _track_gradients(self, points):
-        points_coordinates = points.coordinates
-        for var in points_coordinates:
-            points_coordinates[var].requires_grad = True
-        return points_coordinates, Points.from_coordinates(points_coordinates)
-
     def _setup_data_functions(self, data_functions, sampler):
         for fun in data_functions:
             data_functions[fun] = UserFunction(data_functions[fun])
@@ -233,7 +227,7 @@ class SingleModuleCondition(Condition):
         else:
             x = self.sampler.sample_points(device=device)
 
-        x_coordinates, x = self._track_gradients(x)
+        x_coordinates, x = x.track_coord_gradients()
 
         data = {}
         for fun in self.data_functions:
@@ -480,9 +474,9 @@ class PeriodicCondition(Condition):
         x_left = self.left_sampler.sample_points(device=device)
         x_right = self.right_sampler.sample_points(device=device)
 
-        x_left_coordinates, x_left = self._track_gradients(x_left)
-        x_right_coordinates, x_right = self._track_gradients(x_right)
-        x_b_coordinates, x_b = self._track_gradients(x_b)
+        x_left_coordinates, x_left = x_left.track_coord_gradients()
+        x_right_coordinates, x_right = x_right.track_coord_gradients()
+        x_b_coordinates, x_b = x_b.track_coord_gradients()
 
 
         data_left = {}
@@ -610,8 +604,8 @@ class IntegroPINNCondition(Condition):
 
         x = x.unsqueeze(dim=1)
         x_int = x_int.unsqueeze(dim=0)
-        x_coordinates, x = self._track_gradients(x)
-        x_int_coordinates, x_int = self._track_gradients(x_int)
+        x_coordinates, x = x.track_coord_gradients()
+        x_int_coordinates, x_int = x_int.track_coord_gradients()
 
         # combine both inputs to be able to compute model(x_int) with all correct
         # parameters

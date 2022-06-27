@@ -368,3 +368,9 @@ class Points():
         """
         self._t = self._t.to(*args, **kwargs)
         return self
+    
+    def track_coord_gradients(self):
+        points_coordinates = self.coordinates
+        for var in points_coordinates:
+            points_coordinates[var].requires_grad = True
+        return points_coordinates, Points.from_coordinates(points_coordinates)
