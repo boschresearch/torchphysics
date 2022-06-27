@@ -23,3 +23,5 @@ from .data import PointsDataset, PointsDataLoader, DeepONetDataLoader
 from .user_fun import UserFunction
 from .plotting import plot, Plotter, animate, scatter
 from .evaluation import compute_min_and_max
+
+from .callbacks import WeightSaveCallback
