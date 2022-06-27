@@ -17,3 +17,7 @@ from .condition import (Condition,
                         SingleModuleCondition,
                         PeriodicCondition,
                         IntegroPINNCondition)
+
+from .deeponet_condition import (DeepONetSingleModuleCondition, 
+                                 PIDeepONetCondition, 
+                                 DeepONetDataCondition)

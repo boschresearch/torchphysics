@@ -86,3 +86,54 @@ class PointsDataLoader(torch.utils.data.DataLoader):
                          shuffle=shuffle,
                          num_workers=num_workers,
                          pin_memory=pin_memory)
+
+
+class DeepONetDataLoader(torch.utils.data.DataLoader):
+    """
+    A DataLoader that can be used in a condition to load minibatches of paired data
+    points as the input and output of a DeepONet-model.
+
+    Parameters
+    ----------
+    branch_data : torch.tensor
+        A tensor containing the input data for the branch network. Shape of the 
+        data should be: [number_of_functions, input_dim_of_branch_net]
+    trunk_data : torch.tensor
+        A tensor containing the input data for the trunk network. Shape of the 
+        data should be: 
+        [number_of_functions, number_of_discrete_points, input_dim_of_trunk_net]
+        For each input of the branch_data we will have multiple inputs for the 
+        trunk net.
+    output_data : torch.tensor
+        A tensor containing the expected output of the network. Shape of the 
+        data should be: 
+        [number_of_functions, number_of_discrete_points, output_dim].
+    input_space : torchphysics.spaces.Space
+        The input space of the trunk network.
+    output_space : torchphysics.spaces.Space
+        The output space in which the solution is. 
+    batch_size : int
+        The size of the loaded batches.
+    shuffle : bool
+        Whether to shuffle the order of the data points at initialization.
+    num_workers : int
+        The amount of workers used during data loading, see also: the PyTorch documentation
+    pin_memory : bool
+        Whether to use pinned memory during data loading, see also: the PyTorch documentation
+    drop_last : bool
+        Whether to drop the last (and non-batch-size-) minibatch.
+    """
+    def __init__(self, branch_data, trunk_data, output_data, 
+                 input_space, output_space, batch_size, shuffle=False,
+                 num_workers=0, pin_memory=False, drop_last=False):
+        assert len(branch_data) == len(trunk_data) 
+        assert len(trunk_data) == len(output_data)
+        assert trunk_data.shape == output_data.shape
+        data_points = [branch_data, Points(trunk_data, input_space), 
+                       Points(output_data, output_space)]
+        super().__init__(PointsDataset(data_points, batch_size,
+                                       shuffle=shuffle, drop_last=drop_last),
+                         batch_size=None,
+                         shuffle=shuffle,
+                         num_workers=num_workers,
+                         pin_memory=pin_memory)
