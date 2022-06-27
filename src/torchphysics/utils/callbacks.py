@@ -2,6 +2,10 @@ import torch
 
 from pytorch_lightning.callbacks import Callback
 
+from .plotting.plot_functions import plot
+from .user_fun import UserFunction
+
+
 class WeightSaveCallback(Callback):
     """
     A callback to save the weights of a model during training. Can save
@@ -50,3 +54,57 @@ class WeightSaveCallback(Callback):
     def on_train_end(self, trainer, pl_module):
         if self.save_final_model:
             torch.save(self.model.state_dict(), self.path+'/' + self.name + '_final.pt')
+
+
+class PlotterCallback(Callback):
+    '''Object for plotting (logging plots) inside of tensorboard. 
+    Can be passed to the pytorch lightning trainer.
+
+    Parameters
+    ----------
+    plot_function : callable
+        A function that specfices the part of the model that should be plotted.  
+    point_sampler : torchphysics.samplers.PlotSampler
+        A sampler that creates the points that should be used for the plot.
+    log_interval : str, optional
+        Name of the plots inside of tensorboard.
+    check_interval : int, optional
+        Plots will be saved every check_interval steps, if the plotter is used.
+    angle : list, optional
+        The view angle for surface plots. Standard angle is [30, 30]
+    plot_type : str, optional
+        Specifies how the output should be plotted. If no input is given, the method
+        will try to use a fitting way, to show the data. See also plot-functions.
+    kwargs:
+        Additional arguments to specify different parameters/behaviour of
+        the plot. See https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.html
+        for possible arguments of each underlying object.
+    '''
+    def __init__(self, model, plot_function, point_sampler, log_name='plot', 
+                 check_interval=200, angle=[30, 30], plot_type='', **kwargs):
+        super().__init__()
+        self.model = model
+        self.check_interval=check_interval
+        self.plot_function = UserFunction(plot_function)
+        self.log_name = log_name
+        self.point_sampler = point_sampler
+        self.angle = angle
+        self.plot_type = plot_type
+        self.kwargs = kwargs
+
+    def on_train_start(self, trainer, pl_module):
+        self.point_sampler.sample_points(device=pl_module.device)
+        
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch,
+                           batch_idx, dataloader_idx):
+        if batch_idx % self.check_interval == 0:
+            fig = plot(model=self.model, plot_function=self.plot_function,
+                       point_sampler=self.point_sampler, 
+                       angle=self.angle, plot_type=self.plot_type,
+                       device=pl_module.device, **self.kwargs)
+            pl_module.logger.experiment.add_figure(tag=self.log_name,
+                                                    figure=fig,
+                                                    global_step=batch_idx)
+
+    def on_train_end(self, trainer, pl_module):
+        return

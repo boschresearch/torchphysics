@@ -7,6 +7,6 @@
 
 """
 
-from .plot_functions import Plotter, plot
+from .plot_functions import plot
 from .animation import animate
 from .scatter_points import scatter

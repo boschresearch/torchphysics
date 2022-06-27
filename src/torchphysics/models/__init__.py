@@ -16,7 +16,7 @@ from .model import (Model, NormalizationLayer, AdaptiveWeightLayer,
 from .fcn import FCN
 from .deepritz import DeepRitzNet
 from .qres import QRES
-from .activation_fn import AdaptiveActivationFunction
+from .activation_fn import (AdaptiveActivationFunction, ReLUn, Sinus)
 
 # DeepONet:
 from .deeponet.deeponet import DeepONet
