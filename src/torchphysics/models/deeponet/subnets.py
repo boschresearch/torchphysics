@@ -206,4 +206,5 @@ class FCBranchNet(BranchNet):
         self.sequential = nn.Sequential(*layers)
 
     def forward(self, discrete_function_batch):
-        self.current_out = self._reshape_multidimensional_output(self.sequential(points))
+        self.current_out = self._reshape_multidimensional_output(self.sequential(discrete_function_batch))
+       
