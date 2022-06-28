@@ -79,7 +79,8 @@ class Plotter():
                     angle=self.angle, plot_type=self.plot_type, **self.kwargs)
 
 
-def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type='', **kwargs):
+def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type='', 
+         device='cpu', **kwargs):
     '''Main function for plotting
 
     Parameters
@@ -135,7 +136,7 @@ def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type='', **kw
     if not isinstance(plot_function, UserFunction):
         plot_function = UserFunction(fun=plot_function)
     inp_points, output, out_shape = _create_plot_output(model, plot_function,
-                                                        point_sampler)
+                                                        point_sampler, device)
     domain_points = _extract_domain_points(inp_points, point_sampler.domain, 
                                            len(point_sampler))
     plot_fun = _find_plot_function(point_sampler, out_shape, plot_type)
@@ -148,9 +149,9 @@ def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type='', **kw
                                       Please specify the output to plot.""")
 
 
-def _create_plot_output(model, plot_function, point_sampler):
+def _create_plot_output(model, plot_function, point_sampler, device):
     # first create the plot points and evaluate the model
-    inp_points = point_sampler.sample_points()
+    inp_points = point_sampler.sample_points(device=device)
     inp_points_dict = inp_points.coordinates
     model_out = model(Points.from_coordinates(inp_points_dict))
     data_dict = {**model_out.coordinates, **inp_points_dict}
