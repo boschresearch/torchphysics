@@ -28,7 +28,8 @@ class TrunkNet(Model):
         self.output_neurons = output_neurons * output_space.dim
 
     def _reshape_multidimensional_output(self, output):
-        return output.reshape(-1, self.output_space.dim, self.output_neurons/self.output_space.dim)
+        return output.reshape(-1, self.output_space.dim, 
+                              int(self.output_neurons/self.output_space.dim))
 
 class BranchNet(Model):
     """A neural network that can be used inside a DeepONet-model.
@@ -61,7 +62,8 @@ class BranchNet(Model):
         self.current_out = torch.empty(0)
 
     def _reshape_multidimensional_output(self, output):
-        return output.reshape(-1, self.output_space.dim, self.output_neurons/self.output_space.dim)
+        return output.reshape(-1, self.output_space.dim, 
+                              int(self.output_neurons/self.output_space.dim))
         
     @abc.abstractmethod
     def forward(self, discrete_function_batch, device='cpu'):
@@ -193,6 +195,24 @@ class FCBranchNet(BranchNet):
     xavier_gains : float or list, optional
         For the weight initialization a Xavier/Glorot algorithm will be used.
         Default is 5/3. 
+    """
+    def __init__(self, function_space, output_space, output_neurons,
+                 discretization_sampler, hidden=(20,20,20), activations=nn.Tanh(),
+                 xavier_gains=5/3):
+        super().__init__(function_space, output_space, 
+                         output_neurons, discretization_sampler)
+        layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_dim, 
+                                      output_dim=output_neurons, 
+                                      activations=activations, xavier_gains=xavier_gains)
+
+        self.sequential = nn.Sequential(*layers)
+
+    def forward(self, discrete_function_batch):
+        self.current_out = self._reshape_multidimensional_output(self.sequential(discrete_function_batch))
+       
+
+class ConvBranchNet1D(BranchNet):
+    """A neural network that can be used inside a DeepONet-model.
     """
     def __init__(self, function_space, output_space, output_neurons,
                  discretization_sampler, hidden=(20,20,20), activations=nn.Tanh(),
