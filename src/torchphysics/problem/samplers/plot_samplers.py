@@ -42,6 +42,7 @@ class PlotSampler(PointSampler):
             "Plotting for boundaries is not implemented"""
         super().__init__(n_points=n_points, density=density)
         self.device = device
+        self.created_points = None
         self.set_data_for_other_variables(data_for_other_variables)
         self.domain = plot_domain(**self.data_for_other_variables.coordinates)
         self.sampler = self.construct_sampler()
@@ -110,20 +111,23 @@ class PlotSampler(PointSampler):
         n_root -= 2
         return n_root**self.domain.dim
 
-    def sample_points(self):
+    def sample_points(self, params=Points.empty(), device='cpu'):
         """Creates the points for the plot. Does not need additional arguments, since
         they were set in the init.
         """
-        plot_points = self.sampler.sample_points()
-        self.set_length(len(plot_points))
-        other_data = self._repeat_params(self.data_for_other_variables, len(self))
-        plot_points = plot_points.join(other_data)
-        self._set_device_and_grad_true(plot_points)
-        return plot_points
+        if not self.created_points:
+            self.device = device
+            plot_points = self.sampler.sample_points(device=device)
+            self.set_length(len(plot_points))
+            self.data_for_other_variables = self.data_for_other_variables.to(device)
+            other_data = self._repeat_params(self.data_for_other_variables, len(self))
+            self.created_points = plot_points.join(other_data)
+        self._set_device_and_grad_true()
+        return self.created_points
 
-    def _set_device_and_grad_true(self, plot_points):
-        plot_points._t.requires_grad = True
-        plot_points._t.to(self.device)
+    def _set_device_and_grad_true(self):
+        self.created_points._t.requires_grad = True
+        self.created_points._t.to(self.device)
 
 
 class AnimationSampler(PlotSampler):
@@ -212,3 +216,7 @@ class AnimationSampler(PlotSampler):
             plot_points._t.to(self.device)
             output_list.append(plot_points)
         return output_list
+
+    def _set_device_and_grad_true(self, p):
+        p._t.requires_grad = True
+        p._t.to(self.device)

@@ -66,4 +66,5 @@ class FCN(Model):
         self.sequential = nn.Sequential(*layers)
 
     def forward(self, points):
+        points = self._fix_points_order(points)
         return Points(self.sequential(points), self.output_space)

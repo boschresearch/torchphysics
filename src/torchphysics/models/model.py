@@ -18,6 +18,14 @@ class Model(nn.Module):
         super().__init__()
         self.input_space = input_space
         self.output_space = output_space
+    
+    def _fix_points_order(self, points):
+        if points.space != self.input_space:
+            if points.space.keys() != self.input_space.keys():
+                raise ValueError(f"""Points are in {points.space} but should lie
+                                     in {self.input_space}.""")
+            points = points[..., list(self.input_space.keys())]
+        return points
 
 
 class NormalizationLayer(Model):
@@ -53,6 +61,7 @@ class NormalizationLayer(Model):
             self.normalize.bias.copy_(bias)
 
     def forward(self, points):
+        points = self._fix_points_order(points)
         return Points(self.normalize(points), self.output_space)
 
 
@@ -81,7 +90,7 @@ class Parallel(Model):
     def forward(self, points):
         out = []
         for model in self.models:
-            out.append(model(points[:, list(model.input_space.keys())]))
+            out.append(model(points[..., list(model.input_space.keys())]))
         return Points.joined(*out)
 
 class Sequential(Model):
@@ -100,6 +109,7 @@ class Sequential(Model):
         self.models = nn.ModuleList(models)
     
     def forward(self, points):
+        points = self._fix_points_order(points)
         for model in self.models:
             points = model(points)
         return points

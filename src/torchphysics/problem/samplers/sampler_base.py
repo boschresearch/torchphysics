@@ -252,7 +252,7 @@ class ProductSampler(PointSampler):
 
     def sample_points(self, params=Points.empty(), device='cpu'):
         b_points = self.sampler_b.sample_points(params, device=device)
-        a_points = self.sampler_a.sample_points(b_points.join(params), device=device)
+        a_points = self.sampler_a.sample_points(b_points, device=device)
         self.set_length(len(a_points))
         return a_points
 

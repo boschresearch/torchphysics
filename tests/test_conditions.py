@@ -25,7 +25,7 @@ def test_create_general_condition():
 def test_track_gradients():
     cond = Condition()
     p = Points(torch.tensor([[2, 3.0, 0.0], [1, 1, 1]]), R1('t')*R2('x'))
-    point_dict, new_points = cond._track_gradients(p)
+    point_dict, new_points = p.track_coord_gradients()
     assert isinstance(point_dict, dict)
     assert isinstance(new_points, Points)
     assert Points.requires_grad

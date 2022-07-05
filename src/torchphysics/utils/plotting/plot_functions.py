@@ -46,15 +46,20 @@ class Plotter():
             - 'curve' for a curve in 3D, with a 1D-domain, 
             - 'quiver_2D' for quiver/vector field plots, with a 2D-domain
             - 'contour_surface' for contour/colormaps, with a 2D-domain
+    kwargs:
+        Additional arguments to specify different parameters/behaviour of
+        the plot. See https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.html
+        for possible arguments of each underlying object.
     '''
 
     def __init__(self, plot_function, point_sampler, angle=[30, 30],
-                 log_interval=None, plot_type=''):
+                 log_interval=None, plot_type='', **kwargs):
         self.plot_function = UserFunction(plot_function)
         self.point_sampler = point_sampler
         self.angle = angle
         self.log_interval = log_interval
         self.plot_type = plot_type
+        self.kwargs = kwargs
 
     def plot(self, model):
         """Creates the plot of the model.
@@ -71,10 +76,11 @@ class Plotter():
         """
         return plot(model=model, plot_function=self.plot_function,
                     point_sampler=self.point_sampler, 
-                    angle=self.angle, plot_type=self.plot_type)
+                    angle=self.angle, plot_type=self.plot_type, **self.kwargs)
 
 
-def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type=''):
+def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type='', 
+         device='cpu', **kwargs):
     '''Main function for plotting
 
     Parameters
@@ -107,7 +113,10 @@ def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type=''):
             - 'curve' for a curve in 3D, with a 1D-domain, 
             - 'quiver_2D' for quiver/vector-field plots, with a 2D-domain
             - 'contour_surface' for contour/colormaps, with a 2D-domain
-
+    kwargs:
+        Additional arguments to specify different parameters/behaviour of
+        the plot. See https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.html
+        for possible arguments of each underlying object.
 
     Returns
     -------
@@ -127,22 +136,22 @@ def plot(model, plot_function, point_sampler, angle=[30, 30], plot_type=''):
     if not isinstance(plot_function, UserFunction):
         plot_function = UserFunction(fun=plot_function)
     inp_points, output, out_shape = _create_plot_output(model, plot_function,
-                                                        point_sampler)
+                                                        point_sampler, device)
     domain_points = _extract_domain_points(inp_points, point_sampler.domain, 
                                            len(point_sampler))
     plot_fun = _find_plot_function(point_sampler, out_shape, plot_type)
     if plot_fun is not None:
         return plot_fun(output=output, domain_points=domain_points,
-                        point_sampler=point_sampler, angle=angle)
+                        point_sampler=point_sampler, angle=angle, **kwargs)
     else:
         raise NotImplementedError(f"""Plotting for a {out_shape[1]} 
                                       dimensional output is not implemented!  
                                       Please specify the output to plot.""")
 
 
-def _create_plot_output(model, plot_function, point_sampler):
+def _create_plot_output(model, plot_function, point_sampler, device):
     # first create the plot points and evaluate the model
-    inp_points = point_sampler.sample_points()
+    inp_points = point_sampler.sample_points(device=device)
     inp_points_dict = inp_points.coordinates
     model_out = model(Points.from_coordinates(inp_points_dict))
     data_dict = {**model_out.coordinates, **inp_points_dict}
@@ -218,21 +227,25 @@ def _plot_for_two_outputs(domain_dim):
         raise NotImplementedError("""Can't plot 2D-output on given domain""")
 
 
-def surface2D(output, domain_points, point_sampler, angle):
+def surface2D(output, domain_points, point_sampler, angle, **kwargs):
     '''Handels surface plots w.r.t. a two dimensional variable.
     '''
     # For complex domains it is best to triangulate them for the plotting
     triangulation = _triangulation_of_domain(point_sampler.domain, domain_points)
     fig, ax = _create_figure_and_axis(angle)
     _set_x_y_axis_data(point_sampler, ax)
+    if not 'antialiased' in kwargs:
+        kwargs['antialiased'] = False
+    if not 'linewidth' in kwargs:
+        kwargs['linewidth'] = 0
     surf = ax.plot_trisurf(triangulation, output.flatten(),
-                           cmap=cm.jet, linewidth=0, antialiased=False)
+                           cmap=cm.jet, **kwargs)
     fig.colorbar(surf, shrink=0.4, aspect=5, pad=0.1)
     _add_textbox(point_sampler.data_for_other_variables, ax, 1.2, 0.1)
     return fig
 
 
-def line_plot(output, domain_points, point_sampler, angle):
+def line_plot(output, domain_points, point_sampler, angle, **kwargs):
     '''Handels line plots w.r.t. a one dimensional variable.
     '''
     fig = plt.figure()
@@ -242,7 +255,7 @@ def line_plot(output, domain_points, point_sampler, angle):
         raise ValueError("""Can't plot a line with a multidimensional output. 
                             If u want to plot the norm use: torch.linalg.norm inside 
                             the plot function.""")
-    ax.plot(domain_points.flatten(), output.flatten())
+    ax.plot(domain_points.flatten(), output.flatten(), **kwargs)
     # add a text box for the values of the other variables
     if len(point_sampler.data_for_other_variables) > 0:
         info_string = _create_info_text(point_sampler.data_for_other_variables)
@@ -252,7 +265,7 @@ def line_plot(output, domain_points, point_sampler, angle):
     return fig
 
 
-def curve3D(output, domain_points, point_sampler, angle):
+def curve3D(output, domain_points, point_sampler, angle, **kwargs):
     '''Handles curve plots where the output is 2D and the domain is 1D.
     '''
     fig, ax = _create_figure_and_axis(angle)
@@ -261,7 +274,7 @@ def curve3D(output, domain_points, point_sampler, angle):
     # we plot a helper line to better show the structure of the curve
     domain_points = domain_points.flatten()
     ax.plot(domain_points, np.zeros_like(domain_points), np.zeros_like(domain_points),
-            color='black') 
+            **kwargs) 
     # Now plot the curve
     ax.plot(domain_points, output[:, 0], output[:, 1])
     # add a text box for the values of the other variables
@@ -270,7 +283,7 @@ def curve3D(output, domain_points, point_sampler, angle):
     return fig
 
 
-def quiver2D(output, domain_points, point_sampler, angle):
+def quiver2D(output, domain_points, point_sampler, angle, **kwargs):
     '''Handles quiver/vector field plots w.r.t. a two dimensional variable.
     '''
     # for the colors
@@ -288,7 +301,7 @@ def quiver2D(output, domain_points, point_sampler, angle):
     # create arrows
     ax.quiver(domain_points[:, 0], domain_points[:, 1], output[:, 0], output[:, 1], 
               color=cm.jet(norm(color)),
-              units='xy', zorder=10)
+              units='xy', zorder=10, **kwargs)
     sm = cm.ScalarMappable(cmap=cm.jet, norm=norm)
     plt.colorbar(sm)
     # add a text box for the values of the other variables
@@ -299,7 +312,7 @@ def quiver2D(output, domain_points, point_sampler, angle):
     return fig
 
 
-def contour_2D(output, domain_points, point_sampler, angle):
+def contour_2D(output, domain_points, point_sampler, angle, **kwargs):
     '''Handles colormap/contour plots w.r.t. a two dimensional variable.
     '''
     # Create the plot
@@ -314,7 +327,9 @@ def contour_2D(output, domain_points, point_sampler, angle):
         raise ValueError("""Can't plot a surface with a multidimensional output. 
                             If u want to plot the norm use: torch.linalg.norm inside 
                             the plot function.""")
-    cs = ax.tricontourf(triangulation, output.flatten(), 100, cmap=cm.jet)
+    if not 'levels' in kwargs:
+        kwargs['levels'] = 100
+    cs = ax.tricontourf(triangulation, output.flatten(), cmap=cm.jet, **kwargs)
     plt.colorbar(cs) 
     # add a text box for the values of the other variables
     if len(point_sampler.data_for_other_variables) > 0:

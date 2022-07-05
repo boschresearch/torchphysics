@@ -33,3 +33,51 @@ class AdaptiveActivationFunction(nn.Module):
 
     def forward(self, x):
         return self.activation_fn(self.scaling*self.a*x)
+
+
+class relu_n(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, x, n):
+        ctx.save_for_backward(x)
+        ctx.n = n
+        return torch.nn.functional.relu(x)**n
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, = ctx.saved_tensors
+        n = ctx.n
+        grad_input = grad_output.clone()
+        slice_idx = input > 0
+        grad_input[slice_idx] = grad_input[slice_idx] * n*input[slice_idx]**(n-1)
+        grad_input[torch.logical_not(slice_idx)] = 0
+        return grad_input, None # <- for n gradient, not needed
+
+
+class ReLUn(nn.Module):
+    """Implementation of a smoother version of ReLU, in the 
+    form of relu(x)**n.
+
+    Parameters
+    ----------
+    n : float
+        The power to which the inputs should be rasied before appplying the
+        rectified linear unit function. 
+    """
+    def __init__(self, n):
+        super().__init__()
+        self.n = n
+        self.relu_n = relu_n()
+
+    def forward(self, x):
+        return self.relu_n.apply(x, self.n)
+
+
+class Sinus(torch.nn.Module):
+    """Implementation of a sinus activation.
+    """
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, input):
+        return torch.sin(input)

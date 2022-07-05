@@ -18,8 +18,10 @@ from .differentialoperators import (laplacian,
                                     sym_grad, 
                                     matrix_div)
 
-from .data import PointsDataset, PointsDataLoader
+from .data import PointsDataset, PointsDataLoader, DeepONetDataLoader
 
 from .user_fun import UserFunction
-from .plotting import plot, Plotter, animate, scatter
+from .plotting import plot, animate, scatter
 from .evaluation import compute_min_and_max
+
+from .callbacks import (WeightSaveCallback, PlotterCallback)
