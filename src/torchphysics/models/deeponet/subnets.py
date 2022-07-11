@@ -20,12 +20,16 @@ class TrunkNet(Model):
         be used internally. The final output of the DeepONet-model will be 
         in the dimension of the output space. 
     output_neurons : int
-        The number of output neurons.
+        The number of output neurons. Will be multiplied my the dimension of the output space, 
+        so each dimension will have the same number of intermediate neurons.
     """
     def __init__(self, input_space, output_space, output_neurons):
         super().__init__(input_space, output_space)
-        self.output_neurons = output_neurons
+        self.output_neurons = output_neurons * output_space.dim
 
+    def _reshape_multidimensional_output(self, output):
+        return output.reshape(-1, self.output_space.dim, 
+                              int(self.output_neurons/self.output_space.dim))
 
 class BranchNet(Model):
     """A neural network that can be used inside a DeepONet-model.
@@ -39,8 +43,10 @@ class BranchNet(Model):
         returned by the parent DeepONet-model.
     output_neurons : int
         The number of output neurons. These neurons will only
-        be used internally. The final output of the DeepONet-model will be 
-        in the dimension of the output space. 
+        be used internally. Will be multiplied my the dimension of the output space, 
+        so each dimension will have the same number of intermediate neurons. 
+        The final output of the DeepONet-model will be in the dimension of the 
+        output space. 
     discretization_sampler : torchphysics.sampler
         A sampler that will create the points at which the input functions should 
         evaluated, to create a discrete input for the network.
@@ -50,11 +56,15 @@ class BranchNet(Model):
     def __init__(self, function_space, output_space, output_neurons, 
                  discretization_sampler):
         super().__init__(function_space, output_space)
-        self.output_neurons = output_neurons
+        self.output_neurons = output_neurons * output_space.dim
         self.discretization_sampler = discretization_sampler
         self.input_dim = len(self.discretization_sampler)
         self.current_out = torch.empty(0)
 
+    def _reshape_multidimensional_output(self, output):
+        return output.reshape(-1, self.output_space.dim, 
+                              int(self.output_neurons/self.output_space.dim))
+        
     @abc.abstractmethod
     def forward(self, discrete_function_batch, device='cpu'):
         """Evaluated the network at a given function batch. Should not be called
@@ -152,7 +162,7 @@ class FCTrunkNet(TrunkNet):
 
     def forward(self, points):
         points = self._fix_points_order(points)
-        return self.sequential(points)
+        return self._reshape_multidimensional_output(self.sequential(points))
 
 
 class FCBranchNet(BranchNet):
@@ -198,4 +208,23 @@ class FCBranchNet(BranchNet):
         self.sequential = nn.Sequential(*layers)
 
     def forward(self, discrete_function_batch):
-        self.current_out = self.sequential(discrete_function_batch)
+        self.current_out = self._reshape_multidimensional_output(self.sequential(discrete_function_batch))
+       
+
+class ConvBranchNet1D(BranchNet):
+    """A neural network that can be used inside a DeepONet-model.
+    """
+    def __init__(self, function_space, output_space, output_neurons,
+                 discretization_sampler, hidden=(20,20,20), activations=nn.Tanh(),
+                 xavier_gains=5/3):
+        super().__init__(function_space, output_space, 
+                         output_neurons, discretization_sampler)
+        layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_dim, 
+                                      output_dim=output_neurons, 
+                                      activations=activations, xavier_gains=xavier_gains)
+
+        self.sequential = nn.Sequential(*layers)
+
+    def forward(self, discrete_function_batch):
+        self.current_out = self._reshape_multidimensional_output(self.sequential(discrete_function_batch))
+       
