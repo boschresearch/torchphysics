@@ -83,9 +83,101 @@ class PointsDataLoader(torch.utils.data.DataLoader):
         super().__init__(PointsDataset(data_points, batch_size,
                                        shuffle=shuffle, drop_last=drop_last),
                          batch_size=None,
-                         shuffle=shuffle,
+                         shuffle=False,
                          num_workers=num_workers,
                          pin_memory=pin_memory)
+
+
+class DeepONetDataset(torch.utils.data.Dataset):
+    """
+    A PyTorch Dataset to load tuples of data points.
+
+    Parameters
+    ----------
+    data_points : Points or tuple
+        One or multiple Points object containing multiple data points or tuples of data points.
+        If a tuple of Points objects is given, they should all have the same length, as data will
+        be loaded in tuples where the i-th points are loaded simultaneously.
+    batch_size : int
+        The size of the loaded batches.
+    shuffle : bool
+        Whether to shuffle the order of the data points at initialization.
+    drop_last : bool
+        Whether to drop the last (and non-batch-size-) minibatch.
+    """
+    def __init__(self, branch_data_points, trunk_data_points, out_data_points,
+                 branch_space, trunk_space, output_space,
+                 branch_batch_size, trunk_batch_size, shuffle=False):
+
+        assert out_data_points.shape[0] == branch_data_points.shape[0]
+        assert out_data_points.shape[1] == trunk_data_points.shape[0]
+
+        self.trunk_data_points = trunk_data_points
+        self.branch_data_points = branch_data_points
+        self.out_data_points = out_data_points
+        if shuffle:
+            trunk_perm = torch.randperm(len(self.trunk_data_points[0]))
+            self.trunk_data_points = self.trunk_data_points[trunk_perm]
+            self.out_data_points = self.out_data_points[:, trunk_perm]
+            branch_perm = torch.randperm(len(self.branch_data_points[0]))
+            self.branch_data_points = self.branch_data_points[branch_perm]
+            self.out_data_points = self.out_data_points[branch_perm, :]
+
+        self.trunk_batch_size = len(self.trunk_data_points) if trunk_batch_size == -1 else trunk_batch_size
+        self.branch_batch_size = len(self.branch_data_points) if branch_batch_size == -1 else branch_batch_size
+
+        self.branch_space = branch_space
+        self.trunk_space = trunk_space
+        self.output_space = output_space
+    
+    def __len__(self):
+        """Returns the number of points of this dataset.
+        """
+        return max(math.ceil(len(self.branch_data_points[0]) / self.branch_batch_size),
+                   math.ceil(len(self.trunk_data_points[0]) / self.trunk_batch_size))
+
+    def _slice_points(self, points, out_points, out_axis, batch_size, idx):
+        a = (idx*batch_size) % len(points)
+        b = ((idx+1)*batch_size) % len(points)
+        if a < b:
+            points = points[a:b]
+            if out_axis == 0:
+                out_points = out_points[a:b, :]
+            elif out_axis == 1:
+                out_points = out_points[:, a:b]
+            else:
+                raise ValueError
+        else:
+            points = torch.cat([points[a:], points[:b]], dim=0)
+            if out_axis == 0:
+                out_points = torch.cat([out_points[a:,:], out_points[:b,:]], dim=0)
+            elif out_axis == 1:
+                out_points = torch.cat([out_points[:,a:], out_points[:,:b]], dim=1)
+            else:
+                raise ValueError
+        return points, out_points
+
+    def __getitem__(self, idx):
+        """Returns the item at the given index.
+
+        Parameters
+        ----------
+        idx : int
+            The index of the desired point.
+        """
+        branch_points, out_points = self._slice_points(self.branch_data_points,
+                                                       self.out_data_points,
+                                                       0,
+                                                       self.branch_batch_size,
+                                                       idx)
+        trunk_points, out_points = self._slice_points(self.trunk_data_points,
+                                                      out_points,
+                                                      1,
+                                                      self.trunk_batch_size,
+                                                      idx)
+        return (Points(branch_points, self.branch_space),
+                Points(trunk_points, self.trunk_space),
+                Points(out_points, self.output_space))
 
 
 class DeepONetDataLoader(torch.utils.data.DataLoader):
@@ -123,17 +215,22 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
     drop_last : bool
         Whether to drop the last (and non-batch-size-) minibatch.
     """
-    def __init__(self, branch_data, trunk_data, output_data, 
-                 input_space, output_space, batch_size, shuffle=False,
-                 num_workers=0, pin_memory=False, drop_last=False):
-        assert len(branch_data) == len(trunk_data) 
-        assert len(trunk_data) == len(output_data)
-        assert trunk_data.shape == output_data.shape
-        data_points = [branch_data, Points(trunk_data, input_space), 
-                       Points(output_data, output_space)]
-        super().__init__(PointsDataset(data_points, batch_size,
-                                       shuffle=shuffle, drop_last=drop_last),
+    def __init__(self, branch_data, trunk_data, output_data, branch_space,
+                 trunk_space, output_space, branch_batch_size, trunk_batch_size,
+                 shuffle=False, num_workers=0, pin_memory=False):
+        trunk_data = trunk_data
+        branch_data = branch_data
+        output_data = output_data
+        super().__init__(DeepONetDataset(branch_data,
+                                         trunk_data,
+                                         output_data,
+                                         branch_space,
+                                         trunk_space,
+                                         output_space,
+                                         branch_batch_size,
+                                         trunk_batch_size,
+                                         shuffle=shuffle),
                          batch_size=None,
-                         shuffle=shuffle,
+                         shuffle=False,
                          num_workers=num_workers,
                          pin_memory=pin_memory)
