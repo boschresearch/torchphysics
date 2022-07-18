@@ -1,5 +1,6 @@
 import math
 import torch
+import numpy as np
 
 from ...problem.spaces import Points
 
@@ -115,16 +116,18 @@ class DeepONetDataset(torch.utils.data.Dataset):
         self.trunk_data_points = trunk_data_points
         self.branch_data_points = branch_data_points
         self.out_data_points = out_data_points
-        if shuffle:
-            trunk_perm = torch.randperm(len(self.trunk_data_points[0]))
+        self.shuffle = shuffle
+
+        if self.shuffle:
+            trunk_perm = torch.randperm(len(self.trunk_data_points))
             self.trunk_data_points = self.trunk_data_points[trunk_perm]
             self.out_data_points = self.out_data_points[:, trunk_perm]
-            branch_perm = torch.randperm(len(self.branch_data_points[0]))
+            branch_perm = torch.randperm(len(self.branch_data_points))
             self.branch_data_points = self.branch_data_points[branch_perm]
             self.out_data_points = self.out_data_points[branch_perm, :]
 
-        self.trunk_batch_size = len(self.trunk_data_points) if trunk_batch_size == -1 else trunk_batch_size
-        self.branch_batch_size = len(self.branch_data_points) if branch_batch_size == -1 else branch_batch_size
+        self.trunk_batch_size = len(self.trunk_data_points) if trunk_batch_size < 0 else trunk_batch_size
+        self.branch_batch_size = len(self.branch_data_points) if branch_batch_size < 0 else branch_batch_size
 
         self.branch_space = branch_space
         self.trunk_space = trunk_space
@@ -133,8 +136,11 @@ class DeepONetDataset(torch.utils.data.Dataset):
     def __len__(self):
         """Returns the number of points of this dataset.
         """
-        return max(math.ceil(len(self.branch_data_points[0]) / self.branch_batch_size),
-                   math.ceil(len(self.trunk_data_points[0]) / self.trunk_batch_size))
+        # the least common multiple of both possible length will lead to the correct distribution
+        # of data points and hopefully managable effort
+        return int(np.lcm(
+            int(np.lcm(len(self.branch_data_points), self.branch_batch_size) / self.branch_batch_size),
+            int(np.lcm(len(self.trunk_data_points), self.trunk_batch_size) / self.trunk_batch_size)))
 
     def _slice_points(self, points, out_points, out_axis, batch_size, idx):
         a = (idx*batch_size) % len(points)
