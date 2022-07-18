@@ -4,6 +4,7 @@ import pytest
 from torchphysics.models.deeponet.branchnets import (BranchNet, FCBranchNet, Conv1DBranchNet)
 from torchphysics.models.deeponet.trunknets import (TrunkNet, FCTrunkNet) 
 from torchphysics.models.deeponet.deeponet import DeepONet
+from torchphysics.models.deeponet.layers import TrunkLinear
 from torchphysics.models.model import Sequential, NormalizationLayer
 from torchphysics.problem.spaces import Points, R1, R2, FunctionSpace
 from torchphysics.problem.domains import Interval, CustomFunctionSet
@@ -202,3 +203,24 @@ def test_deeponet_forward_branch_intern():
     net = DeepONet(trunk, branch)
     net._forward_branch(fn_set, iteration_num=0)
     net._forward_branch(fn_set, iteration_num=0)
+
+def test_trunk_linear():
+    linear_a = TrunkLinear(30, 20, bias=True)
+    linear_b = torch.nn.Linear(30, 20, bias=True)
+    linear_b.bias = torch.nn.Parameter(linear_a.bias[:])
+    linear_b.weight = torch.nn.Parameter(linear_a.weight[:])
+
+    x = torch.randn(2,4,30).expand(5,-1,-1,-1)
+    x.requires_grad = True
+    
+    y_b = linear_b(x)
+    y_a = linear_a(x)
+    
+    assert torch.norm(
+        torch.autograd.grad(y_a.sum(), x, retain_graph=True)[0]-torch.autograd.grad(y_b.sum(), x,retain_graph=True)[0]
+    ) < 1e-5
+
+    y_a.sum().backward()
+    y_b.sum().backward()
+    assert torch.norm(linear_a.weight.grad - linear_b.weight.grad) < 1e-2
+    assert torch.norm(linear_a.bias.grad - linear_b.bias.grad) < 1e-5
