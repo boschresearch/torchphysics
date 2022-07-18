@@ -2,7 +2,8 @@ import torch
 
 from torchphysics.problem.spaces.points import Points
 from ..model import Model, Sequential
-from .subnets import BranchNet, TrunkNet
+from .branchnets import BranchNet
+from .trunknets import TrunkNet
 
 
 class DeepONet(Model):
@@ -66,8 +67,10 @@ class DeepONet(Model):
         
         """
         if branch_inputs:
-            self.fix_branch_input(branch_inputs, device=device)
-        trunk_out = self.trunk(trunk_inputs).unsqueeze(0) # shape = [1, trunk_n, dim, neurons]
+            self.fix_branch_input(branch_inputs, device=device) 
+        trunk_out = self.trunk(trunk_inputs)
+        if len(trunk_out.shape) < 4:
+            trunk_out = trunk_out.unsqueeze(0) # shape = [1, trunk_n, dim, neurons]
         return Points(torch.sum(trunk_out * self.branch.current_out.unsqueeze(1), dim=-1),
                       self.output_space)
 

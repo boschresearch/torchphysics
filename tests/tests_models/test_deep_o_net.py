@@ -1,8 +1,8 @@
 import torch
 import pytest
 
-from torchphysics.models.deeponet.subnets import (TrunkNet, FCTrunkNet, 
-                                                  BranchNet, FCBranchNet)
+from torchphysics.models.deeponet.branchnets import (BranchNet, FCBranchNet, Conv1DBranchNet)
+from torchphysics.models.deeponet.trunknets import (TrunkNet, FCTrunkNet) 
 from torchphysics.models.deeponet.deeponet import DeepONet
 from torchphysics.models.model import Sequential, NormalizationLayer
 from torchphysics.problem.spaces import Points, R1, R2, FunctionSpace

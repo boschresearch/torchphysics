@@ -45,6 +45,29 @@ def laplacian(model_out, *derivative_variable, grad=None):
 
 def grad(model_out, *derivative_variable):
     '''Computes the gradient of a network with respect to the given variable.
+    Parameters
+    ----------
+    model_out : torch.tensor
+        The (scalar) output tensor of the neural network
+    derivative_variable : torch.tensor
+        The input tensor of the variables in which respect the derivatives have to
+        be computed
+    Returns
+    ----------
+    torch.tensor
+        A Tensor, where every row contains the values of the the first
+        derivatives (gradient) w.r.t the row of the input variable.
+    '''
+    grad = []
+    for vari in derivative_variable:
+        new_grad = torch.autograd.grad(model_out.sum(), vari,
+                                       create_graph=True)[0]
+        grad.append(new_grad)
+    return torch.column_stack(grad)
+
+"""
+def grad(model_out, *derivative_variable):
+    '''Computes the gradient of a network with respect to the given variable.
 
     Parameters
     ----------
@@ -81,7 +104,7 @@ def grad(model_out, *derivative_variable):
                                            create_graph=True)[0]
         grad.append(new_grad)
     return torch.cat(grad, dim=-1)
-
+"""
 
 def normal_derivative(model_out, normals, *derivative_variable):
     '''Computes the normal derivativ of a network with respect to the given variable
