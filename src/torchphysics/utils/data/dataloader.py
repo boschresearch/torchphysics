@@ -108,7 +108,8 @@ class DeepONetDataset(torch.utils.data.Dataset):
     """
     def __init__(self, branch_data_points, trunk_data_points, out_data_points,
                  branch_space, trunk_space, output_space,
-                 branch_batch_size, trunk_batch_size, shuffle=False):
+                 branch_batch_size, trunk_batch_size, shuffle_branch=False,
+                 shuffle_trunk=True):
 
         assert out_data_points.shape[0] == branch_data_points.shape[0]
         assert out_data_points.shape[1] == trunk_data_points.shape[0]
@@ -116,12 +117,12 @@ class DeepONetDataset(torch.utils.data.Dataset):
         self.trunk_data_points = trunk_data_points
         self.branch_data_points = branch_data_points
         self.out_data_points = out_data_points
-        self.shuffle = shuffle
 
-        if self.shuffle:
+        if shuffle_trunk:
             trunk_perm = torch.randperm(len(self.trunk_data_points))
             self.trunk_data_points = self.trunk_data_points[trunk_perm]
             self.out_data_points = self.out_data_points[:, trunk_perm]
+        if shuffle_branch:
             branch_perm = torch.randperm(len(self.branch_data_points))
             self.branch_data_points = self.branch_data_points[branch_perm]
             self.out_data_points = self.out_data_points[branch_perm, :]
