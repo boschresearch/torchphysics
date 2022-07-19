@@ -91,20 +91,7 @@ class PointsDataLoader(torch.utils.data.DataLoader):
 
 class DeepONetDataset(torch.utils.data.Dataset):
     """
-    A PyTorch Dataset to load tuples of data points.
-
-    Parameters
-    ----------
-    data_points : Points or tuple
-        One or multiple Points object containing multiple data points or tuples of data points.
-        If a tuple of Points objects is given, they should all have the same length, as data will
-        be loaded in tuples where the i-th points are loaded simultaneously.
-    batch_size : int
-        The size of the loaded batches.
-    shuffle : bool
-        Whether to shuffle the order of the data points at initialization.
-    drop_last : bool
-        Whether to drop the last (and non-batch-size-) minibatch.
+    A PyTorch Dataset to load tuples of data points, used via DeepONetDataLoader
     """
     def __init__(self, branch_data_points, trunk_data_points, out_data_points,
                  branch_space, trunk_space, output_space,
@@ -200,7 +187,7 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
     trunk_data : torch.tensor
         A tensor containing the input data for the trunk network. Shape of the 
         data should be: 
-        [number_of_functions, number_of_discrete_points, input_dim_of_trunk_net]
+        [number_of_discrete_points, input_dim_of_trunk_net]
         For each input of the branch_data we will have multiple inputs for the 
         trunk net.
     output_data : torch.tensor
@@ -213,8 +200,10 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
         The output space in which the solution is. 
     batch_size : int
         The size of the loaded batches.
-    shuffle : bool
-        Whether to shuffle the order of the data points at initialization.
+    shuffle_branch : bool
+        Whether to shuffle the order of the branch functions at initialization.
+    shuffle_trunk : bool
+        Whether to shuffle the order of the trunk points at initialization.
     num_workers : int
         The amount of workers used during data loading, see also: the PyTorch documentation
     pin_memory : bool
@@ -224,7 +213,8 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
     """
     def __init__(self, branch_data, trunk_data, output_data, branch_space,
                  trunk_space, output_space, branch_batch_size, trunk_batch_size,
-                 shuffle=False, num_workers=0, pin_memory=False):
+                 shuffle_branch=False, shuffle_trunk=True, num_workers=0,
+                 pin_memory=False):
         trunk_data = trunk_data
         branch_data = branch_data
         output_data = output_data
@@ -236,7 +226,8 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
                                          output_space,
                                          branch_batch_size,
                                          trunk_batch_size,
-                                         shuffle=shuffle),
+                                         shuffle_branch,
+                                         shuffle_trunk),
                          batch_size=None,
                          shuffle=False,
                          num_workers=num_workers,
