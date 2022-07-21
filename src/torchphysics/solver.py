@@ -77,15 +77,17 @@ class Solver(pl.LightningModule):
             condition._move_static_data(self.device)
         for condition in self.val_conditions:
             condition._move_static_data(self.device)
+        self.n_training_step = 0
 
     def training_step(self, batch, batch_idx):
         loss = torch.zeros(1, requires_grad=True, device=self.device)
         for condition in self.train_conditions:
-            cond_loss = condition.weight * condition(device=self.device, iteration=batch_idx)
+            cond_loss = condition.weight * condition(device=self.device, iteration=self.n_training_step)
             self.log(f'train/{condition.name}', cond_loss)
             loss = loss + cond_loss
 
         self.log('train/loss', loss)
+        self.n_training_step += 1
         return loss
 
     def validation_step(self, batch, batch_idx):
