@@ -137,6 +137,9 @@ class DeepONetDataCondition(DataCondition):
         The 'norm' which should be computed for evaluation. If 'inf', maximum norm will
         be used. Else, the result will be taken to the n-th potency (without computing the
         root!)
+    root : float
+        the n-th root to be computed to obtain the final loss. E.g., if norm=2, root=2, the
+        loss is the 2-norm.
     use_full_dataset : bool
         Whether to perform single iterations or compute the error on the whole dataset during
         forward call. The latter can especially be useful during validation.
@@ -147,10 +150,10 @@ class DeepONetDataCondition(DataCondition):
         training.
     """
 
-    def __init__(self, module, dataloader, norm, use_full_dataset=False,
+    def __init__(self, module, dataloader, norm, root=1., use_full_dataset=False,
                  name='datacondition', weight=1.0):
         super().__init__(module=module, dataloader=dataloader, 
-                         norm=norm, use_full_dataset=use_full_dataset, 
+                         norm=norm, root=root, use_full_dataset=use_full_dataset, 
                          name=name, weight=weight)
         assert isinstance(self.module, DeepONet)
 
