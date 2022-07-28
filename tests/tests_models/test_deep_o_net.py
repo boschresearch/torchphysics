@@ -1,7 +1,7 @@
 import torch
 import pytest
 
-from torchphysics.models.deeponet.branchnets import (BranchNet, FCBranchNet, Conv1DBranchNet)
+from torchphysics.models.deeponet.branchnets import (BranchNet, FCBranchNet, ConvBranchNet1D)
 from torchphysics.models.deeponet.trunknets import (TrunkNet, FCTrunkNet) 
 from torchphysics.models.deeponet.deeponet import DeepONet
 from torchphysics.models.deeponet.layers import TrunkLinear
