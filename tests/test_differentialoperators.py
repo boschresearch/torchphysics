@@ -70,7 +70,7 @@ def test_laplacian_with_grad_input():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function1(a[i], b[i])
-    g = grad(output, a)
+    g = grad(output.unsqueeze(-1), a)
     l = laplacian(output, a, grad=g)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
@@ -220,7 +220,7 @@ def test_laplacian_for_two_variables_at_the_same_time():
 # Test gradient
 def test_gradient_for_one_input():
     a = torch.tensor([[1.0, 1.0]], requires_grad=True)
-    output = function(a[0])
+    output = function(a[0]).unsqueeze(-1).unsqueeze(0)
     g = grad(output, a)
     assert g.shape[0] == 1
     assert g.shape[1] == 2
@@ -232,7 +232,7 @@ def test_gradient_many_inputs():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function(a[i])
-    g = grad(output, a)
+    g = grad(output.unsqueeze(-1), a)
     assert g.shape[0] == 3
     assert g.shape[1] == 2
     assert np.equal(g.detach().numpy(), [[2, 2], [4, 0], [6, 2]]).all()   
@@ -243,7 +243,7 @@ def test_gradient_1D():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function(a[i])
-    g = grad(output, a)
+    g = grad(output.unsqueeze(-1), a)
     assert g.shape[0] == 3
     assert g.shape[1] == 1
     assert np.equal(g.detach().numpy(), [[2], [4], [0]]).all()
@@ -254,7 +254,7 @@ def test_gradient_3D():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function(a[i])
-    g = grad(output, a)
+    g = grad(output.unsqueeze(-1), a)
     assert g.shape[0] == 2
     assert g.shape[1] == 3
     assert np.equal(g.detach().numpy(), [[2, 10, 4], [4, 4, 4]]).all()
@@ -268,11 +268,11 @@ def test_gradient_mixed_input():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function1(a[i], b[i])
-    g = grad(output, a)
+    g = grad(output.unsqueeze(-1), a)
     assert g.shape[0] == a.shape[0]
     assert g.shape[1] == 2
     assert np.equal(g.detach().numpy(), [[2, 1], [4, 1]]).all()  
-    g = grad(output, b)
+    g = grad(output.unsqueeze(-1), b)
     assert g.shape[0] == b.shape[0]
     assert g.shape[1] == 1
     assert np.equal(g.detach().numpy(), [[3], [3/4]]).all() 
@@ -286,7 +286,7 @@ def test_gradient_for_two_variables_at_the_same_time():
     output = torch.zeros(x.shape[0])
     for i in range(x.shape[0]):
         output[i] = function1(x[i], y[i])
-    g = grad(output, x, y)
+    g = grad(output.unsqueeze(-1), x, y)
     assert g.shape[0] == x.shape[0]
     assert g.shape[1] == 3
     assert np.allclose(g.detach().numpy(), [[16, 12, 2], [4, 12, 4]])     
@@ -296,7 +296,7 @@ def test_normal_derivative_for_one_input():
     a = torch.tensor([[1.0, 1.0]], requires_grad=True)
     output = function(a[0])
     normal = torch.tensor([[1.0, 0]])
-    n = normal_derivative(output, normal, a)
+    n = normal_derivative(output.unsqueeze(-1).unsqueeze(0), normal, a)
     assert n.shape[0] == 1
     assert n.shape[1] == 1
     assert np.equal(n.detach().numpy(), [2]).all()
@@ -308,7 +308,7 @@ def test_normal_derivative_for_many_inputs():
     for i in range(a.shape[0]):
         output[i] = function(a[i])
     normals = torch.tensor([[1.0, 0], [1.0, 0], [np.cos(np.pi/4), np.sin(np.pi/4)]])
-    n = normal_derivative(output, normals, a)
+    n = normal_derivative(output.unsqueeze(-1), normals, a)
     assert n.shape[0] == 3
     assert n.shape[1] == 1
     assert np.allclose(n.detach().numpy(), [[2], [0],
@@ -321,7 +321,7 @@ def test_normal_derivative_3D():
     for i in range(a.shape[0]):
         output[i] = function(a[i])
     normals = torch.tensor([[1.0, 0, 0], [1.0, 0, 1.0]])
-    n = normal_derivative(output, normals, a)
+    n = normal_derivative(output.unsqueeze(-1), normals, a)
     assert n.shape[0] == 2
     assert n.shape[1] == 1
     assert np.allclose(n.detach().numpy(), [[2], [4]])
@@ -336,11 +336,11 @@ def test_normal_derivative_complexer_function():
     for i in range(a.shape[0]):
         output[i] = function1(a[i], b[i])
     normals = torch.tensor([[1.0, 0], [1.0/np.sqrt(2), 1.0/np.sqrt(2)]])
-    n = normal_derivative(output, normals, a)
+    n = normal_derivative(output.unsqueeze(-1), normals, a)
     assert n.shape[0] == a.shape[0]
     assert n.shape[1] == 1
     assert np.allclose(n.detach().numpy(), [[2], [1/np.sqrt(2)*(4+np.cos(0))]])
-    n = normal_derivative(output, normals, b)
+    n = normal_derivative(output.unsqueeze(-1), normals, b)
     assert n.shape[0] == b.shape[0]
     assert n.shape[1] == 1
     assert np.allclose(n.detach().numpy(), [[3], [27/np.sqrt(2)]])

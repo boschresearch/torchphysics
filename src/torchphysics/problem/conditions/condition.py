@@ -93,6 +93,9 @@ class DataCondition(Condition):
         The 'norm' which should be computed for evaluation. If 'inf', maximum norm will
         be used. Else, the result will be taken to the n-th potency (without computing the
         root!)
+    root : float
+        the n-th root to be computed to obtain the final loss. E.g., if norm=2, root=2, the
+        loss is the 2-norm.
     use_full_dataset : bool
         Whether to perform single iterations or compute the error on the whole dataset during
         forward call. The latter can especially be useful during validation.
@@ -103,12 +106,14 @@ class DataCondition(Condition):
         training.
     """
 
-    def __init__(self, module, dataloader, norm, use_full_dataset=False, name='datacondition',
+    def __init__(self, module, dataloader, norm, root=1., use_full_dataset=False,
+                 name='datacondition',
                  weight=1.0):
         super().__init__(name=name, weight=weight, track_gradients=False)
         self.module = module
         self.dataloader = dataloader
         self.norm = norm
+        self.root = root
         self.use_full_dataset = use_full_dataset
 
     def _compute_dist(self, batch, device):
@@ -136,6 +141,8 @@ class DataCondition(Condition):
                 loss = torch.max(a)
             else:
                 loss = torch.mean(a**self.norm)
+        if self.root != 1.0:
+            loss = loss**(1/self.root)
         return loss
 
 

@@ -1,4 +1,8 @@
 '''File contains differentialoperators
+
+NOTE: We aim to make the computation of differential operaotrs more efficient
+      by building an intelligent framework that is able to keep already computed
+      derivatives and therefore make the computations more efficient.
 '''
 import torch
 
@@ -41,6 +45,29 @@ def laplacian(model_out, *derivative_variable, grad=None):
 
 def grad(model_out, *derivative_variable):
     '''Computes the gradient of a network with respect to the given variable.
+    Parameters
+    ----------
+    model_out : torch.tensor
+        The (scalar) output tensor of the neural network
+    derivative_variable : torch.tensor
+        The input tensor of the variables in which respect the derivatives have to
+        be computed
+    Returns
+    ----------
+    torch.tensor
+        A Tensor, where every row contains the values of the the first
+        derivatives (gradient) w.r.t the row of the input variable.
+    '''
+    grad = []
+    for vari in derivative_variable:
+        new_grad = torch.autograd.grad(model_out.sum(), vari,
+                                       create_graph=True)[0]
+        grad.append(new_grad)
+    return torch.column_stack(grad)
+
+"""
+def grad(model_out, *derivative_variable):
+    '''Computes the gradient of a network with respect to the given variable.
 
     Parameters
     ----------
@@ -57,12 +84,27 @@ def grad(model_out, *derivative_variable):
         derivatives (gradient) w.r.t the row of the input variable.
     '''
     grad = []
+    # store identity matrix (necessary in batched grad computation) only once
+    eye = None
+    dim = list(range(len(model_out.shape)))
+    assert model_out.shape[-1] == 1
     for vari in derivative_variable:
-        new_grad = torch.autograd.grad(model_out.sum(), vari,
-                                       create_graph=True)[0]
+        if vari.shape[:-1] == model_out.shape[:-1]:
+            new_grad = torch.autograd.grad(model_out.sum(dim),
+                                           vari,
+                                           create_graph=True)[0]
+        else:
+            assert vari.shape[:-1] == model_out.shape[1:-1]
+            if eye is None:
+                eye = torch.eye(model_out.shape[0], device=vari.device)
+            new_grad = torch.autograd.grad(model_out.sum(dim[1:]),
+                                           vari,
+                                           grad_outputs=(eye,),
+                                           is_grads_batched=True,
+                                           create_graph=True)[0]
         grad.append(new_grad)
-    return torch.column_stack(grad)
-
+    return torch.cat(grad, dim=-1)
+"""
 
 def normal_derivative(model_out, normals, *derivative_variable):
     '''Computes the normal derivativ of a network with respect to the given variable
@@ -87,9 +129,38 @@ def normal_derivative(model_out, normals, *derivative_variable):
     '''
     gradient = grad(model_out, *derivative_variable)
     normal_derivatives = gradient*normals
-    return normal_derivatives.sum(dim=1, keepdim=True)
+    return normal_derivatives.sum(dim=-1, keepdim=True)
+    
 
+def div(model_out, *derivative_variable):
+    '''Computes the divergence of a network with respect to the given variable.
+    Only for vector valued inputs, for matices use the function matrix_div.
+    Parameters
+    ----------
+    model_out : torch.tensor
+        The output tensor of the neural network
+    derivative_variable : torch.tensor
+        The input tensor of the variables in which respect the derivatives have to
+        be computed. Have to be in a consistent ordering, if for example the output 
+        is u = (u_x, u_y) than the variables has to passed in the order (x, y)
+    Returns
+    ----------
+    torch.tensor
+        A Tensor, where every row contains the values of the divergence
+        of the model w.r.t the row of the input variable.
+    '''
+    divergence = torch.zeros((derivative_variable[0].shape[0], 1),
+                             device=derivative_variable[0].device)
+    var_dim = 0
+    for vari in derivative_variable:
+        for i in range(vari.shape[1]):
+            Du = torch.autograd.grad(model_out.narrow(1, var_dim + i, 1).sum(),
+                                     vari, create_graph=True)[0]
+            divergence += Du.narrow(1, i, 1)
+        var_dim += i + 1
+    return divergence
 
+"""
 def div(model_out, *derivative_variable):
     '''Computes the divergence of a network with respect to the given variable.
     Only for vector valued inputs, for matices use the function matrix_div.
@@ -109,17 +180,49 @@ def div(model_out, *derivative_variable):
         A Tensor, where every row contains the values of the divergence
         of the model w.r.t the row of the input variable.
     '''
-    divergence = torch.zeros((derivative_variable[0].shape[0], 1),
-                             device=derivative_variable[0].device)
+    divergence = torch.zeros((*derivative_variable[0].shape[:-1], 1),
+                              device=derivative_variable[0].device)
     var_dim = 0
+    dim = list(range(len(model_out.shape)))
+    model_out_sum = None
+    model_out_partial_sum = None
     for vari in derivative_variable:
-        for i in range(vari.shape[1]):
-            Du = torch.autograd.grad(model_out.narrow(1, var_dim + i, 1).sum(),
-                                     vari, create_graph=True)[0]
-            divergence += Du.narrow(1, i, 1)
-        var_dim += i + 1
+        if vari.shape[:-1] == model_out.shape[:-1]:
+            # standard case (e.g. PINN)
+            if model_out_sum is None:
+                model_out_sum = model_out.sum(dim[:-1])
+            if vari.shape[-1] > 1:
+                eye_out = torch.eye(vari.shape[-1], device=vari.device)
+                new_div = torch.autograd.grad(model_out_sum[var_dim:var_dim+vari.shape[-1]],
+                                              vari,
+                                              grad_outputs=(eye_out,),
+                                              is_grads_batched=True,
+                                              create_graph=True)[0]
+            else:
+                new_div = torch.autograd.grad(model_out_sum.narrow(-1, var_dim, 1),
+                                              vari, create_graph=True)[0]
+        else:
+            # advanced, e.g. efficient DeepONet case
+            assert vari.shape[:-1] == model_out.shape[1:-1]
+            eye = torch.eye(model_out.shape[0]*vari.shape[-1])
+            if model_out_partial_sum is None:
+                model_out_partial_sum = model_out.sum(dim[1:-1])
+            if vari.shape[-1] > 1:
+                new_div = torch.autograd.grad(model_out_partial_sum[:, var_dim:var_dim+vari.shape[-1]].reshape(-1, 1),
+                                              vari,
+                                              grad_outputs=(eye,),
+                                              is_grads_batched=True,
+                                              create_graph=True)[0].reshape(model_out.shape[0], vari.shape[-1])
+            else:
+                new_div = torch.autograd.grad(model_out_partial_sum[:, var_dim:var_dim+1],
+                                              vari,
+                                              grad_outputs=(eye,),
+                                              is_grads_batched=True,
+                                              create_graph=True)[0]
+        var_dim += vari.shape[-1]
+        divergence = divergence + new_div
     return divergence
-
+"""
 
 def jac(model_out, *derivative_variable):
     '''Computes the jacobian of a network output with

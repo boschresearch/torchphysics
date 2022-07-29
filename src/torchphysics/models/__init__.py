@@ -20,4 +20,6 @@ from .activation_fn import (AdaptiveActivationFunction, ReLUn, Sinus)
 
 # DeepONet:
 from .deeponet.deeponet import DeepONet
-from .deeponet.subnets import (TrunkNet, BranchNet, FCBranchNet, FCTrunkNet) 
+from .deeponet.branchnets import (BranchNet, FCBranchNet, ConvBranchNet1D)
+from .deeponet.trunknets import (TrunkNet, FCTrunkNet) 
+from .deeponet.layers import TrunkLinear

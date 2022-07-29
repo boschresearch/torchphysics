@@ -1,9 +1,10 @@
 import torch
 import pytest
 
-from torchphysics.models.deeponet.subnets import (TrunkNet, FCTrunkNet, 
-                                                  BranchNet, FCBranchNet)
+from torchphysics.models.deeponet.branchnets import (BranchNet, FCBranchNet, ConvBranchNet1D)
+from torchphysics.models.deeponet.trunknets import (TrunkNet, FCTrunkNet) 
 from torchphysics.models.deeponet.deeponet import DeepONet
+from torchphysics.models.deeponet.layers import TrunkLinear
 from torchphysics.models.model import Sequential, NormalizationLayer
 from torchphysics.problem.spaces import Points, R1, R2, FunctionSpace
 from torchphysics.problem.domains import Interval, CustomFunctionSet
@@ -31,7 +32,7 @@ def test_forward_fc_trunk_net():
     net =  FCTrunkNet(input_space=R2('x'), output_space=R1('u'), output_neurons=20)
     test_data = Points(torch.tensor([[2, 3.0], [0, 1]]), R2('x'))
     out = net(test_data)
-    assert out.size() == torch.Size([2, 20])
+    assert out.size() == torch.Size([2, 1, 20])
 
 """
 Tests for branch net:
@@ -88,7 +89,7 @@ def test_fix_branch_net_with_function():
     net = FCBranchNet(fn_space, output_space=R1('u'), output_neurons=22, 
                       discretization_sampler=sampler)
     net.fix_input(f)
-    assert net.current_out.shape == (1, 22)
+    assert net.current_out.shape == (1, 1, 22)
 
 
 def test_fix_branch_net_with_function_2():
@@ -99,7 +100,7 @@ def test_fix_branch_net_with_function_2():
     net = FCBranchNet(fn_space, output_space=R1('u'), output_neurons=22, 
                       discretization_sampler=sampler)
     net.fix_input(f)
-    assert net.current_out.shape == (1, 22)
+    assert net.current_out.shape == (1, 1, 22)
 
 
 def test_fix_branch_net_with_function_set():
@@ -108,7 +109,7 @@ def test_fix_branch_net_with_function_set():
     net = FCBranchNet(fn_space, output_space=R1('u'), output_neurons=22, 
                       discretization_sampler=sampler)
     net.fix_input(fn_set)
-    assert net.current_out.shape == (20, 22)
+    assert net.current_out.shape == (20, 1, 22)
 
 
 def test_fix_branch_wrong_input():
@@ -149,7 +150,7 @@ def test_create_deeponet_with_seq_trunk():
     assert net.output_space == R1('u')
     
 
-def test_create_deeponet_fix_branch():
+def test_deeponet_fix_branch():
     def f(t):
         return 20*t
     trunk = TrunkNet(input_space=R1('t'), output_space=R1('u'), output_neurons=20)
@@ -159,7 +160,7 @@ def test_create_deeponet_fix_branch():
                          discretization_sampler=sampler)
     net = DeepONet(trunk, branch)
     net.fix_branch_input(f)
-    assert branch.current_out.shape == (1, 20)
+    assert branch.current_out.shape == (1, 1, 20)
 
 
 def test_deeponet_forward():
@@ -202,3 +203,24 @@ def test_deeponet_forward_branch_intern():
     net = DeepONet(trunk, branch)
     net._forward_branch(fn_set, iteration_num=0)
     net._forward_branch(fn_set, iteration_num=0)
+
+def test_trunk_linear():
+    linear_a = TrunkLinear(30, 20, bias=True)
+    linear_b = torch.nn.Linear(30, 20, bias=True)
+    linear_b.bias = torch.nn.Parameter(linear_a.bias[:])
+    linear_b.weight = torch.nn.Parameter(linear_a.weight[:])
+
+    x = torch.randn(2,4,30).expand(5,-1,-1,-1)
+    x.requires_grad = True
+    
+    y_b = linear_b(x)
+    y_a = linear_a(x)
+    
+    assert torch.norm(
+        torch.autograd.grad(y_a.sum(), x, retain_graph=True)[0]-torch.autograd.grad(y_b.sum(), x,retain_graph=True)[0]
+    ) < 1e-5
+
+    y_a.sum().backward()
+    y_b.sum().backward()
+    assert torch.norm(linear_a.weight.grad - linear_b.weight.grad) < 1e-2
+    assert torch.norm(linear_a.bias.grad - linear_b.bias.grad) < 1e-5

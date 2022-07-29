@@ -188,7 +188,7 @@ class TrimeshPolyhedron(Domain):
         x_axis = torch.linspace(bounds[0], bounds[1], scaled_n, device=device)
         y_axis = torch.linspace(bounds[2], bounds[3], scaled_n, device=device)
         z_axis = torch.linspace(bounds[4], bounds[5], scaled_n, device=device)
-        points = torch.stack(torch.meshgrid(x_axis, y_axis, z_axis)).T
+        points = torch.stack(torch.meshgrid(x_axis, y_axis, z_axis)).mT
         return points.reshape(-1, 3)
 
     def _get_bounding_box_volume(self, bounds):
