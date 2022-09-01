@@ -27,7 +27,7 @@ def laplacian(model_out, *derivative_variable, grad=None):
         A Tensor, where every row contains the value of the sum of the second
         derivatives (laplace) w.r.t the row of the input variable.
     '''
-    laplacian = torch.zeros((model_out.shape[0], 1),
+    laplacian = torch.zeros((*model_out.shape[:-1], 1),
                              device=model_out.device)
     for vari in derivative_variable:
         if grad is None or len(derivative_variable) > 1:
@@ -36,10 +36,10 @@ def laplacian(model_out, *derivative_variable, grad=None):
         # when we compute the second derivative. If it is linear we can just return zeros
         if grad.grad_fn is None:
             continue
-        for i in range(vari.shape[1]):
-            D2u = torch.autograd.grad(grad.narrow(1, i, 1).sum(),
+        for i in range(vari.shape[-1]):
+            D2u = torch.autograd.grad(grad.narrow(-1, i, 1).sum(),
                                       vari, create_graph=True)[0]
-            laplacian += D2u.narrow(1, i, 1)
+            laplacian += D2u.narrow(-1, i, 1)
     return laplacian
 
 
