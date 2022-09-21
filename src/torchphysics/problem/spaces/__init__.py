@@ -12,8 +12,6 @@ Points
 """
 
 from .space import (Space,
-                    R1,
-                    R2,
-                    R3)
+                    R1, R2, R3, Rn)
 from .points import Points
 from .functionspace import FunctionSpace

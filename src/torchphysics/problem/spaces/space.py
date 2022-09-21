@@ -89,6 +89,26 @@ class Space(Counter, OrderedDict):
     def __reduce__(self):
         return self.__class__, (OrderedDict(self),)
 
+    def check_values_in_space(self, values):
+        """Checks if a given tensor is valid to belong to this space.
+
+        Parameters
+        ----------
+        values : torch.tensor
+            A tensor of values that should be checked.
+            Generally the last dimension of the tensor has to fit 
+            the dimension of this space.
+
+        Returns
+        -------
+        torch.tensor
+            In the case, that the values have not the corrected shape, but can
+            be reshaped, thet reshaped values are returned. 
+            This is used in the matrix-space.
+        """
+        assert values.shape[-1] == self.dim
+        return values
+
 
 class R1(Space):
     """The space for one dimensional real numbers.
@@ -124,3 +144,49 @@ class R3(Space):
     """
     def __init__(self, variable_name):
         super().__init__({variable_name: 3})
+
+
+class Rn(Space):
+    """The space for n dimensional real numbers.
+
+    Parameters
+    ----------
+    variable_name: str
+        The name of the variable that belongs to this space.
+    n : int
+        The dimension of this space.
+    """
+    def __init__(self, variable_name, n : int):
+        super().__init__({variable_name: n})
+
+
+# class M(Space):
+#     """The space for n x m matricies. (currently only real numbers)
+
+#     Parameters
+#     ----------
+#     variable_name: str
+#         The name of the variable that belongs to this space.
+#     n : int
+#         The number of rows of the matricies.
+#     m : int
+#         The number of columns.
+#     """
+#     def __init__(self, variable_name, n : int, m : int):
+#         self.rows = n
+#         self.columns = m
+#         super().__init__({variable_name: n*m})
+
+#     def __mul__(self, other):
+#         raise NotImplementedError("Matrix-spaces can not be multiplied!")
+
+#     def check_values_in_space(self, values):
+#         v_shape = values.shape
+#         if len(v_shape) >= 3 and v_shape[-2] == self.rows and v_shape[-1] == self.columns:
+#             # values aready in correct shape
+#             return values
+#         if values.shape[-1] == self.dim:
+#             # maybe values are given as a vector with correct dimension
+#             # -> reshape to matrix 
+#             return values.reshape(-1, self.rows, self.columns)
+#         raise AssertionError("Values do not belong to a matrix-space")
