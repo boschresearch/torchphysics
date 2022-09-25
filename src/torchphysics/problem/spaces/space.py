@@ -76,6 +76,12 @@ class Space(Counter, OrderedDict):
         """
         return set(self.keys())
 
+    def __eq__(self, o: object) -> bool:
+        # use OrderedDict equal methode to get order-sensitive comparision
+        return OrderedDict.__eq__(self, o)
+
+    def __ne__(self, o: object) -> bool:
+        return OrderedDict.__ne__(self, o)
 
     """
     Python recipe (see official Python docs) to maintain the insertion order.

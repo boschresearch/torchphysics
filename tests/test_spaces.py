@@ -73,6 +73,30 @@ def test_space_serialize():
     assert isinstance(s_dict[0], OrderedDict)
 
 
+def test_space_equal():
+    x = R1('x')
+    y = R1('y')
+    z = R2('z')
+    assert x == x
+    assert not x == y
+    assert not z == y
+    assert x*y*z == x*y*z
+    assert not x*y*z == x*z*y
+    assert not y*x*z == x*y*z
+
+
+def test_space_not_equal():
+    x = R1('x')
+    y = R1('y')
+    z = R2('z')
+    assert x != y
+    assert not x != x
+    assert z != y
+    assert not x*y*z != x*y*z
+    assert x*y*z != x*z*y
+    assert y*x*z != x*y*z
+
+
 def test_create_R1():
     r = R1('x')
     assert isinstance(r, Counter)
