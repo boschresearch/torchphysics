@@ -1,7 +1,8 @@
 import torch.nn as nn
+import torch
 
 from ..model import Model
-from ..fcn import _construct_FC_layers
+from .layers import TrunkLinear
 
 
 class TrunkNet(Model):
@@ -29,10 +30,28 @@ class TrunkNet(Model):
         return output.reshape(-1, self.output_space.dim, 
                               int(self.output_neurons/self.output_space.dim))
 
+def construct_FC_trunk_layers(hidden, input_dim, output_dim, activations, xavier_gains):
+    """Constructs the layer structure for a fully connected neural network.
+    """
+    if not isinstance(activations, (list, tuple)):
+        activations = len(hidden) * [activations]
+    if not isinstance(xavier_gains, (list, tuple)):
+        xavier_gains = len(hidden) * [xavier_gains]
 
+    layers = []
+    layers.append(TrunkLinear(input_dim, hidden[0]))
+    torch.nn.init.xavier_normal_(layers[-1].weight, gain=xavier_gains[0])
+    layers.append(activations[0])
+    for i in range(len(hidden)-1):
+        layers.append(TrunkLinear(hidden[i], hidden[i+1]))
+        torch.nn.init.xavier_normal_(layers[-1].weight, gain=xavier_gains[i+1])
+        layers.append(activations[i+1])
+    layers.append(TrunkLinear(hidden[-1], output_dim))
+    torch.nn.init.xavier_normal_(layers[-1].weight, gain=1)
+    return layers
 
 class FCTrunkNet(TrunkNet):
-    """A fully connected neural networks that can be used inside a DeepONet.
+    """A fully connected neural network that can be used inside a DeepONet.
     Parameters
     ----------
     input_space : Space
@@ -60,12 +79,12 @@ class FCTrunkNet(TrunkNet):
                  hidden=(20,20,20), activations=nn.Tanh(), xavier_gains=5/3):
         super().__init__(input_space, output_space, output_neurons)
 
-        layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_space.dim, 
-                                      output_dim=output_neurons, 
-                                      activations=activations, xavier_gains=xavier_gains)
+        layers = construct_FC_trunk_layers(hidden=hidden, input_dim=self.input_space.dim, 
+                                           output_dim=output_neurons, 
+                                           activations=activations, xavier_gains=xavier_gains)
 
         self.sequential = nn.Sequential(*layers)
 
     def forward(self, points):
         points = self._fix_points_order(points)
-        return self._reshape_multidimensional_output(self.sequential(points))
+        return self._reshape_multidimensional_output(self.sequential(points.as_tensor))
