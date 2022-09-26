@@ -255,7 +255,7 @@ def animation_quiver_2D(outputs, ani_sampler, animation_points, domain_points,
                        units='xy', zorder=10)
     sm = cm.ScalarMappable(cmap=cm.jet, norm=norm)
     quiver._init() # to fix the arrow scale
-    plt.colorbar(sm)
+    plt.colorbar(sm, ax=ax)
     # create the animation
     def animate(frame_number, outputs, quiver):
         # set new coords. of arrow head and color

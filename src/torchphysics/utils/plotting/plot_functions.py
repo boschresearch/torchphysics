@@ -303,7 +303,7 @@ def quiver2D(output, domain_points, point_sampler, angle, **kwargs):
               color=cm.jet(norm(color)),
               units='xy', zorder=10, **kwargs)
     sm = cm.ScalarMappable(cmap=cm.jet, norm=norm)
-    plt.colorbar(sm)
+    plt.colorbar(sm, ax=ax)
     # add a text box for the values of the other variables
     if len(point_sampler.data_for_other_variables) > 0:
         info_string = _create_info_text(point_sampler.data_for_other_variables)
