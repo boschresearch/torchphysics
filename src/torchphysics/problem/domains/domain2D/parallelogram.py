@@ -77,7 +77,7 @@ class Parallelogram(Domain):
     def _contains(self, points, params=Points.empty()):
         origin, _, _, dir_1, dir_2 = \
             self._construct_parallelogram(points.join(params), points.device)
-        points = points[:, list(self.space.variables)].as_tensor
+        points = points[:, list(self.space.keys())].as_tensor
         points -= origin
         bary_x, bary_y = self._solve_lgs(points, dir_1, dir_2)
         in_x = torch.logical_and(0 <= bary_x, bary_x <= 1)
@@ -155,7 +155,7 @@ class ParallelogramBoundary(BoundaryDomain):
     def _contains(self, points, params=Points.empty()):
         origin, _, _, dir_1, dir_2 = \
             self.domain._construct_parallelogram(points.join(params), points.device)
-        points = points[:, list(self.space.variables)].as_tensor
+        points = points[:, list(self.space.keys())].as_tensor
         points -= origin
         bary_x, bary_y = self.domain._solve_lgs(points, dir_1, dir_2)
         x_close = self._bary_coords_close_to_0_or_1(bary_x, bary_y)
@@ -234,7 +234,7 @@ class ParallelogramBoundary(BoundaryDomain):
             self._transform_input_for_normals(points, params, device)
         origin, _, _, dir_1, dir_2 = \
             self.domain._construct_parallelogram(points.join(params), device)
-        points = points[:, list(self.space.variables)].as_tensor
+        points = points[:, list(self.space.keys())].as_tensor
         normals = torch.zeros_like(points, device=device)
         bary_x, bary_y = self.domain._solve_lgs(points - origin, dir_1, dir_2)
         normal_dir_1 = self._get_normal_direction(dir_1, device)

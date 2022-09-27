@@ -35,9 +35,9 @@ class Translate(Domain):
 
     def _contains(self, points, params=Points.empty()):
         translate_values = self.translate_fn(points.join(params)).reshape(-1, self.space.dim)
-        shifted_points = points[:, list(self.space.variables)].as_tensor \
+        shifted_points = points[:, list(self.space.keys())].as_tensor \
                         - translate_values
-        #points[:, list(self.space.variables)] = Points(shifted_points, self.space)
+        #points[:, list(self.space.keys())] = Points(shifted_points, self.space)
         return self.domain._contains(Points(shifted_points, self.space), params)
 
     def sample_random_uniform(self, n=None, d=None, params=Points.empty(),
