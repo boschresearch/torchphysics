@@ -33,7 +33,7 @@ class Interval(Domain):
     def _contains(self, points, params=Points.empty()):
         lb = self.lower_bound(points.join(params))
         ub = self.upper_bound(points.join(params))
-        points = points[:, list(self.space.variables)].as_tensor
+        points = points[:, list(self.space.keys())].as_tensor
         bigger_then_low = torch.ge(points[:, None], lb) 
         smaller_then_up = torch.le(points[:, None], ub) 
         return torch.logical_and(bigger_then_low, smaller_then_up).reshape(-1, 1)
@@ -101,7 +101,7 @@ class IntervalBoundary(BoundaryDomain):
     def _check_close_left_right(self, points, params):
         lb = self.domain.lower_bound(points.join(params))
         ub = self.domain.upper_bound(points.join(params))
-        points = points[:, list(self.space.variables)].as_tensor
+        points = points[:, list(self.space.keys())].as_tensor
         close_to_left = torch.isclose(points[:, None], lb)
         close_to_right = torch.isclose(points[:, None], ub)
         return close_to_left, close_to_right
@@ -152,7 +152,7 @@ class IntervalSingleBoundaryPoint(BoundaryDomain):
 
     def _contains(self, points, params=Points.empty()):
         side = self.side(points.join(params))
-        points = points[:, list(self.space.variables)].as_tensor
+        points = points[:, list(self.space.keys())].as_tensor
         inside = torch.isclose(points[:, None], side)
         return inside.reshape(-1, 1)
 
