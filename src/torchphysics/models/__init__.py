@@ -13,7 +13,7 @@ Here you also find the parameters that can be learned in inverse problems.
 from .parameter import Parameter
 from .model import (Model, NormalizationLayer, AdaptiveWeightLayer,
                     Sequential, Parallel)
-from .fcn import FCN
+from .fcn import FCN, Harmonic_FCN
 from .deepritz import DeepRitzNet
 from .qres import QRES
 from .activation_fn import (AdaptiveActivationFunction, ReLUn, Sinus)
