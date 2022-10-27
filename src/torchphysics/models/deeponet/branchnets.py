@@ -6,6 +6,7 @@ from ..model import Model
 from ..fcn import _construct_FC_layers
 from ...problem.domains.functionsets.functionset import FunctionSet
 from ...utils.user_fun import UserFunction
+from ...problem.spaces.points import Points
 
 
 class BranchNet(Model):
@@ -45,12 +46,14 @@ class BranchNet(Model):
     def forward(self, discrete_function_batch, device='cpu'):
         """Evaluated the network at a given function batch. Should not be called
         directly, rather use the method ``.fix_input``.
+        
         Parameters
         ----------
-        discrete_function_batch : tensor
-            A tensor of discrete function values to evaluate the model.
+        discrete_function_batch : tp.space.Points
+            The points object of discrete function values to evaluate the model.
         device : str, optional
             The device where the data lays. Default is 'cpu'.
+        
         Notes
         -----
         Will, in general, not return anything. The output of the network will be saved 
@@ -64,17 +67,19 @@ class BranchNet(Model):
         input_points = self.discretization_sampler.sample_points(device=device)
         #self.input_points = input_points
         fn_out = function_set.create_function_batch(input_points)
-        return fn_out.as_tensor.reshape(-1, self.input_dim)
+        return fn_out
 
     def fix_input(self, function, device='cpu'):
         """Fixes the branch net for a given function. The branch net will 
         be evaluated for the given function and the output saved in ``current_out``. 
+        
         Parameters
         ----------
         function : callable, torchphysics.domains.FunctionSet
             The function(s) for which the network should be evaluaded.
         device : str, optional
             The device where the data lays. Default is 'cpu'.
+        
         Notes
         -----
         To overwrite the data ``current_out`` (the fixed function) just call 
@@ -89,8 +94,8 @@ class BranchNet(Model):
             function = UserFunction(function)
             discrete_points = self.discretization_sampler.sample_points(device=device)
             discrete_fn = function(discrete_points)
-            if discrete_fn.shape[0] == self.input_dim:
-                discrete_fn = discrete_fn.T
+            discrete_fn = discrete_fn.unsqueeze(0) # add batch dimension
+            discrete_fn = Points(discrete_fn, self.input_space.output_space)
         else:
             raise NotImplementedError("function has to be callable or a FunctionSet")
         self(discrete_fn)
@@ -98,6 +103,7 @@ class BranchNet(Model):
 
 class FCBranchNet(BranchNet):
     """A neural network that can be used inside a DeepONet-model.
+    
     Parameters
     ----------
     function_space : Space
@@ -132,12 +138,13 @@ class FCBranchNet(BranchNet):
         super().__init__(function_space, output_space, 
                          output_neurons, discretization_sampler)
         layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_dim, 
-                                      output_dim=output_neurons, 
+                                      output_dim=self.output_neurons, 
                                       activations=activations, xavier_gains=xavier_gains)
 
         self.sequential = nn.Sequential(*layers)
 
     def forward(self, discrete_function_batch):
+        discrete_function_batch = discrete_function_batch.as_tensor.reshape(-1, self.input_dim)
         self.current_out = self._reshape_multidimensional_output(self.sequential(discrete_function_batch))
        
 
@@ -191,17 +198,13 @@ class ConvBranchNet1D(BranchNet):
                          output_neurons, discretization_sampler)
         self.conv_net = convolutional_network
         layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_dim, 
-                                      output_dim=output_neurons, 
+                                      output_dim=self.output_neurons, 
                                       activations=activations, xavier_gains=xavier_gains)
 
         self.sequential = nn.Sequential(*layers)
 
-    def _discretize_function_set(self, function_set, device='cpu'):
-        input_points = self.discretization_sampler.sample_points(device=device)
-        fn_out = function_set.create_function_batch(input_points)
-        return fn_out.as_tensor
-
     def _discretize_fn(self, function, device):
+        # where is this function used?
         function = UserFunction(function)
         discrete_points = self.discretization_sampler.sample_points(device=device)
         discrete_fn = function(discrete_points)
@@ -216,7 +219,8 @@ class ConvBranchNet1D(BranchNet):
         # Generally we have : (batch, length, channels_in), where channels_in
         # corresponds to the output dimension of our functions and length to the 
         # number of discretization points. -> switch dim. 1 and 2
+        discrete_function_batch = discrete_function_batch.as_tensor
         x = self.conv_net(discrete_function_batch.permute(0, 2, 1))
-        # for the linear layer transform again:
-        out = self.sequential(x.permute(0, 2, 1).squeeze(-1))
+        # for the linear layer transform again and remove the last dimension:
+        out = self.sequential(x.permute(0, 2, 1).reshape(-1, self.input_dim))
         self.current_out = self._reshape_multidimensional_output(out)
