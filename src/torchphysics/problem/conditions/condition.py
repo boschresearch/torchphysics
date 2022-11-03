@@ -101,13 +101,18 @@ class DataCondition(Condition):
         forward call. The latter can especially be useful during validation.
     name : str
         The name of this condition which will be monitored in logging.
+    constrain_fn : callable, optional
+        A additional transformation that will be applied to the network output.
+        The function can use all the model inputs (e.g. space, time values)
+        and the corresponding outputs (the solution approximation).
+        Can be used to enforce some conditions (e.g. boundary values, or scaling the output)
     weight : float
         The weight multiplied with the loss of this condition during
         training.
     """
 
     def __init__(self, module, dataloader, norm, root=1., use_full_dataset=False,
-                 name='datacondition',
+                 name='datacondition', constrain_fn = None,
                  weight=1.0):
         super().__init__(name=name, weight=weight, track_gradients=False)
         self.module = module
@@ -115,11 +120,19 @@ class DataCondition(Condition):
         self.norm = norm
         self.root = root
         self.use_full_dataset = use_full_dataset
+        self.constrain_fn = constrain_fn
+        if self.constrain_fn:
+            self.constrain_fn = UserFunction(self.constrain_fn)
 
     def _compute_dist(self, batch, device):
         x, y = batch
         x, y = x.to(device), y.to(device)
-        return torch.abs(self.module(x).as_tensor-y.as_tensor)
+        model_out = self.module(x)
+        if self.constrain_fn:
+            model_out = self.constrain_fn({**model_out.coordinates, **x.coordinates})
+        else:
+            model_out = model_out.as_tensor
+        return torch.abs(model_out - y.as_tensor)
 
     def forward(self, device='cpu', iteration=None):
         if self.use_full_dataset:

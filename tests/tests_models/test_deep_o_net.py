@@ -92,17 +92,6 @@ def test_fix_branch_net_with_function():
     assert net.current_out.shape == (1, 1, 22)
 
 
-def test_fix_branch_net_with_function_2():
-    def f(t):
-        return 20*t.T + 4.0
-    fn_space, _ = helper_fn_set()
-    sampler = GridSampler(fn_space.input_domain, 15).make_static()
-    net = FCBranchNet(fn_space, output_space=R1('u'), output_neurons=22, 
-                      discretization_sampler=sampler)
-    net.fix_input(f)
-    assert net.current_out.shape == (1, 1, 22)
-
-
 def test_fix_branch_net_with_function_set():
     fn_space, fn_set = helper_fn_set()
     sampler = GridSampler(fn_space.input_domain, 15).make_static()
