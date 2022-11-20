@@ -30,9 +30,9 @@ def test_create_fc_trunk_net():
 
 def test_forward_fc_trunk_net():
     net =  FCTrunkNet(input_space=R2('x'), output_space=R1('u'), output_neurons=20)
-    test_data = Points(torch.tensor([[2, 3.0], [0, 1]]), R2('x'))
+    test_data = Points(torch.tensor([[[2, 3.0], [0, 1]], [[2, 3.0], [0, 1]]]), R2('x'))
     out = net(test_data)
-    assert out.size() == torch.Size([2, 1, 20])
+    assert out.size() == torch.Size([2, 2, 1, 20])
 
 """
 Tests for branch net:
@@ -84,17 +84,6 @@ def test_create_fc_branch_net():
 def test_fix_branch_net_with_function():
     def f(t):
         return 20*t
-    fn_space, _ = helper_fn_set()
-    sampler = GridSampler(fn_space.input_domain, 15).make_static()
-    net = FCBranchNet(fn_space, output_space=R1('u'), output_neurons=22, 
-                      discretization_sampler=sampler)
-    net.fix_input(f)
-    assert net.current_out.shape == (1, 1, 22)
-
-
-def test_fix_branch_net_with_function_2():
-    def f(t):
-        return 20*t.T + 4.0
     fn_space, _ = helper_fn_set()
     sampler = GridSampler(fn_space.input_domain, 15).make_static()
     net = FCBranchNet(fn_space, output_space=R1('u'), output_neurons=22, 
@@ -172,10 +161,10 @@ def test_deeponet_forward():
     branch = FCBranchNet(fn_space, output_space=R1('u'), output_neurons=20, 
                          discretization_sampler=sampler)
     net = DeepONet(trunk, branch)
-    in_sampler = GridSampler(Interval(R1('t'), 0, 1), 50)
-    out = net(in_sampler.sample_points(), f)
+    test_data = Points(torch.tensor([[[2], [0], [3.4], [2.9]]]), R1('t'))
+    out = net(test_data, f)
     assert 'u' in out.space
-    assert out.as_tensor.shape == (1, 50, 1)
+    assert out.as_tensor.shape == (1, 4, 1)
 
 
 def test_deeponet_forward_with_fixed_branch():
@@ -187,11 +176,11 @@ def test_deeponet_forward_with_fixed_branch():
     branch = FCBranchNet(fn_space, output_space=R1('u'), output_neurons=20, 
                          discretization_sampler=sampler)
     net = DeepONet(trunk, branch)
-    in_sampler = GridSampler(Interval(R1('t'), 0, 1), 50)
+    test_data = Points(torch.tensor([[[2], [0], [3.4], [2.9], [5.2]]]), R1('t'))
     net.fix_branch_input(f)
-    out = net(in_sampler.sample_points())
+    out = net(test_data)
     assert 'u' in out.space
-    assert out.as_tensor.shape == (1, 50, 1)
+    assert out.as_tensor.shape == (1, 5, 1)
 
 
 def test_deeponet_forward_branch_intern():

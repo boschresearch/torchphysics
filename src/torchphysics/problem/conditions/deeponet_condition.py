@@ -137,6 +137,11 @@ class DeepONetDataCondition(DataCondition):
         The 'norm' which should be computed for evaluation. If 'inf', maximum norm will
         be used. Else, the result will be taken to the n-th potency (without computing the
         root!)
+    constrain_fn : callable, optional
+        A additional transformation that will be applied to the network output.
+        The function gets as an input all the trunk inputs (e.g. space, time values)
+        and the corresponding outputs of the final model (the solution approximation).
+        Can be used to enforce some conditions (e.g. boundary values, or scaling the output)
     root : float
         the n-th root to be computed to obtain the final loss. E.g., if norm=2, root=2, the
         loss is the 2-norm.
@@ -150,11 +155,11 @@ class DeepONetDataCondition(DataCondition):
         training.
     """
 
-    def __init__(self, module, dataloader, norm, root=1., use_full_dataset=False,
-                 name='datacondition', weight=1.0):
+    def __init__(self, module, dataloader, norm, constrain_fn = None, 
+                 root=1., use_full_dataset=False, name='datacondition', weight=1.0):
         super().__init__(module=module, dataloader=dataloader, 
                          norm=norm, root=root, use_full_dataset=use_full_dataset, 
-                         name=name, weight=weight)
+                         name=name, weight=weight, constrain_fn=constrain_fn)
         assert isinstance(self.module, DeepONet)
 
     def _compute_dist(self, batch, device):
@@ -162,4 +167,9 @@ class DeepONetDataCondition(DataCondition):
         branch_in, trunk_in, out = branch_in.to(device), trunk_in.to(device), \
                                    out.to(device)
         self.module.branch(branch_in)
-        return torch.abs(self.module(trunk_in).as_tensor-out.as_tensor)
+        model_out = self.module(trunk_in)
+        if self.constrain_fn:
+            model_out = self.constrain_fn({**model_out.coordinates, **trunk_in.coordinates})
+        else:
+            model_out = model_out.as_tensor
+        return torch.abs(model_out - out.as_tensor)

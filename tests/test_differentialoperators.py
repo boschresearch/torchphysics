@@ -34,7 +34,7 @@ def test_laplacian_for_many_inputs():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function(a[i])
-    l = laplacian(output, a)
+    l = laplacian(output.reshape(-1, 1), a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [4, 4, 4, 4])
@@ -45,7 +45,7 @@ def test_laplacian_in_1D():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function(a[i])
-    l = laplacian(output, a)
+    l = laplacian(output.reshape(-1, 1), a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [2, 2, 2])
@@ -56,7 +56,7 @@ def test_laplacian_in_3D():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function(a[i])
-    l = laplacian(output, a)
+    l = laplacian(output.reshape(-1, 1), a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [6, 6, 6])
@@ -71,7 +71,7 @@ def test_laplacian_with_grad_input():
     for i in range(a.shape[0]):
         output[i] = function1(a[i], b[i])
     g = grad(output.unsqueeze(-1), a)
-    l = laplacian(output, a, grad=g)
+    l = laplacian(output.reshape(-1, 1), a, grad=g)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.allclose(l.detach().numpy(), [[-4*np.sin(2)+2], [-4*np.sin(4)+2]])
@@ -90,8 +90,9 @@ def test_laplacian_with_grad_input_2():
     jacobi = jac(output, inp)
     assert jacobi.shape == (4, 2, 3)
     l_1 = laplacian(output, x, grad=jacobi[:, 0, :2])
-    l_2 = laplacian(output[:, 0], x)
+    l_2 = laplacian(output[:, :1], x)
     assert torch.equal(l_1, l_2)
+
 
 def test_laplacian_for_complexer_function_1():
     a = torch.tensor([[1.0, 1.0, 1.0], [2.0, 1.0, 0], [0, 0, 0], [1.0, 0, 4.0]],
@@ -100,7 +101,7 @@ def test_laplacian_for_complexer_function_1():
         return a[0]**2 + a[1]**3 + 4*a[2]**3
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]) : output[i] = function1(a[i])
-    l = laplacian(output, a)
+    l = laplacian(output.reshape(-1, 1), a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [[32], [8], [2], [98]])
@@ -114,7 +115,7 @@ def test_laplacian_for_complexer_function_2():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function1(a[i])
-    l = laplacian(output, a)
+    l = laplacian(output.reshape(-1, 1), a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.allclose(l.detach().numpy(), [[6-np.sin(1)], [12], [0],
@@ -129,11 +130,11 @@ def test_laplacian_for_two_inputs_one_linear():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function1(a[i], b[i])
-    l = laplacian(output, a)
+    l = laplacian(output.reshape(-1, 1), a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [6, 6])  
-    l = laplacian(output, b)
+    l = laplacian(output.reshape(-1, 1), b)
     assert l.shape[0] == b.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [0, 0])  
@@ -148,11 +149,11 @@ def test_laplacian_for_two_not_linear_inputs():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function1(a[i], b[i])
-    l = laplacian(output, a)
+    l = laplacian(output.reshape(-1, 1), a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [4, 4])  
-    l = laplacian(output, b)
+    l = laplacian(output.reshape(-1, 1), b)
     assert l.shape[0] == b.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [[6], [3]]) 
@@ -167,11 +168,11 @@ def test_laplacian_multiply_varibales():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function1(a[i], b[i])
-    l = laplacian(output, a)
+    l = laplacian(output.reshape(-1, 1), a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [[4], [32]])  
-    l = laplacian(output, b)
+    l = laplacian(output.reshape(-1, 1), b)
     assert l.shape[0] == b.shape[0]
     assert l.shape[1] == 1
     assert np.all(l.detach().numpy() == [[2], [0]])    
@@ -185,7 +186,7 @@ def test_laplacian_with_chain_rule():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function1(a[i])
-    l = laplacian(output, a)
+    l = laplacian(output.reshape(-1, 1), a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.allclose(l.detach().numpy(), [[-0.97203], [-0.22555]], atol=1e-04)  
@@ -198,7 +199,7 @@ def test_laplacian_with_tanh():
     output = torch.zeros(a.shape[0])
     for i in range(a.shape[0]):
         output[i] = function1(a[i])
-    l = laplacian(output, a)
+    l = laplacian(output.reshape(-1, 1), a)
     assert l.shape[0] == a.shape[0]
     assert l.shape[1] == 1
     assert np.allclose(l.detach().numpy(), [[-0.0087], [-1.7189]], atol=1e-04)  
@@ -212,7 +213,7 @@ def test_laplacian_for_two_variables_at_the_same_time():
     output = torch.zeros(x.shape[0])
     for i in range(x.shape[0]):
         output[i] = function1(x[i], y[i])
-    l = laplacian(output, x, y)
+    l = laplacian(output.reshape(-1, 1), x, y)
     assert l.shape[0] == x.shape[0]
     assert l.shape[1] == 1
     assert np.allclose(l.detach().numpy(), [[30], [28]])          

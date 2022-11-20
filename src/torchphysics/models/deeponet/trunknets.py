@@ -3,10 +3,12 @@ import torch
 
 from ..model import Model
 from .layers import TrunkLinear
+from ..fcn import _construct_FC_layers
 
 
 class TrunkNet(Model):
     """A neural network that can be used inside a DeepONet-model.
+
     Parameters
     ----------
     input_space : Space
@@ -18,10 +20,20 @@ class TrunkNet(Model):
     output_neurons : int
         The number of output neurons. Will be multiplied my the dimension of the output space, 
         so each dimension will have the same number of intermediate neurons.
+    trunk_input_copied : bool, optional
+        If every sample function of the branch input gets evaluated at the same trunk input, 
+        the evaluation process can be speed up, since the trunk only has to evaluated once
+        for the whole data batch of branch inputs. 
+        If this is the case, set trunk_input_copied = True.
+        If for example a dataset with different trunk inputs for each branch function
+        is used, set trunk_input_copied = False. Else this may lead to unexpected 
+        behavior.
     """
-    def __init__(self, input_space, output_space, output_neurons):
+    def __init__(self, input_space, output_space, output_neurons, 
+                 trunk_input_copied=True):
         super().__init__(input_space, output_space)
         self.output_neurons = output_neurons * output_space.dim
+        self.trunk_input_copied = trunk_input_copied
 
     def _reshape_multidimensional_output(self, output):
         if len(output.shape) == 3:
@@ -76,12 +88,20 @@ class FCTrunkNet(TrunkNet):
         Default is 5/3. 
     """
     def __init__(self, input_space, output_space, output_neurons, 
-                 hidden=(20,20,20), activations=nn.Tanh(), xavier_gains=5/3):
-        super().__init__(input_space, output_space, output_neurons)
+                 hidden=(20,20,20), activations=nn.Tanh(), xavier_gains=5/3, 
+                 trunk_input_copied=True):
+        super().__init__(input_space, output_space, output_neurons, 
+                         trunk_input_copied=trunk_input_copied)
 
-        layers = construct_FC_trunk_layers(hidden=hidden, input_dim=self.input_space.dim, 
-                                           output_dim=output_neurons, 
-                                           activations=activations, xavier_gains=xavier_gains)
+        # special layer architecture is used if trunk data is copied -> faster training
+        if self.trunk_input_copied:
+            layers = construct_FC_trunk_layers(hidden=hidden, input_dim=self.input_space.dim, 
+                                            output_dim=self.output_neurons, 
+                                            activations=activations, xavier_gains=xavier_gains)
+        else:
+            layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_space.dim, 
+                                          output_dim=self.output_neurons, 
+                                          activations=activations, xavier_gains=xavier_gains)
 
         self.sequential = nn.Sequential(*layers)
 

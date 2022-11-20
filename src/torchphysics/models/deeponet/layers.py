@@ -6,6 +6,9 @@ class linear(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weight, bias=None):
         # we assume that the tensor is copied along the first axis
+        if len(input.shape) < 3:
+            # have to axis if only one single example should be evaluated
+            input = input.unsqueeze(0)
         n_inputs = input.shape[0]
         input = input[0]
         ctx.save_for_backward(input, weight, bias)
