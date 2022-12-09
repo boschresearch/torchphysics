@@ -20,7 +20,7 @@ One of the simplest applications is the forward solution of a Poisson equation:
    u &= \sin(\frac{\pi}{2} x_1)\cos(2\pi x_2), \text{ on } \partial \Omega
    \end{align}
 
-This problem is part of the tutorial and only mentioned for completeness. 
+This problem is part of the tutorial and is therefore explained with alot of details. 
 The corresponding implementation can be found here_.
 
 .. _here : tutorial/solve_pde.html
@@ -38,7 +38,7 @@ A simple example would be the problem:
       u(0) &= 1
    \end{align*}
 
-where we want to train a family of solutions for :math:`k \in [0, 2]`. So we essentially
+where we want to train a family of solutions for :math:`k \in [0, 2]`. We
 want to find the function :math:`u(x, k) = e^{kx}`.
 Implemented is this example in: `simple-parameter-dependency-notebook`_ 
 
@@ -95,6 +95,27 @@ solution of this problem.
 Link to the notebook: `moving-domain-notebook`_ 
 
 .. _`moving-domain-notebook`: https://github.com/boschresearch/torchphysics/blob/main/examples/pinn/moving-heat-equation.ipynb
+
+
+Using hard constrains
+=====================
+For some problems, it is advantageous to build some prior knowledge into the used network architecture 
+(e.g. scaling the network output or fixing the values on the boundary). This can easily be achieved 
+in TorchPhysics and is demonstrated in this `hard-constrains-notebook`_. There we consider the system:
+
+.. math::
+
+   \begin{align*}
+      \partial_y u(x,y) &= \frac{u(x,y)}{y}, \text{ in } [0, 1] \times [0, 1] \\
+      u_1(x, 0) &= 0 , \text{ for } x \in [0, 1] \\
+      u_2(x, 1) &= \sin(20\pi*x) , \text{ for } x \in [0, 1] \\
+      \vec{n} \nabla u(x, y) &= 0 , \text{ for } x \in \{0, 1\}, y \in \{0, 1\}\\
+   \end{align*} 
+
+where the high frequency is problematic for the usual PINN-approach.
+
+.. _`hard-constrains-notebook`: https://github.com/boschresearch/torchphysics/blob/main/examples/pinn/hard-constrains.ipynb
+
 
 Interface jump
 ==============

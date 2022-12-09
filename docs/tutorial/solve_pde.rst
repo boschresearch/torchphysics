@@ -101,8 +101,7 @@ Pytorch Lightning can be applied in the trainings process.
 .. code-block:: python
 
     import pytorch_lightning as pl
-    import os
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0" # select GPUs to use
+
     trainer = pl.Trainer(gpus=1, # or None if CPU is used
                          max_steps=4000, # number of training steps
                          logger=False,

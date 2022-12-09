@@ -41,6 +41,13 @@ Conditions
   induced by the differential equation. See `condition tutorial`_ on how to create different
   kinds of conditions for all parts of the problem.
 
+Solver
+  Handles the training of the defined model, by applying the previously created conditions.
+  The usage of the solver is shown the beginnig example for `solving a simple PDE`_. More details
+  of the trainings process are mentioned here_.
+
+.. _here: solver_info.html
+
 Utils
   Implement a variety of helper functions to make the definition and evaluation of 
   problems easier. To get an overview of all methods, see the docs_. Two parts that will
@@ -48,15 +55,6 @@ Utils
 
   - The usage of the pre implemented `differential operators`_
   - `Creating plots`_ of the trained solutions.
-
-Solver
-  Handles the training of the defined model, by applying the previously created conditions.
-  The usage of the solver will be shown in a complete problem, where all the above parts of the library
-  are used. This is shown in `solving a simple PDE`_.
-
-These are all the basics of TorchPhysics. You should now have a rough understanding of the 
-structure of this library. Some additional applications (inverse problems, training input params, ...)
-can be found under the `example-folder`_
 
 .. _`spaces and points tutorial`: tutorial_spaces_and_points.html
 .. _`Domain basics`: tutorial_domain_basics.html
