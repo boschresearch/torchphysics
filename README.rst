@@ -9,13 +9,15 @@ You can use TorchPhysics e.g. to
 - train a neural network to approximate solutions for different parameters
 - solve inverse problems and interpolate external data
 
-The following approaches are implemented using high-level concepts to make their usage as easy as possible:
+The following approaches are implemented using high-level concepts to make their usage as easy 
+as possible:
 
 - physics-informed neural networks (PINN) [1]_
 - QRes [2]_
 - the Deep Ritz method [3]_
+- DeepONets [4]_ and Physics-Informed DeepONets [5]_
 
-TorchPhysics can also be used to implement extensions of these approaches or concepts like DeepONets [4]_ and Physics-Informed DeepONets [5]_. We aim to also include further implementations in the future.
+We aim to also include further implementations in the future.
 
 
 TorchPhysics is build upon the machine learning library PyTorch_. 
