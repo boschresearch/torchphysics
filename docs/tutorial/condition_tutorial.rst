@@ -4,7 +4,7 @@ Conditions
 The **Conditions** are the central concept of TorchPhysics. They transform the conditions of
 the underlying differential equation into the trainings conditions for the neural network.
 
-Many kinds of conditions are pre implemented, they can be found under 
+Many kinds of conditions are pre implemented, they can be found in
 the docs_. Depending on the used type, the condition get different inputs. The five arguments 
 that almost all conditions need, are:
 
@@ -65,7 +65,7 @@ need the output ``u`` and the input ``t`` and ``x``. Therefore the corresponding
     def boundary_residual(u, t, x):
         return u - torch.sin(t * x[:, :1])*torch.sin(t * x[:, 1:])
 
-Here many important things are happening:
+Here many **important** things are happening:
 
 1) The inputs of the function ``boundary_residual`` only corresponds to the variables required. 
    The needed variables will then internally be correctly passed to the method. Here it is important
@@ -76,9 +76,21 @@ Here many important things are happening:
    If we assume ``x`` is two-dimensional the value ``x[:, :1]`` corresponds to the entries
    of the first axis, while ``x[:, 1:]`` is the second axis.
    One could also write something like ``t[:, :1]``, but this is equal to ``t``.
+   Maybe now the question arises, if one could also use ``x[:, 0]`` instead of ``x[:, :1]``.
+   Both expressions return the first axis of our two-dimensional input points. **But** 
+   there is one important difference in the output, the final **shape**. The use of
+   ``x[:, 0]`` leads to an output of the shape: [batch-dimension] (essentially just 
+   a list/tensor with the values of the first axis), while ``x[:, :1]`` has the 
+   shape: [batch-dimension, 1]. So ``x[:, :1]`` preserves the shape of the 
+   input. This is important to get the correct behavior for different operations like
+   addition, multiplication, etc. Therefore, ``x[:, 0]`` should generally not be used
+   inside the residuals and can even lead to errors while training. For more info 
+   on tensor shapes one should check the documentation of `PyTorch`_.
 4) The output at the end has to be a PyTorch tensor.
 5) We have to rewrite the residual in such a way, that the right hand side is zero. E.g.
    here we have to bring the sin-function to the other side.
+
+.. _`PyTorch`: https://pytorch.org/tutorials/beginner/introyt/tensors_deeper_tutorial.html
 
 The defined method could then be passed to a condition. Let us assume we have already created 
 our model and sampler:

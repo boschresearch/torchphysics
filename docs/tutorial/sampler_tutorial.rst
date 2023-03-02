@@ -30,7 +30,7 @@ created with:
   import torchphysics as tp
   X = tp.spaces.R2('x') # the space of the object
   R = tp.domains.Parallelogram(X, [0, 0], [1, 0], [0, 1]) # unit square
-  C = tp.domains.Circle(X, [0, 0], 1)  # unit circle
+  C = tp.domains.Circle(X, [0, 0], 1) # unit circle
   random_R = tp.samplers.RandomUniformSampler(R, n_points=50) # 50 random points in R
   grid_C = tp.samplers.GridSampler(C, density=10) # grid points with density 10 in C
 
@@ -50,6 +50,20 @@ be used in the following way:
 
   # first argument the space, afterwards all samplers:
   tp.utils.scatter(X, random_R, random_R_bound)
+
+To create on batch of points, the ``.sample_points()`` method can be used. This functions
+creates ``n_points`` (or density dependent) different points with the desired sampling strategy 
+and returns the corresponding ``Points`` object:
+
+.. code-block:: python
+
+  created_points = random_R.sample_points()
+
+The utilities of the ``Points`` objects were part of the `spaces and points tutorial`_.
+As a general reminder, these ``created_points`` are essentially a dictionary with the 
+different space variables as keys and PyTorch-tensors as values. To extract a stacked
+PyTorch-tensor of all values, one can use the property ``.as_tensor``. Generally the 
+``.sample_points()`` function will be called only internally.
 
 The default behavior of each sampler is, that in each iteration of the trainings process new 
 points are created and used. If this is not desired, not useful (grid sampling) or not
@@ -118,4 +132,5 @@ found in the `sampler-docs`_.
 Now you know all about the creation of points and can either go to the conditions or
 definition of neural networks. Click here_ to go back to the main tutorial page. 
 
+.. _`spaces and points tutorial`: tutorial_spaces_and_points.html
 .. _here: tutorial_start.html
