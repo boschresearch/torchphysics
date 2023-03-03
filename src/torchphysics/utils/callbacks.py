@@ -108,3 +108,44 @@ class PlotterCallback(Callback):
 
     def on_train_end(self, trainer, pl_module):
         return
+
+
+class TrainerStateCheckpoint(Callback):
+    """
+    A callback to saves the current state of the trainer (a PyTorch Lightning checkpoint),
+    if the training has to be resumed at a later point in time.
+
+    Parameters
+    ----------
+    path : str
+        The relative path of the saved weights.
+    name : str
+        A name that will become part of the file name of the saved weights.
+    check_interval : int, optional
+        Checkpoints will be saved every check_interval steps. Default is 200.
+    weights_only : bool, optional
+        If only the model parameters should be saved. Default is false.
+
+    Note
+    ----
+    To continue from the checkpoint, use `resume_from_checkpoint ="path_to_ckpt_file"` as an
+    argument in the initialization of the trainer.
+
+    The PyTorch Lightning checkpoint would save the current epoch and restart from it. 
+    In TorchPhysics we dont use multiple epochs, instead we train with multiple iterations
+    inside "one giant epoch". If the training is restarted, the trainer will always start
+    from iteration 0 (essentially the last completed epoch). But all other states
+    (model, optimizer, ...) will be correctly restored.
+    """
+    def __init__(self, path, name, check_interval=200, weights_only = False):
+        super().__init__()
+        self.path = path
+        self.name = name
+        self.check_interval = check_interval
+        self.weights_only = weights_only
+
+
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+        if batch_idx % self.check_interval == 0:
+            trainer.save_checkpoint(self.path + '/' + self.name + ".ckpt", 
+                                    weights_only=self.weights_only)

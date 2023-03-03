@@ -19,7 +19,7 @@ class DeepONet(Model):
     branch_net : torchphysics.models.BranchNet
         The neural network that will get the function variables as an 
         input. 
-    
+
     Notes
     -----
     The number of output neurons in the branch and trunk net have to be the same!
@@ -71,8 +71,8 @@ class DeepONet(Model):
         trunk_out = self.trunk(trunk_inputs)
         if len(trunk_out.shape) < 4:
             trunk_out = trunk_out.unsqueeze(0) # shape = [1, trunk_n, dim, neurons]
-        return Points(torch.sum(trunk_out * self.branch.current_out.unsqueeze(1), dim=-1),
-                      self.output_space)
+        out = torch.sum(trunk_out * self.branch.current_out.unsqueeze(1), dim=-1)
+        return Points(out, self.output_space)
 
     def _forward_branch(self, function_set, iteration_num=-1, device='cpu'):
         """Branch evaluation for training.

@@ -70,7 +70,7 @@ class Triangle(Domain):
     def _contains(self, points, params=Points.empty()):
         origin, _, _, dir_1, _, dir_3 = \
             self._construct_triangle(points.join(params), device=points.device)
-        points = points[:, list(self.space.variables)].as_tensor
+        points = points[:, list(self.space.keys())].as_tensor
         points -= origin
         bary_x, bary_y = self._solve_lgs(points, dir_1, -dir_3)
         greater_0 = torch.logical_and(0 <= bary_x, 0 <= bary_y)
@@ -178,7 +178,7 @@ class TriangleBoundary(BoundaryDomain):
     def _contains(self, points, params=Points.empty()):
         origin, _, _, dir_1, _, dir_3 = \
             self.domain._construct_triangle(points.join(params), device=points.device)
-        points = points[:, list(self.space.variables)].as_tensor
+        points = points[:, list(self.space.keys())].as_tensor
         points -= origin
         bary_x, bary_y = self.domain._solve_lgs(points, dir_1, -dir_3)
         x_close_to_0 = self._bary_coords_close_to_0_or_1(bary_x, bary_y)
@@ -249,7 +249,7 @@ class TriangleBoundary(BoundaryDomain):
             self._transform_input_for_normals(points, params, device)
         origin, _, _, dir_1, dir_2, dir_3 = \
             self.domain._construct_triangle(points.join(params), device)
-        points = points[:, list(self.space.variables)].as_tensor
+        points = points[:, list(self.space.keys())].as_tensor
         normals = torch.zeros_like(points, device=device)
         bary_x, bary_y = self.domain._solve_lgs(points - origin, dir_1, -dir_3)
         normal_dir_1 = self._get_normal_direction(dir_1, device)

@@ -122,7 +122,7 @@ class Rotate(Domain):
         translate_values = self.rotate_around(points.join(params)).reshape(-1, self.space.dim)
         rotation_matrix = self.rotation_fn(points.join(params)).reshape(-1, self.space.dim, 
                                                                         self.space.dim)
-        shifted_points = points[:, list(self.space.variables)].as_tensor \
+        shifted_points = points[:, list(self.space.keys())].as_tensor \
                         - translate_values
         # here apply inverse rotation -> solve: Matrix * x = shifted_points
         rotated_points = torch.linalg.solve(rotation_matrix, shifted_points.unsqueeze(-1))
