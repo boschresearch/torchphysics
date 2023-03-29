@@ -80,10 +80,11 @@ Installation
 ============
 TorchPhysics reqiueres the follwing dependencies to be installed: 
 
-- PyTorch_ >=1.7.1
-- `PyTorch Lightning`_ >=1.3.4,<2.0.0
-- Numpy_ >=1.20.2
-- Matplotlib_ >=3.0.0
+- PyTorch_ >= 1.7.1, < 2.0.0
+- `PyTorch Lightning`_ >= 1.3.4, < 2.0.0
+- Numpy_ >= 1.20.2
+- Matplotlib_ >= 3.0.0
+- Scipy_ >= 1.6.3
 
 Installing TorchPhysics with ``pip``, automatically downloads everything that is needed:
 
@@ -91,7 +92,7 @@ Installing TorchPhysics with ``pip``, automatically downloads everything that is
 
   pip install torchphysics
 
-Additionally, to use the ``Shapely`` and ``Trimesh`` functionalites install the library 
+Additionally, to use the ``Shapely`` and ``Trimesh`` functionalities, install the library 
 with the option ``all``:
 
 .. code-block:: python
@@ -99,8 +100,8 @@ with the option ``all``:
   pip install torchphysics[all]
 
 
-If you want to add functionalties or modify the code. We recommend to copy the repository and install
-it locally:
+If you want to add functionalities or modify the code. We recommend copying the 
+repository and install it locally:
 
 .. code-block:: python
 
@@ -108,7 +109,8 @@ it locally:
   pip install .
 
 .. _Numpy: https://numpy.org/
-.. _Matplotlib: https://matplotlib.org/ 
+.. _Matplotlib: https://matplotlib.org/
+.. _Scipy: https://scipy.org/
 
 About
 =====
