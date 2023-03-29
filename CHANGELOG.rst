@@ -1,10 +1,9 @@
 =========
 Changelog
 =========
+All notable changes to this project will be documented in this file.
 
-Version 0.1
+
+Version 1.0
 ===========
-
-- Feature A added
-- FIX: nasty bug #1729 fixed
-- add your changes here!
+First official release of TorchPhysics on PyPI.

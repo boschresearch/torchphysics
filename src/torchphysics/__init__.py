@@ -4,6 +4,7 @@ from .problem import domains
 from .problem import samplers
 from .problem import conditions
 from .models import *
+from .utils import *
 from .solver import Solver, OptimizerSetting
 
 if sys.version_info[:2] >= (3, 8):
