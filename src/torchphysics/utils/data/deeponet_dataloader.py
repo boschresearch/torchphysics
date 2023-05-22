@@ -17,7 +17,7 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
         [number_of_functions, discrete_points_of_branch_net, function_space_dim]
         For example, if we have a batch of 20 vector-functions (:math:`f:\R \to \R^2`) and
         use 100 discrete points for the evaluation (where the branch nets evaluates f), 
-        the shape would be: [50, 100, 2] 
+        the shape would be: [20, 100, 2] 
     trunk_data : torch.tensor
         A tensor containing the input data for the trunk network. There are two different
         possibilites for the shape of this data:
