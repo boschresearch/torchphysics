@@ -33,9 +33,9 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
         A tensor containing the expected output of the network. Shape of the 
         data should be: 
         [number_of_functions, number_of_trunk_points, output_dim].
-    branch_output_space : torchphysics.spaces.Space
+    branch_space : torchphysics.spaces.Space
         The output space of the functions, that are used as the branch input.
-    input_space : torchphysics.spaces.Space
+    trunk_space : torchphysics.spaces.Space
         The input space of the trunk network.
     output_space : torchphysics.spaces.Space
         The output space in which the solution is. 
@@ -54,6 +54,13 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
                  trunk_space, output_space, branch_batch_size, trunk_batch_size,
                  shuffle_branch=False, shuffle_trunk=True, num_workers=0,
                  pin_memory=False):
+        assert len(branch_data.shape) == 3, "Branch data has the wrong shape"
+        assert branch_data.shape[-1] == branch_space.dim , \
+            "Branch data dimension is not correct, is " + str(branch_data.shape[-1]) + " but expected " + str(branch_space.dim)
+        assert trunk_data.shape[-1] == trunk_space.dim, \
+            "Trunk data dimension is not correct, is " + str(trunk_data.shape[-1]) + " but expected " + str(trunk_space.dim)
+        assert output_data.shape[-1] == output_space.dim, \
+            "Solution data dimension is not correct, is " + str(output_data.shape[-1]) + " but expected " + str(output_space.dim)
         if len(trunk_data.shape) == 3:
             super().__init__(DeepONetDataset_Unique(branch_data,
                                                     trunk_data,

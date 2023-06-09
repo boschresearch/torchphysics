@@ -8,7 +8,8 @@ Version 1.0
 ===========
 First official release of TorchPhysics on PyPI.
 
-Version 1.1.0
+Version 1.0.1
 =============
-    - Updated documentation.
+    - Updated documentation and error messages.
     - Simplyfied creation/definition of DeepONets.
+    - Add evalution of the DeepONet for discrete inputs.
