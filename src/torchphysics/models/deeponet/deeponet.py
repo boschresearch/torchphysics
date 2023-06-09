@@ -81,7 +81,7 @@ class DeepONet(Model):
             A point object containing the output.
         
         """
-        if branch_inputs:
+        if not branch_inputs is None:
             self.fix_branch_input(branch_inputs, device=device) 
         trunk_out = self.trunk(trunk_inputs)
         if len(trunk_out.shape) < 4:

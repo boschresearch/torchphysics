@@ -80,7 +80,8 @@ class BranchNet(Model):
         
         Parameters
         ----------
-        function : callable, torchphysics.domains.FunctionSet
+        function : callable, torchphysics.domains.FunctionSet, torch.Tensor, 
+                    torchphysics.spaces.Points
             The function(s) for which the network should be evaluaded.
         device : str, optional
             The device where the data lays. Default is 'cpu'.
@@ -90,8 +91,6 @@ class BranchNet(Model):
         To overwrite the data ``current_out`` (the fixed function) just call 
         ``.fix_input`` again with a new function.
         """
-        # TODO: add  functionality for list of functions and already 
-        # discrete function tensor
         if isinstance(function, FunctionSet):
             function.sample_params(device=device)
             discrete_fn = self._discretize_function_set(function, device=device)
@@ -101,8 +100,21 @@ class BranchNet(Model):
             discrete_fn = function(discrete_points)
             discrete_fn = discrete_fn.unsqueeze(0) # add batch dimension
             discrete_fn = Points(discrete_fn, self.input_space.output_space)
+        elif isinstance(function, Points):
+            # check if we have to add batch dimension
+            if len(function._t.shape) < 3:
+                discrete_fn = Points(function._t.unsqueeze(0), self.input_space.output_space)
+            else:
+                discrete_fn = function
+        elif isinstance(function, torch.Tensor):
+            # check if we have to add batch dimension
+            if len(function.shape) < 3:
+                discrete_fn = function.unsqueeze(0)
+                discrete_fn = Points(discrete_fn, self.input_space.output_space)
+            else:
+                discrete_fn = Points(function, self.input_space.output_space)
         else:
-            raise NotImplementedError("function has to be callable or a FunctionSet")
+            raise NotImplementedError("Function has to be callable, a FunctionSet, a tensor, or a tp.Point")
         self(discrete_fn)
 
 
