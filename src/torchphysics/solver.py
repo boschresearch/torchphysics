@@ -82,9 +82,9 @@ class Solver(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         loss = torch.zeros(1, requires_grad=True, device=self.device)
         for condition in self.train_conditions:
-            cond_loss = condition.weight * condition(device=self.device, iteration=self.n_training_step)
+            cond_loss =  condition(device=self.device, iteration=self.n_training_step)
             self.log(f'train/{condition.name}', cond_loss)
-            loss = loss + cond_loss
+            loss = loss + condition.weight*cond_loss
 
         self.log('train/loss', loss)
         self.n_training_step += 1
@@ -93,7 +93,7 @@ class Solver(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         for condition in self.val_conditions:
             torch.set_grad_enabled(condition.track_gradients is not False)
-            self.log(f'val/{condition.name}', condition.weight * condition(device=self.device))
+            self.log(f'val/{condition.name}', condition(device=self.device))
 
     def configure_optimizers(self):
         optimizer = self.optimizer_setting.optimizer_class(
