@@ -101,12 +101,13 @@ with the option ``all``:
 
 
 If you want to add functionalities or modify the code. We recommend copying the 
-repository and install it locally:
+repository and installing it locally:
 
 .. code-block:: python
 
   git clone https://github.com/boschresearch/torchphysics 
-  pip install .
+  cd path_to_torchphysics_folder
+  pip install .[all]
 
 .. _Numpy: https://numpy.org/
 .. _Matplotlib: https://matplotlib.org/
