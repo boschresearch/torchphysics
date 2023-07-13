@@ -17,7 +17,7 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
         [number_of_functions, discrete_points_of_branch_net, function_space_dim]
         For example, if we have a batch of 20 vector-functions (:math:`f:\R \to \R^2`) and
         use 100 discrete points for the evaluation (where the branch nets evaluates f), 
-        the shape would be: [50, 100, 2] 
+        the shape would be: [20, 100, 2] 
     trunk_data : torch.tensor
         A tensor containing the input data for the trunk network. There are two different
         possibilites for the shape of this data:
@@ -33,9 +33,9 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
         A tensor containing the expected output of the network. Shape of the 
         data should be: 
         [number_of_functions, number_of_trunk_points, output_dim].
-    branch_output_space : torchphysics.spaces.Space
+    branch_space : torchphysics.spaces.Space
         The output space of the functions, that are used as the branch input.
-    input_space : torchphysics.spaces.Space
+    trunk_space : torchphysics.spaces.Space
         The input space of the trunk network.
     output_space : torchphysics.spaces.Space
         The output space in which the solution is. 
@@ -54,6 +54,13 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
                  trunk_space, output_space, branch_batch_size, trunk_batch_size,
                  shuffle_branch=False, shuffle_trunk=True, num_workers=0,
                  pin_memory=False):
+        assert len(branch_data.shape) == 3, "Branch data has the wrong shape"
+        assert branch_data.shape[-1] == branch_space.dim , \
+            "Branch data dimension is not correct, is " + str(branch_data.shape[-1]) + " but expected " + str(branch_space.dim)
+        assert trunk_data.shape[-1] == trunk_space.dim, \
+            "Trunk data dimension is not correct, is " + str(trunk_data.shape[-1]) + " but expected " + str(trunk_space.dim)
+        assert output_data.shape[-1] == output_space.dim, \
+            "Solution data dimension is not correct, is " + str(output_data.shape[-1]) + " but expected " + str(output_space.dim)
         if len(trunk_data.shape) == 3:
             super().__init__(DeepONetDataset_Unique(branch_data,
                                                     trunk_data,
