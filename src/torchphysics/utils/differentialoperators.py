@@ -304,11 +304,11 @@ def partial(model_out, *derivative_variables):
     '''
     du = model_out
     for inp in derivative_variables:
+        if du.grad_fn is None:
+            return torch.zeros_like(inp)
         du = torch.autograd.grad(du.sum(),
                                  inp,
                                  create_graph=True)[0]
-        if du.grad_fn is None:
-            return torch.zeros_like(inp)
     return du
 
 

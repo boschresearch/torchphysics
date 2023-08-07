@@ -24,4 +24,4 @@ from .user_fun import UserFunction
 from .plotting import plot, animate, scatter
 from .evaluation import compute_min_and_max
 
-from .callbacks import (WeightSaveCallback, PlotterCallback)
+from .callbacks import (WeightSaveCallback, PlotterCallback, TrainerStateCheckpoint)

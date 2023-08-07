@@ -3,6 +3,7 @@
 import abc
 import torch
 import warnings
+import math 
 
 from ...utils.user_fun import UserFunction
 from ..spaces.points import Points
@@ -92,15 +93,22 @@ class PointSampler:
                                 Set the length by using .set_length, if this 
                                 property is needed""")
 
-    def make_static(self):
+    def make_static(self, resample_interval =math.inf):
         """Transforms a sampler to an ``StaticSampler``. A StaticSampler only creates
         points the first time .sample_points() is called. Afterwards the points 
         are saved and will always be returned if .sample_points() is called again.
         Useful if the same points should be used while training/validation
         or if it is not practicall to create new points in each iteration
         (e.g. grid points).
+
+        Parameters
+        ----------
+        resample_interval : int, optional
+            Parameter to specify if new sampling of points should be created after a fixed number 
+            of iterations. E.g. resample_interval =5, will use the same points for five iterations 
+            and then sample a new batch that will be used for the next five iterations.
         """
-        return StaticSampler(self)
+        return StaticSampler(self, resample_interval)
 
     @property
     def is_static(self):
@@ -314,19 +322,26 @@ class AppendSampler(PointSampler):
 
 class StaticSampler(PointSampler):
     """Constructs a sampler that saves the first points created and 
-    afterwards always returns these points again. Has the advantage
-    that the points only have to be computed once.
+    afterwards only returns these points again. Has the advantage
+    that the points only have to be computed once. Can also be customized to created new
+    points after a fixed number of iterations.
 
     Parameters
     ----------
     sampler : Pointsampler
         The basic sampler that will create the points.  
+    resample_interval : int, optional
+        Parameter to specify if new sampling of points should be created after a fixed number 
+        of iterations. E.g. resample_interval =5, will use the same points for five iterations 
+        and then sample a new batch that will be used for the next five iterations.
     """
 
-    def __init__(self, sampler):
+    def __init__(self, sampler, resample_interval=math.inf):
         self.length = None
         self.sampler = sampler
         self.created_points = None
+        self.resample_interval = resample_interval 
+        self.counter = 0
 
     def __len__(self):
         if self.length:
@@ -339,9 +354,12 @@ class StaticSampler(PointSampler):
         return self.sample_points()
 
     def sample_points(self, params=Points.empty(), device='cpu', **kwargs):
-        if self.created_points:
+        self.counter += 1
+        if self.created_points and self.counter < self.resample_interval:
             self._change_device(device=device)
             return self.created_points
+        # reset counter if over self.resample_interval and create new points
+        self.counter = 0
         points = self.sampler.sample_points(params, device=device, **kwargs)
         self.created_points = points
         return points
@@ -349,7 +367,8 @@ class StaticSampler(PointSampler):
     def _change_device(self, device):
         self.created_points = self.created_points.to(device) 
 
-    def make_static(self):
+    def make_static(self, resample_interval=math.inf):
+        self.resample_interval = resample_interval
         return self
 
 
