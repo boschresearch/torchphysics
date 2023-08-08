@@ -94,7 +94,7 @@ class UserFunction:
         # check that every necessary arg is given
         for key in self.necessary_args:
             assert key in args, \
-                f"The argument '{key}' is necessary in {self.__name__} but not given."
+                f"The argument '{key}' is necessary in {self.__name__()} but not given."
         # if necessary, pass defaults
         inp = {key: args[key] for key in self.args if key in args}
         inp.update({key: self.defaults[key] for key in self.args if key not in args})

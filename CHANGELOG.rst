@@ -1,10 +1,15 @@
 =========
 Changelog
 =========
+All notable changes to this project will be documented in this file.
 
-Version 0.1
+
+Version 1.0
 ===========
+First official release of TorchPhysics on PyPI.
 
-- Feature A added
-- FIX: nasty bug #1729 fixed
-- add your changes here!
+Version 1.0.1
+=============
+    - Updated documentation and error messages
+    - Simplyfied creation/definition of DeepONets
+    - Add more evalution types for the DeepONet

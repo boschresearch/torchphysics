@@ -659,6 +659,18 @@ def test_partial_repeated_gives_0():
     assert np.allclose(d[0], [[0], [0]])
 
 
+def test_partial_repeated_gives_0_2():
+    x = torch.tensor([[1.0], [2.0]], requires_grad=True)
+    y = torch.tensor([[1.0], [3.0]], requires_grad=True)
+    t = torch.tensor([[2.0], [0.0]], requires_grad=True)
+    output = part_function(x, y, t)
+    p = partial(output, x, x, x, x, y)
+    assert p.shape == (2, 1)
+    d = p.detach().numpy()
+    assert np.allclose(d[0], [[0], [0]])
+
+
+
 # Test convective
 def convec_function(x):
     out = torch.zeros((len(x), 3))

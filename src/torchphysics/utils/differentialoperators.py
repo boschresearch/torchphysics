@@ -149,14 +149,14 @@ def div(model_out, *derivative_variable):
         A Tensor, where every row contains the values of the divergence
         of the model w.r.t the row of the input variable.
     '''
-    divergence = torch.zeros((derivative_variable[0].shape[0], 1),
+    divergence = torch.zeros((*derivative_variable[0].shape[:-1], 1),
                              device=derivative_variable[0].device)
     var_dim = 0
     for vari in derivative_variable:
-        for i in range(vari.shape[1]):
-            Du = torch.autograd.grad(model_out.narrow(1, var_dim + i, 1).sum(),
+        for i in range(vari.shape[-1]):
+            Du = torch.autograd.grad(model_out.narrow(-1, var_dim + i, 1).sum(),
                                      vari, create_graph=True)[0]
-            divergence += Du.narrow(1, i, 1)
+            divergence = divergence + Du.narrow(-1, i, 1)
         var_dim += i + 1
     return divergence
 
@@ -304,11 +304,11 @@ def partial(model_out, *derivative_variables):
     '''
     du = model_out
     for inp in derivative_variables:
+        if du.grad_fn is None:
+            return torch.zeros_like(inp)
         du = torch.autograd.grad(du.sum(),
                                  inp,
                                  create_graph=True)[0]
-        if du.grad_fn is None:
-            return torch.zeros_like(inp)
     return du
 
 

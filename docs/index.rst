@@ -34,7 +34,7 @@ can be found.
    :maxdepth: 2
 
    Overview <readme>
-   Tutorial <tutorial/tutorial_start>
+   Tutorial <tutorial/main_page>
    Examples <examples>
 
 

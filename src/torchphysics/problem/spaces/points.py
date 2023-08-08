@@ -31,7 +31,8 @@ class Points():
         self._t = torch.as_tensor(data, **kwargs)
         self.space = space
         assert len(self._t.shape) >= 2
-        assert self._t.shape[-1] == self.space.dim
+        assert self._t.shape[-1] == self.space.dim, \
+            "Data dimension does not fit dimension of the space " + str(list(self.space.keys()))
 
     @classmethod
     def empty(cls, **kwargs):

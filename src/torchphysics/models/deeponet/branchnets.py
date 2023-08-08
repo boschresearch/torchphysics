@@ -15,28 +15,33 @@ class BranchNet(Model):
     ----------
     function_space : Space
         The space of functions that can be put in this network.
-    output_space : Space
-        The space of the points that should be
-        returned by the parent DeepONet-model.
-    output_neurons : int
-        The number of output neurons. These neurons will only
-        be used internally. Will be multiplied my the dimension of the output space, 
-        so each dimension will have the same number of intermediate neurons. 
-        The final output of the DeepONet-model will be in the dimension of the 
-        output space. 
     discretization_sampler : torchphysics.sampler
         A sampler that will create the points at which the input functions should 
         evaluated, to create a discrete input for the network.
         The number of input neurons will be equal to the number of sampled points.
         Therefore, the sampler should always return the same number of points!
     """
-    def __init__(self, function_space, output_space, output_neurons, 
-                 discretization_sampler):
-        super().__init__(function_space, output_space)
-        self.output_neurons = output_neurons * output_space.dim
+    def __init__(self, function_space, discretization_sampler):
+        super().__init__(function_space, output_space=None)
+        self.output_neurons = 0
         self.discretization_sampler = discretization_sampler
         self.input_dim = len(self.discretization_sampler)
         self.current_out = torch.empty(0)
+
+    def finalize(self, output_space, output_neurons):
+        """Method to set the output space and output neurons of the network. 
+        Will be called once the BranchNet is connected to the TrunkNet, so
+        that both will have a fitting output shape.
+
+        output_space : Space
+            The space in which the final output of the DeepONet will belong to.
+        output_neurons : int
+            The number of output neurons. Will be multiplied my the dimension of the 
+            output space, so each dimension will have the same number of 
+            intermediate neurons.
+        """
+        self.output_neurons = output_neurons
+        self.output_space = output_space
 
     def _reshape_multidimensional_output(self, output):
         return output.reshape(-1, self.output_space.dim, 
@@ -75,7 +80,8 @@ class BranchNet(Model):
         
         Parameters
         ----------
-        function : callable, torchphysics.domains.FunctionSet
+        function : callable, torchphysics.domains.FunctionSet, torch.Tensor, 
+                    torchphysics.spaces.Points
             The function(s) for which the network should be evaluaded.
         device : str, optional
             The device where the data lays. Default is 'cpu'.
@@ -85,8 +91,6 @@ class BranchNet(Model):
         To overwrite the data ``current_out`` (the fixed function) just call 
         ``.fix_input`` again with a new function.
         """
-        # TODO: add  functionality for list of functions and already 
-        # discrete function tensor
         if isinstance(function, FunctionSet):
             function.sample_params(device=device)
             discrete_fn = self._discretize_function_set(function, device=device)
@@ -96,8 +100,21 @@ class BranchNet(Model):
             discrete_fn = function(discrete_points)
             discrete_fn = discrete_fn.unsqueeze(0) # add batch dimension
             discrete_fn = Points(discrete_fn, self.input_space.output_space)
+        elif isinstance(function, Points):
+            # check if we have to add batch dimension
+            if len(function._t.shape) < 3:
+                discrete_fn = Points(function._t.unsqueeze(0), self.input_space.output_space)
+            else:
+                discrete_fn = function
+        elif isinstance(function, torch.Tensor):
+            # check if we have to add batch dimension
+            if len(function.shape) < 3:
+                discrete_fn = function.unsqueeze(0)
+                discrete_fn = Points(discrete_fn, self.input_space.output_space)
+            else:
+                discrete_fn = Points(function, self.input_space.output_space)
         else:
-            raise NotImplementedError("function has to be callable or a FunctionSet")
+            raise NotImplementedError("Function has to be callable, a FunctionSet, a tensor, or a tp.Point")
         self(discrete_fn)
 
 
@@ -108,13 +125,6 @@ class FCBranchNet(BranchNet):
     ----------
     function_space : Space
         The space of functions that can be put in this network.
-    output_space : Space
-        The space of the points that should be
-        returned by the parent DeepONet-model.
-    output_neurons : int
-        The number of output neurons. These neurons will only
-        be used internally. The final output of the DeepONet-model will be 
-        in the dimension of the output space. 
     discretization_sampler : torchphysics.sampler
         A sampler that will create the points at which the input functions should 
         evaluated, to create a discrete input for the network.
@@ -132,14 +142,18 @@ class FCBranchNet(BranchNet):
         For the weight initialization a Xavier/Glorot algorithm will be used.
         Default is 5/3. 
     """
-    def __init__(self, function_space, output_space, output_neurons,
-                 discretization_sampler, hidden=(20,20,20), activations=nn.Tanh(),
-                 xavier_gains=5/3):
-        super().__init__(function_space, output_space, 
-                         output_neurons, discretization_sampler)
-        layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_dim, 
-                                      output_dim=self.output_neurons, 
-                                      activations=activations, xavier_gains=xavier_gains)
+    def __init__(self, function_space, discretization_sampler, hidden=(20,20,20), 
+                 activations=nn.Tanh(), xavier_gains=5/3):
+        super().__init__(function_space, discretization_sampler)
+        self.hidden = hidden
+        self.activations = activations
+        self.xavier_gains = xavier_gains
+
+    def finalize(self, output_space, output_neurons):
+        super().finalize(output_space, output_neurons)
+        layers = _construct_FC_layers(hidden=self.hidden, input_dim=self.input_dim, 
+                        output_dim=self.output_neurons, activations=self.activations, 
+                        xavier_gains=self.xavier_gains)
 
         self.sequential = nn.Sequential(*layers)
 
@@ -156,13 +170,6 @@ class ConvBranchNet1D(BranchNet):
     ----------
     function_space : Space
         The space of functions that can be put in this network.
-    output_space : Space
-        The space of the points that should be
-        returned by the parent DeepONet-model.
-    output_neurons : int
-        The number of output neurons. These neurons will only
-        be used internally. The final output of the DeepONet-model will be 
-        in the dimension of the output space. 
     discretization_sampler : torchphysics.sampler
         A sampler that will create the points at which the input functions should 
         evaluated, to create a discrete input for the network.
@@ -191,15 +198,19 @@ class ConvBranchNet1D(BranchNet):
         For the weight initialization a Xavier/Glorot algorithm will be used.
         Default is 5/3. 
     """
-    def __init__(self, function_space, output_space, output_neurons,
-                 discretization_sampler, convolutional_network,
+    def __init__(self, function_space, discretization_sampler, convolutional_network,
                  hidden=(20,20,20), activations=nn.Tanh(), xavier_gains=5/3):
-        super().__init__(function_space, output_space, 
-                         output_neurons, discretization_sampler)
+        super().__init__(function_space, discretization_sampler)
         self.conv_net = convolutional_network
-        layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_dim, 
-                                      output_dim=self.output_neurons, 
-                                      activations=activations, xavier_gains=xavier_gains)
+        self.hidden = hidden
+        self.activations = activations
+        self.xavier_gains = xavier_gains
+
+    def finalize(self, output_space, output_neurons):
+        super().finalize(output_space, output_neurons)
+        layers = _construct_FC_layers(hidden=self.hidden, input_dim=self.input_dim, 
+                        output_dim=self.output_neurons, activations=self.activations, 
+                        xavier_gains=self.xavier_gains)
 
         self.sequential = nn.Sequential(*layers)
 
