@@ -21,7 +21,7 @@ concurrency:
 
 
 jobs:
-  build-documentation:
+  build-docs:
     runs-on: [self-hosted, ubuntu-latest]
     container: python:3-buster
     steps:
@@ -40,12 +40,12 @@ jobs:
         uses: actions/upload-pages-artifact@v3
 
   # Deployment job
-  deploy:
+  deploy-docs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-docs
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
