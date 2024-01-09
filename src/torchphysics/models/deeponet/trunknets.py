@@ -14,13 +14,14 @@ class TrunkNet(Model):
     input_space : Space
         The space of the points that can be put into this model.
     trunk_input_copied : bool, optional
-        If every sample function of the branch input gets evaluated at the same trunk input, 
+        If every sample function of the branch input gets evaluated at the same trunk input,
         the evaluation process can be speed up, since the trunk only has to evaluated once
-        for the whole data batch of branch inputs. 
+        for the whole data batch of branch inputs.
         If this is the case, set trunk_input_copied = True.
         If for example a dataset with different trunk inputs for each branch function
-        is used, set trunk_input_copied = False. Else this may lead to unexpected 
+        is used, set trunk_input_copied = False. Else this may lead to unexpected
         behavior.
+
     """
     def __init__(self, input_space, trunk_input_copied=True):
         super().__init__(input_space, output_space=None)
@@ -28,25 +29,28 @@ class TrunkNet(Model):
         self.trunk_input_copied = trunk_input_copied
 
     def finalize(self, output_space, output_neurons):
-        """Method to set the output space and output neurons of the network. 
+        """Method to set the output space and output neurons of the network.
         Will be called once the BranchNet is connected to the TrunkNet, so
         that both will have a fitting output shape.
 
+        Parameters
+        ----------
         output_space : Space
             The space in which the final output of the DeepONet will belong to.
         output_neurons : int
-            The number of output neurons. Will be multiplied my the dimension of the 
-            output space, so each dimension will have the same number of 
+            The number of output neurons. Will be multiplied my the dimension of the
+            output space, so each dimension will have the same number of
             intermediate neurons.
+
         """
         self.output_neurons = output_neurons
         self.output_space = output_space
 
     def _reshape_multidimensional_output(self, output):
         if len(output.shape) == 3:
-            return output.reshape(output.shape[0], output.shape[1], self.output_space.dim, 
+            return output.reshape(output.shape[0], output.shape[1], self.output_space.dim,
                                   int(self.output_neurons/self.output_space.dim))
-        return output.reshape(-1, self.output_space.dim, 
+        return output.reshape(-1, self.output_space.dim,
                               int(self.output_neurons/self.output_space.dim))
 
 
@@ -84,13 +88,13 @@ class FCTrunkNet(TrunkNet):
         of hidden layers, while the i-th entry will determine the number
         of neurons of each layer.
     activations : torch.nn or list, optional
-        The activation functions of this network. 
+        The activation functions of this network.
         Deafult is nn.Tanh().
     xavier_gains : float or list, optional
         For the weight initialization a Xavier/Glorot algorithm will be used.
-        Default is 5/3. 
+        Default is 5/3.
     """
-    def __init__(self, input_space, hidden=(20,20,20), activations=nn.Tanh(), xavier_gains=5/3, 
+    def __init__(self, input_space, hidden=(20,20,20), activations=nn.Tanh(), xavier_gains=5/3,
                  trunk_input_copied=True):
         super().__init__(input_space, trunk_input_copied=trunk_input_copied)
         self.hidden = hidden
@@ -102,12 +106,12 @@ class FCTrunkNet(TrunkNet):
         super().finalize(output_space, output_neurons)
         # special layer architecture is used if trunk data is copied -> faster training
         if self.trunk_input_copied:
-            layers = construct_FC_trunk_layers(hidden=self.hidden, input_dim=self.input_space.dim, 
-                        output_dim=self.output_neurons, activations=self.activations, 
+            layers = construct_FC_trunk_layers(hidden=self.hidden, input_dim=self.input_space.dim,
+                        output_dim=self.output_neurons, activations=self.activations,
                         xavier_gains=self.xavier_gains)
         else:
-            layers = _construct_FC_layers(hidden=self.hidden, input_dim=self.input_space.dim, 
-                        output_dim=self.output_neurons, activations=self.activations, 
+            layers = _construct_FC_layers(hidden=self.hidden, input_dim=self.input_space.dim,
+                        output_dim=self.output_neurons, activations=self.activations,
                         xavier_gains=self.xavier_gains)
 
         self.sequential = nn.Sequential(*layers)

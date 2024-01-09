@@ -130,7 +130,7 @@ def normal_derivative(model_out, normals, *derivative_variable):
     gradient = grad(model_out, *derivative_variable)
     normal_derivatives = gradient*normals
     return normal_derivatives.sum(dim=-1, keepdim=True)
-    
+
 
 def div(model_out, *derivative_variable):
     '''Computes the divergence of a network with respect to the given variable.
@@ -141,7 +141,7 @@ def div(model_out, *derivative_variable):
         The output tensor of the neural network
     derivative_variable : torch.tensor
         The input tensor of the variables in which respect the derivatives have to
-        be computed. Have to be in a consistent ordering, if for example the output 
+        be computed. Have to be in a consistent ordering, if for example the output
         is u = (u_x, u_y) than the variables has to passed in the order (x, y)
     Returns
     ----------
@@ -171,7 +171,7 @@ def div(model_out, *derivative_variable):
         The output tensor of the neural network
     derivative_variable : torch.tensor
         The input tensor of the variables in which respect the derivatives have to
-        be computed. Have to be in a consistent ordering, if for example the output 
+        be computed. Have to be in a consistent ordering, if for example the output
         is u = (u_x, u_y) than the variables has to passed in the order (x, y)
 
     Returns
@@ -278,9 +278,9 @@ def rot(model_out, *derivative_variable):
     """
     jacobian = jac(model_out, *derivative_variable)
     rotation = torch.zeros((len(derivative_variable[0]), 3))
-    rotation[:, 0] = jacobian[:, 2, 1] - jacobian[:, 1, 2] 
-    rotation[:, 1] = jacobian[:, 0, 2] - jacobian[:, 2, 0] 
-    rotation[:, 2] = jacobian[:, 1, 0] - jacobian[:, 0, 1] 
+    rotation[:, 0] = jacobian[:, 2, 1] - jacobian[:, 1, 2]
+    rotation[:, 1] = jacobian[:, 0, 2] - jacobian[:, 2, 0]
+    rotation[:, 2] = jacobian[:, 1, 0] - jacobian[:, 0, 1]
     return rotation
 
 
@@ -299,7 +299,7 @@ def partial(model_out, *derivative_variables):
     Returns
     ----------
     torch.tensor
-        A Tensor, where every row contains the values of the computed partial 
+        A Tensor, where every row contains the values of the computed partial
         derivative of the model w.r.t the row of the input variable.
     '''
     du = model_out
@@ -338,7 +338,7 @@ def convective(deriv_out, convective_field, *derivative_variable):
 
 
 def sym_grad(model_out, *derivative_variable):
-    """Computes the symmetric gradient: :math:`0.5(\nabla u + \nabla u^T)`.
+    """Computes the symmetric gradient: :math:`0.5(\\nabla u + \\nabla u^T)`.
 
     Parameters
     ----------
@@ -348,9 +348,9 @@ def sym_grad(model_out, *derivative_variable):
         The spatial variable in which respect model_out should be differentiated.
 
     Returns
-    ----------
+    -------
     torch.tensor
-        A Tensor of matrices of the form (batch, dim, dim), containing the 
+        A Tensor of matrices of the form (batch, dim, dim), containing the
         symmetric gradient.
     """
     jac_matrix = jac(model_out, *derivative_variable)
@@ -370,13 +370,13 @@ def matrix_div(model_out, *derivative_variable):
     Returns
     ----------
     torch.tensor
-        A Tensor of vectors of the form (batch, dim), containing the 
+        A Tensor of vectors of the form (batch, dim), containing the
         divegrence of the input.
     """
-    div_out = torch.zeros((len(model_out), model_out.shape[1]), 
+    div_out = torch.zeros((len(model_out), model_out.shape[1]),
                           device=model_out.device)
     for i in range(model_out.shape[1]):
-        # compute divergence of matrix by computing the divergence 
+        # compute divergence of matrix by computing the divergence
         # for each row
         current_row = model_out.narrow(1, i, 1).squeeze(1)
         div_out[:, i:i+1] = div(current_row, *derivative_variable)
