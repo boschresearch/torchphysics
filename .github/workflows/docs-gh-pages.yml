@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   build-docs:
-    runs-on: [self-hosted, ubuntu-latest]
+    runs-on: [ubuntu-latest]
     container: python:3-buster
     steps:
       - uses: actions/checkout@v3
