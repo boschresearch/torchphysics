@@ -46,8 +46,9 @@ class Solver(pl.LightningModule):
         self.train_conditions = nn.ModuleList(train_conditions)
         self.val_conditions = nn.ModuleList(val_conditions)
         self.optimizer_setting = optimizer_setting
-    
+
     def train_dataloader(self):
+        """"""
         # HACK: create an empty trivial dataloader, since real data is loaded
         # in conditions
         steps = self.trainer.max_steps
@@ -57,14 +58,15 @@ class Solver(pl.LightningModule):
                 "of 1000 steps.")
             steps = 1000
         return torch.utils.data.DataLoader(torch.empty(steps))
-    
+
     def val_dataloader(self):
+        """"""
         # HACK: we perform only a single step during validation,
         return torch.utils.data.DataLoader(torch.empty(1))
 
     def _set_lr_scheduler(self, optimizer):
         lr_scheduler = self.scheduler['class'](optimizer, **self.scheduler['args'])
-        lr_scheduler = {'scheduler': lr_scheduler, 'name': 'learning_rate', 
+        lr_scheduler = {'scheduler': lr_scheduler, 'name': 'learning_rate',
                         'interval': 'epoch', 'frequency': 1}
         for input_name in self.scheduler:
             if not input_name in ['class', 'args']:
@@ -107,7 +109,7 @@ class Solver(pl.LightningModule):
         lr_scheduler = self.optimizer_setting.scheduler_class(optimizer,
             **self.optimizer_setting.scheduler_args
         )
-        lr_scheduler = {'scheduler': lr_scheduler, 'name': 'learning_rate', 
+        lr_scheduler = {'scheduler': lr_scheduler, 'name': 'learning_rate',
                         'interval': 'step',
                         'frequency': self.optimizer_setting.scheduler_frequency}
         for input_name in self.optimizer_setting.scheduler_args:

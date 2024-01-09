@@ -3,9 +3,9 @@ import torch.nn as nn
 
 
 class AdaptiveActivationFunction(nn.Module):
-    """Implementation of the adaptive activation functions used in [1].
-    Will create activations of the form: activation_fn(scaling*a * x), 
-    where activation_fn is an arbitrary function, a is the additional 
+    """Implementation of the adaptive activation functions used in [#]_.
+    Will create activations of the form: activation_fn(scaling*a * x),
+    where activation_fn is an arbitrary function, a is the additional
     hyperparameter and scaling is an additional scaling factor.
 
     Parameters
@@ -21,8 +21,8 @@ class AdaptiveActivationFunction(nn.Module):
 
     Notes
     -----
-    ..  [1] Ameya D. Jagtap, Kenji Kawaguchi and George Em Karniadakis, 
-        "Adaptive activation functions accelerate convergence in deep and 
+    ..  [#] Ameya D. Jagtap, Kenji Kawaguchi and George Em Karniadakis,
+        "Adaptive activation functions accelerate convergence in deep and
         physics-informed neural networks", 2020
     """
     def __init__(self, activation_fn, inital_a=1.0, scaling=1.0):
@@ -55,14 +55,14 @@ class relu_n(torch.autograd.Function):
 
 
 class ReLUn(nn.Module):
-    """Implementation of a smoother version of ReLU, in the 
+    """Implementation of a smoother version of ReLU, in the
     form of relu(x)**n.
 
     Parameters
     ----------
     n : float
         The power to which the inputs should be rasied before appplying the
-        rectified linear unit function. 
+        rectified linear unit function.
     """
     def __init__(self, n):
         super().__init__()

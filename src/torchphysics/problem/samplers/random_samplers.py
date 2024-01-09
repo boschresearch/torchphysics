@@ -21,7 +21,7 @@ class RandomUniformSampler(PointSampler):
         The desiered density of the created points.
     filter : callable, optional
         A function that restricts the possible positions of sample points.
-        A point that is allowed should return True, therefore a point that should be 
+        A point that is allowed should return True, therefore a point that should be
         removed must return False. The filter has to be able to work with a batch
         of inputs.
         The Sampler will use a rejection sampling to find the right amount of points.
@@ -33,7 +33,7 @@ class RandomUniformSampler(PointSampler):
     def _sample_points(self, params=Points.empty(), device='cpu'):
         if self.n_points:
             rand_points = self.domain.sample_random_uniform(self.n_points,
-                                                            params=params, 
+                                                            params=params,
                                                             device=device)
             repeated_params = self._repeat_params(params, len(self))
             return rand_points.join(repeated_params)
@@ -48,7 +48,7 @@ class RandomUniformSampler(PointSampler):
         if self.n_points:
             sample_points = self._sample_n_points_with_filter(params, device)
         else:
-            # for density sampling, just sample normally and afterwards remove all 
+            # for density sampling, just sample normally and afterwards remove all
             # points that are not allowed
             sample_points = self._sample_points(params, device)
             sample_points = self._apply_filter(sample_points)
@@ -77,7 +77,7 @@ class RandomUniformSampler(PointSampler):
             # if to many points were sampled, delete them.
             cuted_points = self._cut_tensor_to_length_n(new_sample_points)
             sample_points = self._set_sampled_points(sample_points, cuted_points)
-        return sample_points 
+        return sample_points
 
 
 class GaussianSampler(PointSampler):
@@ -89,7 +89,7 @@ class GaussianSampler(PointSampler):
     domain : torchphysics.domain.Domain
         The domain in which the points should be sampled.
     n_points : int
-        The number of points that should be sampled. 
+        The number of points that should be sampled.
     mean : list, array or tensor
         The center/mean of the distribution. Has to fit the dimension
         of the given domain.
@@ -111,7 +111,7 @@ class GaussianSampler(PointSampler):
         elif not isinstance(self.mean, torch.Tensor):
             self.mean = torch.FloatTensor(self.mean)
         assert len(self.mean) == self.domain.dim, \
-            f"""Dimension of mean: {self.mean}, does not fit the domain.""" 
+            f"""Dimension of mean: {self.mean}, does not fit the domain."""
 
     def _sample_points(self, params=Points.empty(), device='cpu'):
         self._set_device_of_mean_and_std(device)
@@ -147,7 +147,7 @@ class GaussianSampler(PointSampler):
 
 
 class LHSSampler(PointSampler):
-    """Will create a simple latin hypercube sampling [1] in the given domain.
+    """Will create a simple latin hypercube sampling [#]_ in the given domain.
     Only works for the inner part of a domain, not the boundary!
 
     Parameters
@@ -155,14 +155,14 @@ class LHSSampler(PointSampler):
     domain : torchphysics.domain.Domain
         The domain in which the points should be sampled.
     n_points : int
-        The number of points that should be sampled. 
+        The number of points that should be sampled.
 
     Notes
     -----
     A bounding box is used tp create the lhs-points in the domain.
-    Points outside will be rejected and additional random uniform points will be 
+    Points outside will be rejected and additional random uniform points will be
     added to get a total number of n_points.
-    ..  [1] https://en.wikipedia.org/wiki/Latin_hypercube_sampling
+    ..  [#] https://en.wikipedia.org/wiki/Latin_hypercube_sampling
     """
     def __init__(self, domain, n_points):
         assert not isinstance(domain, BoundaryDomain), \
@@ -186,7 +186,7 @@ class LHSSampler(PointSampler):
         lhs_points = torch.zeros((self.n_points, self.domain.dim), device=device)
         # for each axis apply the lhs strategy
         for i in range(self.domain.dim):
-            axis_grid = torch.linspace(bounding_box[2*i], bounding_box[2*i+1], 
+            axis_grid = torch.linspace(bounding_box[2*i], bounding_box[2*i+1],
                                        steps=self.n_points+1, device=device)[:-1] # dont need endpoint
             axis_length = bounding_box[2*i+1] - bounding_box[2*i]
             random_shift = axis_length/self.n_points * torch.rand(self.n_points,
@@ -235,7 +235,7 @@ class AdaptiveThresholdRejectionSampler(AdaptiveSampler):
         density will change loccally during iterations.
     filter : callable, optional
         A function that restricts the possible positions of sample points.
-        A point that is allowed should return True, therefore a point that should be 
+        A point that is allowed should return True, therefore a point that should be
         removed must return False. The filter has to be able to work with a batch
         of inputs.
         The Sampler will use a rejection sampling to find the right amount of points.
@@ -250,7 +250,7 @@ class AdaptiveThresholdRejectionSampler(AdaptiveSampler):
             n_points=n_points,
             density=density,
             filter_fn=filter_fn)
-        
+
         self.last_points = None
 
     def sample_points(self, unreduced_loss=None, params=Points.empty(), device='cpu'):
@@ -282,7 +282,7 @@ class AdaptiveRandomRejectionSampler(AdaptiveSampler):
         density will change loccally during iterations.
     filter : callable, optional
         A function that restricts the possible positions of sample points.
-        A point that is allowed should return True, therefore a point that should be 
+        A point that is allowed should return True, therefore a point that should be
         removed must return False. The filter has to be able to work with a batch
         of inputs.
         The Sampler will use a rejection sampling to find the right amount of points.
@@ -296,7 +296,7 @@ class AdaptiveRandomRejectionSampler(AdaptiveSampler):
             n_points=n_points,
             density=density,
             filter_fn=filter_fn)
-        
+
         self.last_points = None
 
     def sample_points(self, unreduced_loss=None, params=Points.empty(), device='cpu'):

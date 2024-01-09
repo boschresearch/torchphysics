@@ -274,7 +274,7 @@ class SingleModuleCondition(Condition):
 class MeanCondition(SingleModuleCondition):
     """
     A condition that minimizes the mean of the residual of a single module, can be
-    used e.g. in Deep Ritz Method [1] or for energy functionals, since the mean can
+    used e.g. in Deep Ritz Method [#]_ or for energy functionals, since the mean can
     be seen as a (scaled) integral approximation.
 
     Parameters
@@ -306,7 +306,7 @@ class MeanCondition(SingleModuleCondition):
 
     Notes
     -----
-    ..  [1] Weinan E and Bing Yu, "The Deep Ritz method: A deep learning-based numerical
+    ..  [#] Weinan E and Bing Yu, "The Deep Ritz method: A deep learning-based numerical
         algorithm for solving variational problems", 2017
     """
 
@@ -349,7 +349,7 @@ class DeepRitzCondition(MeanCondition):
 
     Notes
     -----
-    ..  [1] Weinan E and Bing Yu, "The Deep Ritz method: A deep learning-based numerical
+    ..  [#] Weinan E and Bing Yu, "The Deep Ritz method: A deep learning-based numerical
         algorithm for solving variational problems", 2017
     """
     def __init__(self, module, sampler, integrand_fn, track_gradients=True, data_functions={},
@@ -362,7 +362,7 @@ class DeepRitzCondition(MeanCondition):
 class PINNCondition(SingleModuleCondition):
     """
     A condition that minimizes the mean squared error of the given residual, as required in
-    the framework of physics-informed neural networks [1].
+    the framework of physics-informed neural networks [#]_.
 
     Parameters
     -------
@@ -393,7 +393,7 @@ class PINNCondition(SingleModuleCondition):
 
     Notes
     -----
-    ..  [1] M. Raissi, "Physics-informed neural networks: A deep learning framework for
+    ..  [#] M. Raissi, "Physics-informed neural networks: A deep learning framework for
         solving forward and inverse problems involving nonlinear partial differential
         equations", Journal of Computational Physics, vol. 378, pp. 686-707, 2019.
     """
@@ -490,7 +490,7 @@ class PeriodicCondition(Condition):
             self.last_unreduced_loss = None
         else:
             x_b = self.non_periodic_sampler.sample_points(device=device)
-        
+
         x_left = self.left_sampler.sample_points(device=device)
         x_right = self.right_sampler.sample_points(device=device)
 
@@ -664,7 +664,7 @@ class IntegroPINNCondition(Condition):
 
 class AdaptiveWeightsCondition(SingleModuleCondition):
     """
-    A condition using an AdaptiveWeightLayer [1] to assign adaptive weights to all points
+    A condition using an AdaptiveWeightLayer [#]_ to assign adaptive weights to all points
     during training.
 
     Parameters
@@ -700,7 +700,7 @@ class AdaptiveWeightsCondition(SingleModuleCondition):
 
     Notes
     -----
-    ..  [1] Levi D. McClenny, "Self-Adaptive Physics-Informed Neural Networks using a
+    ..  [#]_ Levi D. McClenny, "Self-Adaptive Physics-Informed Neural Networks using a
         Soft Attention Mechanism", CoRR, 2020
     """
 
