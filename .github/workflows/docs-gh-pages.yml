@@ -23,7 +23,7 @@ concurrency:
 jobs:
   build-docs:
     runs-on: [ubuntu-latest]
-    container: python:3-buster
+    container: python:3.10-buster
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
