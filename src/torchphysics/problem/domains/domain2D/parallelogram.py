@@ -131,8 +131,8 @@ class Parallelogram(Domain):
         n_2 = int(torch.sqrt(n*side_length_2/side_length_1))
         x = torch.linspace(0, 1, n_1+2, device=device)[1:-1] # create inner grid, so remove
         y = torch.linspace(0, 1, n_2+2, device=device)[1:-1] # first and last value
-        bary_coords = torch.stack(torch.meshgrid((x, y))).T.reshape(-1, 2)
-        return bary_coords
+        bary_coords = torch.permute(torch.stack(torch.meshgrid((x, y))), (2, 1, 0))
+        return bary_coords.reshape(-1, 2)
 
     def _grid_enough_points(self, n, bary_coords, device): 
         # if not enough points, add some random ones.

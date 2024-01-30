@@ -16,7 +16,9 @@ __pycache__/*
 
 # Log folders
 **/lightning_logs/**
-
+**/bosch/**
+**/Multiscale/**
+**/fluid_logs/**
 # Project files
 .ropeproject
 .project

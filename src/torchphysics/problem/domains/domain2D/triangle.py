@@ -141,7 +141,7 @@ class Triangle(Domain):
         n_2 = int(torch.sqrt(scaled_n*side_length_2/side_length_1))
         x = torch.linspace(0, 1, n_1+2, device=device)[1:-1] # create inner grid, so remove
         y = torch.linspace(0, 1, n_2+2, device=device)[1:-1] # first and last value
-        bary_coords = torch.stack(torch.meshgrid((x, y))).T.reshape(-1, 2)
+        bary_coords = torch.permute(torch.stack(torch.meshgrid((x, y))), (2, 1, 0)).reshape(-1, 2)
         index = torch.where(bary_coords.sum(axis=1) <= 1)
         return bary_coords[index]
 

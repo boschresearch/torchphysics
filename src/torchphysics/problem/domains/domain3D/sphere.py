@@ -36,7 +36,8 @@ class Sphere(Domain):
         return center,radius
 
     def _contains(self, points, params=Points.empty()):
-        center, radius = self._compute_center_and_radius(points.join(params), device=points.device)
+        center, radius = self._compute_center_and_radius(points.join(params), 
+                                                         device=points.device)
         points = points[:, list(self.space.keys())].as_tensor
         norm = torch.linalg.norm(points - center, dim=1).reshape(-1, 1)
         return torch.le(norm[:, None], radius).reshape(-1, 1)
@@ -94,7 +95,8 @@ class Sphere(Domain):
     def _point_grid_in_box(self, n, radius, device):
         scaled_n = int(np.ceil(np.cbrt(n*6/np.pi)))
         axis = torch.linspace(-radius, radius, scaled_n, device=device)
-        points = torch.stack(torch.meshgrid(axis, axis, axis)).T
+        points = torch.permute(torch.stack(torch.meshgrid(axis, axis, axis)), 
+                               (3, 2, 1, 0))
         return points.reshape(-1, 3)
 
     def _get_points_inside(self, points, radius):
@@ -123,7 +125,8 @@ class SphereBoundary(BoundaryDomain):
         super().__init__(domain)
 
     def _contains(self, points, params=Points.empty()):
-        center, radius = self.domain._compute_center_and_radius(points.join(params), device=points.device)
+        center, radius = self.domain._compute_center_and_radius(points.join(params), 
+                                                                device=points.device)
         points = points[:, list(self.space.keys())].as_tensor
         norm = torch.linalg.norm(points - center, dim=1).reshape(-1, 1)
         return torch.isclose(norm[:, None], radius).reshape(-1, 1)
