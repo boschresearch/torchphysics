@@ -37,6 +37,7 @@ class TrunkLinear(torch.nn.Module):
     """Applies a linear transformation to the incoming data: :math:`y = xA^T + b`, similar
     to torch.nn.Linear, but assumes the input `x` to be identical along the first batch axis,
     since this is the case in our implementation of trunk nets.
+
     Args:
         in_features: size of each input sample
         out_features: size of each output sample
@@ -62,6 +63,7 @@ class TrunkLinear(torch.nn.Module):
         >>> output = m(input)
         >>> print(output.size())
         torch.Size([128, 30])
+
     """
     __constants__ = ['in_features', 'out_features']
 

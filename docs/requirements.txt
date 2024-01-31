@@ -13,4 +13,11 @@ trimesh>=3.9.19
 shapely>=1.7.1
 rtree>=0.9.7
 scipy>=1.6.3
-networkx>=2.5.1 
+networkx>=2.5.1
+jupyter
+nbsphinx
+nbsphinx-link
+sphinx_rtd_theme>=1.0
+ipywidgets
+ipython<8.17.0 # https://github.com/ipython/ipython/issues/14235
+ipykernel

@@ -5,7 +5,7 @@ from ..problem.spaces import Points
 
 class DeepRitzNet(Model):
     """
-    Implementation of the architecture used in the Deep Ritz paper [1].
+    Implementation of the architecture used in the Deep Ritz paper [1]_.
     Consists of fully connected layers and residual connections.
 
     Parameters
@@ -21,7 +21,7 @@ class DeepRitzNet(Model):
 
     Notes
     -----
-    ..  [1] Weinan E and Bing Yu, "The Deep Ritz method: A deep learning-based numerical
+    ..  [#] Weinan E and Bing Yu, "The Deep Ritz method: A deep learning-based numerical
         algorithm for solving variational problems", 2017
     """
     def __init__(self, input_space, output_space, width, depth):
@@ -44,5 +44,5 @@ class DeepRitzNet(Model):
             x_temp = torch.relu(layer1(x)**3)
             x_temp = torch.relu(layer2(x_temp)**3)
             x = x_temp + x
-        
+
         return Points(self.linearOut(x), self.output_space)
