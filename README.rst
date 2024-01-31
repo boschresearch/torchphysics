@@ -80,32 +80,26 @@ Installation
 ============
 TorchPhysics reqiueres the follwing dependencies to be installed: 
 
-- PyTorch_ >= 1.7.1, < 2.0.0
-- `PyTorch Lightning`_ >= 1.3.4, < 2.0.0
+- PyTorch_ >= 2.0.0
+- `PyTorch Lightning`_ >= 2.0.0
 - Numpy_ >= 1.20.2
 - Matplotlib_ >= 3.0.0
 - Scipy_ >= 1.6.3
 
-Installing TorchPhysics with ``pip``, automatically downloads everything that is needed:
+To install the TorchPhysics version that is compatible with PyTorch>=2.0.0
+you have to copy this branch and install it manually, either by
 
 .. code-block:: python
 
-  pip install torchphysics
+  pip install "git+https://github.com/boschresearch/torchphysics@Version2.0"
+  cd path_to_torchphysics_folder
+  pip install .[all]
 
-Additionally, to use the ``Shapely`` and ``Trimesh`` functionalities, install the library 
-with the option ``all``:
-
-.. code-block:: python
-
-  pip install torchphysics[all]
-
-
-If you want to add functionalities or modify the code. We recommend copying the 
-repository and installing it locally:
+or by
 
 .. code-block:: python
 
-  git clone https://github.com/boschresearch/torchphysics 
+  git clone https://github.com/boschresearch/torchphysics@Version2.0 
   cd path_to_torchphysics_folder
   pip install .[all]
 
