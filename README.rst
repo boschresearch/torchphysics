@@ -92,8 +92,6 @@ you have to copy this branch and install it manually, either by
 .. code-block:: python
 
   pip install "git+https://github.com/boschresearch/torchphysics@Version2.0"
-  cd path_to_torchphysics_folder
-  pip install .[all]
 
 or by
 
