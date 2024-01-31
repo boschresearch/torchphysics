@@ -50,7 +50,7 @@ class FCN(Model):
     xavier_gains : float or list, optional
         For the weight initialization a Xavier/Glorot algorithm will be used.
         The gain can be specified over this value.
-        Default is 5/3. 
+        Default is 5/3.
     """
     def __init__(self,
                  input_space,
@@ -60,8 +60,8 @@ class FCN(Model):
                  xavier_gains=5/3):
         super().__init__(input_space, output_space)
 
-        layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_space.dim, 
-                                      output_dim=self.output_space.dim, 
+        layers = _construct_FC_layers(hidden=hidden, input_dim=self.input_space.dim,
+                                      output_dim=self.output_space.dim,
                                       activations=activations, xavier_gains=xavier_gains)
 
         self.sequential = nn.Sequential(*layers)
@@ -72,10 +72,10 @@ class FCN(Model):
 
 
 class Harmonic_FCN(Model):
-    """A fully connected neural network, that for the input :math:`x` will also 
-    compute (and use) the values 
+    """A fully connected neural network, that for the input :math:`x` will also
+    compute (and use) the values
     :math:`(\cos(\pi x), \sin(\pi x), ..., \cos(n \pi x), \sin(n \pi x))`.
-    as an input. See for example [1], for some theoretical background, on why this may be 
+    as an input. See for example [#]_, for some theoretical background, on why this may be
     advantageous.
     Should be used in sequence with a normalization layer, to get inputs in the range
     of [-1, 1] with the cos/sin functions.
@@ -96,7 +96,7 @@ class Harmonic_FCN(Model):
         The highest frequenz that should be used in the input computation.
         Equal to :math:`n` in the above describtion.
     min_frequenz : int
-        The smallest frequenz that should be used. Usefull, if it is expected, that 
+        The smallest frequenz that should be used. Usefull, if it is expected, that
         only higher frequenzies appear in the solution.
         Default is 0.
     activations : torch.nn or list, optional
@@ -107,24 +107,24 @@ class Harmonic_FCN(Model):
     xavier_gains : float or list, optional
         For the weight initialization a Xavier/Glorot algorithm will be used.
         The gain can be specified over this value.
-        Default is 5/3. 
+        Default is 5/3.
 
     Notes
     -----
-    ..  [1] Tancik, Matthew and Srinivasan, Pratul P. and Mildenhall, Ben et al., 
-        "Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional 
+    ..  [#] Tancik, Matthew and Srinivasan, Pratul P. and Mildenhall, Ben et al.,
+        "Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional
         Domains", 2020
     """
-    def __init__(self, input_space, output_space, max_frequenz : int, 
+    def __init__(self, input_space, output_space, max_frequenz : int,
                  hidden=(20,20,20), min_frequenz : int = 0,
                  activations=nn.Tanh(), xavier_gains=5/3):
         assert max_frequenz > min_frequenz, "used max frequenz has to be > min frequenz"
         super().__init__(input_space, output_space)
         self.max_frequenz = max_frequenz
         self.min_frequenz = min_frequenz
-        layers = _construct_FC_layers(hidden=hidden, 
-                                      input_dim=(2*(max_frequenz-min_frequenz)+1) * self.input_space.dim, 
-                                      output_dim=self.output_space.dim, 
+        layers = _construct_FC_layers(hidden=hidden,
+                                      input_dim=(2*(max_frequenz-min_frequenz)+1) * self.input_space.dim,
+                                      output_dim=self.output_space.dim,
                                       activations=activations, xavier_gains=xavier_gains)
 
         self.sequential = nn.Sequential(*layers)
