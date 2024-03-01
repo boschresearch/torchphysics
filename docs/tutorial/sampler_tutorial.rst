@@ -13,7 +13,7 @@ are implemented, for example:
 
 And many more, see `sampler-docs`_. The samplers lay all under ``torchphysics.samplers``.
 
-.. _`sampler-docs`: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.problem.samplers.html
+.. _`sampler-docs`: https://boschresearch.github.io/torchphysics/api/torchphysics.problem.samplers.html
 
 In general, a sampler gets the following arguments:
 
