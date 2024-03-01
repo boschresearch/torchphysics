@@ -4,7 +4,7 @@ into the trainings condition of the neural network.
 
 A tutorial on the usage of Conditions can be found here_.
 
-.. _here: https://torchphysics.readthedocs.io/en/latest/tutorial/condition_tutorial.html
+.. _here: https://boschresearch.github.io/torchphysics/tutorial/tutorial_start.html
 """
 
 from .condition import (Condition,

@@ -16,7 +16,7 @@ For explicit documentation of each method and all implemented domains, see the d
 All domains can be found under ``torchphysics.domains``.
 Some pre implemented domains are: ``Point, Interval, Parallelogram, Circle...``
 
-.. _docs: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.problem.domains.html
+.. _docs: https://boschresearch.github.io/torchphysics/api/torchphysics.problem.domains.html
 
 Here we focus now on the creation of different domains. To create a domain,
 we need a space to which the domain belongs. 

@@ -42,4 +42,4 @@ More applications can be found on the `example page`_.
 
 .. _`PINNs for Poisson`: https://github.com/boschresearch/torchphysics/blob/main/examples/tutorial/solve_pde.ipynb
 .. _`DRM for Poisson`: https://github.com/boschresearch/torchphysics/blob/main/examples/tutorial/solve_pde_drm.ipynb
-.. _`example page`: https://torchphysics.readthedocs.io/en/latest/examples.html
+.. _`example page`: https://boschresearch.github.io/torchphysics/examples.html

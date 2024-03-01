@@ -62,7 +62,7 @@ Utils
 .. _`PointSampler tutorial`: sampler_tutorial.html
 .. _`model creation tutorial`: model_creation.html
 .. _`condition tutorial`: condition_tutorial.html
-.. _docs: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.utils.html
+.. _docs: https://boschresearch.github.io/torchphysics/api/torchphysics.utils.html
 .. _`differential operators`: differentialoperators.html
 .. _`Creating plots`: plotting.html
 .. _`solving a simple PDE`: solve_pde.html
