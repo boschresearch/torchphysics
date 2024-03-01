@@ -8,7 +8,7 @@ Many kinds of conditions are pre implemented, they can be found in
 the docs_. Depending on the used type, the condition get different inputs. The five arguments 
 that almost all conditions need, are:
 
-.. _docs: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.problem.conditions.html
+.. _docs: https://boschresearch.github.io/torchphysics/index.html
 
 module
     Your model that should be trained, with the condition you are creating. The definition

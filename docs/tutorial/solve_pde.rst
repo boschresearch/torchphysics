@@ -210,4 +210,4 @@ be found under the `example-folder`_.
 And more in-depth information can be found on the `tutorial page`_.
 
 .. _`example-folder`: https://github.com/boschresearch/torchphysics/tree/main/examples
-.. _`tutorial page`: https://torchphysics.readthedocs.io/en/latest/tutorial/tutorial_start.html
+.. _`tutorial page`: https://boschresearch.github.io/torchphysics/tutorial/tutorial_start.html

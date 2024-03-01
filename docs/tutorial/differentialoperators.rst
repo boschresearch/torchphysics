@@ -27,7 +27,7 @@ entry is specified. E.g. :math:`u: \mathbb{R}^3 \to \mathbb{R}^3` then do
 ``laplacian`` (:math:`u[:, 0], x`), to get the laplacian of the first entry.
 The newest version of all implemented operators can be found under the docs_.
 
-.. _docs: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.utils.html
+.. _docs: https://boschresearch.github.io/torchphysics/index.html
 
 Since ``autograd`` is used, the differential operators can work with neural networks and functions
 that use PyTorch-Tensors. It follow a short example of the usage:
