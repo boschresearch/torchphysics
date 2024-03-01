@@ -18,7 +18,7 @@ class Model(nn.Module):
         super().__init__()
         self.input_space = input_space
         self.output_space = output_space
-    
+
     def _fix_points_order(self, points):
         if points.space != self.input_space:
             if points.space.keys() != self.input_space.keys():
@@ -53,7 +53,7 @@ class NormalizationLayer(Model):
         for i in range(domain.dim):
             diag.append(maxs[i] - mins[i])
             bias.append((maxs[i] + mins[i])/2)
-        
+
         diag = 2./torch.tensor(diag)
         bias = -torch.tensor(bias)*diag
         with torch.no_grad():
@@ -73,7 +73,7 @@ class Parallel(Model):
     *models :
         The models that should be evaluated parallel. The evaluation
         happens in the order that the models are passed in.
-        The outputs of the models will be concatenated. 
+        The outputs of the models will be concatenated.
         The models are not allowed to have the same output spaces, but can
         have the same input spaces.
     """
@@ -86,7 +86,7 @@ class Parallel(Model):
             output_space = output_space * model.output_space
         super().__init__(input_space, output_space)
         self.models = nn.ModuleList(models)
-    
+
     def forward(self, points):
         out = []
         for model in self.models:
@@ -98,7 +98,7 @@ class Sequential(Model):
 
     Parameters
     ----------
-    *models : 
+    *models :
         The models that should be evaluated sequentially. The evaluation
         happens in the order that the models are passed in.
         To work correcty the output of the i-th model has to fit the input
@@ -107,7 +107,7 @@ class Sequential(Model):
     def __init__(self, *models):
         super().__init__(models[0].input_space, models[-1].output_space)
         self.models = nn.ModuleList(models)
-    
+
     def forward(self, points):
         points = self._fix_points_order(points)
         for model in self.models:
@@ -118,7 +118,7 @@ class Sequential(Model):
 class AdaptiveWeightLayer(nn.Module):
     """
     Adds adaptive weights to the non-reduced loss. The weights are maximized by
-    reversing the gradients, similar to the idea in [1].
+    reversing the gradients, similar to the idea in [#]_.
     Should currently only be used with fixed points.
 
     Parameters
@@ -128,7 +128,7 @@ class AdaptiveWeightLayer(nn.Module):
 
     Notes
     -----
-    ..  [1] L. McClenny, "Self-Adaptive Physics-Informed Neural Networks using a Soft
+    ..  [#] L. McClenny, "Self-Adaptive Physics-Informed Neural Networks using a Soft
         Attention Mechanism", 2020.
     """
     class GradReverse(torch.autograd.Function):

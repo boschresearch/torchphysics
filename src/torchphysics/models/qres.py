@@ -12,28 +12,28 @@ class Quadratic(nn.Module):
 
     Parameters
     ----------
-    in_features : int 
+    in_features : int
         size of each input sample.
     out_features :
         size of each output sample.
     xavier_gains : float or list
         For the weight initialization a Xavier/Glorot algorithm will be used.
         The gain can be specified over this value.
-        Default is 5/3. 
+        Default is 5/3.
     """
     def __init__(self, in_features, out_features, xavier_gains):
         super().__init__()
-        bias = torch.nn.init.xavier_normal_(torch.zeros(1, out_features), 
-                                            gain=xavier_gains) 
+        bias = torch.nn.init.xavier_normal_(torch.zeros(1, out_features),
+                                            gain=xavier_gains)
         self.bias = torch.nn.Parameter(bias)
-        self.linear_weights = torch.nn.Linear(in_features=in_features, 
-                                              out_features=out_features, 
+        self.linear_weights = torch.nn.Linear(in_features=in_features,
+                                              out_features=out_features,
                                               bias=False)
-        torch.nn.init.xavier_normal_(self.linear_weights.weight, gain=xavier_gains)    
-        self.quadratic_weights = torch.nn.Linear(in_features=in_features, 
+        torch.nn.init.xavier_normal_(self.linear_weights.weight, gain=xavier_gains)
+        self.quadratic_weights = torch.nn.Linear(in_features=in_features,
                                                  out_features=out_features,
                                                  bias=False)
-        torch.nn.init.xavier_normal_(self.quadratic_weights.weight, gain=xavier_gains)                                 
+        torch.nn.init.xavier_normal_(self.quadratic_weights.weight, gain=xavier_gains)
 
     def forward(self, points):
         linear_out = self.linear_weights(points)
@@ -50,9 +50,9 @@ class Quadratic(nn.Module):
 
 
 class QRES(Model):
-    """Implements the quadratic residual networks from [1].
+    """Implements the quadratic residual networks from [#]_.
     Instead of a linear layer, a quadratic layer W_1*x (*) W_2*x + W_1*x + b
-    will be used. Here (*) means the hadamard product of two vectors 
+    will be used. Here (*) means the hadamard product of two vectors
     (elementwise multiplication).
 
     Parameters
@@ -75,12 +75,12 @@ class QRES(Model):
     xavier_gains : float or list, optional
         For the weight initialization a Xavier/Glorot algorithm will be used.
         The gain can be specified over this value.
-        Default is 5/3. 
+        Default is 5/3.
 
     Notes
     -----
-    ..  [1] Jie Bu and Anuj Karpatne, "Quadratic Residual Networks: 
-        A New Class of Neural Networks for Solving Forward and Inverse Problems 
+    ..  [#] Jie Bu and Anuj Karpatne, "Quadratic Residual Networks:
+        A New Class of Neural Networks for Solving Forward and Inverse Problems
         in Physics Involving PDEs", 2021
     """
     def __init__(self,

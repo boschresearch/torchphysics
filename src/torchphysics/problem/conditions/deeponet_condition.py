@@ -7,7 +7,7 @@ from ...models import DeepONet
 
 class DeepONetSingleModuleCondition(Condition):
 
-    def __init__(self, deeponet_model, function_set, input_sampler, residual_fn, 
+    def __init__(self, deeponet_model, function_set, input_sampler, residual_fn,
                  error_fn, reduce_fn=torch.mean,
                  name='singlemodulecondition', track_gradients=True, data_functions={},
                  parameter=Parameter.empty(), weight=1.0):
@@ -56,7 +56,7 @@ class DeepONetSingleModuleCondition(Condition):
         function_set_output = {}
         if self.eval_function_set:
             function_set_output = self.function_set.create_function_batch(x[0,:,:]).coordinates
-        
+
         unreduced_loss = self.error_fn(self.residual_fn({**y.coordinates,
                                                          **x_coordinates,
                                                          **function_set_output,
@@ -71,8 +71,8 @@ class DeepONetSingleModuleCondition(Condition):
 
 class PIDeepONetCondition(DeepONetSingleModuleCondition):
     """
-    A condition that minimizes the mean squared error of the given residual, as 
-    required in the framework of physics-informed DeepONets [1].
+    A condition that minimizes the mean squared error of the given residual, as
+    required in the framework of physics-informed DeepONets [#]_.
 
     Parameters
     -------
@@ -105,17 +105,17 @@ class PIDeepONetCondition(DeepONetSingleModuleCondition):
 
     Notes
     -----
-    ..  [1] Wang, Sifan and Wang, Hanwen and Perdikaris,
+    ..  [#] Wang, Sifan and Wang, Hanwen and Perdikaris,
         "Learning the solution operator of parametric partial
-        differential equations with physics-informed DeepOnets", 
+        differential equations with physics-informed DeepOnets",
         https://arxiv.org/abs/2103.10974, 2021.
     """
-    def __init__(self, deeponet_model, function_set, input_sampler, residual_fn, 
+    def __init__(self, deeponet_model, function_set, input_sampler, residual_fn,
                  name='pinncondition', track_gradients=True, data_functions={},
                  parameter=Parameter.empty(), weight=1.0):
-        super().__init__(deeponet_model, function_set, input_sampler, 
-                         residual_fn=residual_fn, error_fn=SquaredError(), 
-                         reduce_fn=torch.mean, name=name, 
+        super().__init__(deeponet_model, function_set, input_sampler,
+                         residual_fn=residual_fn, error_fn=SquaredError(),
+                         reduce_fn=torch.mean, name=name,
                          track_gradients=track_gradients, data_functions=data_functions,
                          parameter=parameter, weight=weight)
 
@@ -155,10 +155,10 @@ class DeepONetDataCondition(DataCondition):
         training.
     """
 
-    def __init__(self, module, dataloader, norm, constrain_fn = None, 
+    def __init__(self, module, dataloader, norm, constrain_fn = None,
                  root=1., use_full_dataset=False, name='datacondition', weight=1.0):
-        super().__init__(module=module, dataloader=dataloader, 
-                         norm=norm, root=root, use_full_dataset=use_full_dataset, 
+        super().__init__(module=module, dataloader=dataloader,
+                         norm=norm, root=root, use_full_dataset=use_full_dataset,
                          name=name, weight=weight, constrain_fn=constrain_fn)
         assert isinstance(self.module, DeepONet)
 

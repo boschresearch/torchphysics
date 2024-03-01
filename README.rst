@@ -133,6 +133,23 @@ since we aim to develop a reliable code basis and extend the library to include 
 
 .. _GitHub: https://github.com/boschresearch/torchphysics
 
+Cite TorchPhysics
+=================
+If TorchPhysics has been helpful for your research, please cite:
+
+.. code-block:: latex
+
+  @article{TorchPhysics,
+      author = {Derick Nganyu Tanyu and Jianfeng Ning and Tom Freudenberg and Nick Heilenkötter and Andreas Rademacher and Uwe Iben and Peter Maass},
+      title = {Deep learning methods for partial differential equations and related parameter identification problems},
+      journal = {Inverse Problems},
+      doi = {10.1088/1361-6420/ace9d4},
+      year = {2023},
+      publisher = {IOP Publishing},
+      volume = {39},
+      number = {10},
+      pages = {103001}}
+
 License
 =======
 TorchPhysics uses an Apache License, see the LICENSE_ file.
