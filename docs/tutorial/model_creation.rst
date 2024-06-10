@@ -6,7 +6,7 @@ What basics network structures are implemented, can be found under the `model-do
 All networks can found under ``torchphysics.models``. For example, a simple fully 
 connected neural network can be created with:
 
-.. _`model-docs`: https://torchphysics.readthedocs.io/en/latest/api/torchphysics.models.html
+.. _`model-docs`: https://boschresearch.github.io/torchphysics/api/torchphysics.models.html
 
 .. code-block:: python
 

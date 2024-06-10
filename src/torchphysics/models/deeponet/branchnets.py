@@ -27,7 +27,7 @@ class BranchNet(Model):
         super().__init__(function_space, output_space=None)
         self.output_neurons = 0
         self.discretization_sampler = discretization_sampler
-        self.input_dim = len(self.discretization_sampler)
+        self.input_dim = len(self.discretization_sampler) * function_space.output_space.dim
         self.current_out = torch.empty(0)
 
     def finalize(self, output_space, output_neurons):

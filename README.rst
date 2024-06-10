@@ -71,9 +71,9 @@ to have a look at the following sections:
 - `Examples: Different applications with detailed explanations`_
 - Documentation_
 
-.. _`Tutorial: Understanding the structure of TorchPhysics`: https://torchphysics.readthedocs.io/en/latest/tutorial/tutorial_start.html
+.. _`Tutorial: Understanding the structure of TorchPhysics`: https://boschresearch.github.io/torchphysics/tutorial/tutorial_start.html
 .. _`Examples: Different applications with detailed explanations`: https://github.com/boschresearch/torchphysics/tree/main/examples
-.. _Documentation: https://torchphysics.readthedocs.io/en/latest/api/modules.html
+.. _Documentation: https://boschresearch.github.io/torchphysics/index.html
 
 
 Installation
@@ -132,6 +132,23 @@ during a seminar, we cannot guarantee every feature to work properly. However, w
 since we aim to develop a reliable code basis and extend the library to include other approaches.
 
 .. _GitHub: https://github.com/boschresearch/torchphysics
+
+Cite TorchPhysics
+=================
+If TorchPhysics has been helpful for your research, please cite:
+
+.. code-block:: latex
+
+  @article{TorchPhysics,
+      author = {Derick Nganyu Tanyu and Jianfeng Ning and Tom Freudenberg and Nick Heilenkötter and Andreas Rademacher and Uwe Iben and Peter Maass},
+      title = {Deep learning methods for partial differential equations and related parameter identification problems},
+      journal = {Inverse Problems},
+      doi = {10.1088/1361-6420/ace9d4},
+      year = {2023},
+      publisher = {IOP Publishing},
+      volume = {39},
+      number = {10},
+      pages = {103001}}
 
 License
 =======
