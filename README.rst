@@ -80,26 +80,28 @@ Installation
 ============
 TorchPhysics reqiueres the follwing dependencies to be installed: 
 
+- Python >= 3.8
 - PyTorch_ >= 2.0.0
 - `PyTorch Lightning`_ >= 2.0.0
 - Numpy_ >= 1.20.2
 - Matplotlib_ >= 3.0.0
 - Scipy_ >= 1.6.3
 
-To install the TorchPhysics version that is compatible with PyTorch>=2.0.0
-you have to copy this branch and install it manually, either by
+To install TorchPhysics you can run the following code in any Python environment where ``pip`` is installed
 
 .. code-block:: python
 
-  pip install "git+https://github.com/boschresearch/torchphysics@Version2.0"
+  pip install torchphysics
 
-or by
+Or by
 
 .. code-block:: python
 
-  git clone https://github.com/boschresearch/torchphysics@Version2.0 
+  git clone https://github.com/boschresearch/torchphysics 
   cd path_to_torchphysics_folder
   pip install .[all]
+
+if you want to modify the code.
 
 .. _Numpy: https://numpy.org/
 .. _Matplotlib: https://matplotlib.org/
