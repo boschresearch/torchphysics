@@ -413,7 +413,7 @@ def _triangulation_of_domain(domain, domain_points):
     for t in tess.simplices:
         p = points[t]
         center = 1/3.0 * (p[0] + p[1] + p[2])
-        embed_point = Points(torch.tensor([center]), domain.space)
+        embed_point = Points(torch.tensor(np.array([center])), domain.space)
         if domain.__contains__(embed_point):
             tri = np.append(tri, [t], axis=0)
 

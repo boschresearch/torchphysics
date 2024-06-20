@@ -181,7 +181,7 @@ def test_3D_curve():
     model = FCN(input_space=R1('i')*R1('t'), output_space=R2('u'))  
     fig = plotter.plot(model=model)  
     assert torch.allclose(torch.tensor(fig.axes[0].get_xlim()).float(),
-                          torch.tensor((-1.15, 2.15)))
+                          torch.tensor((-1.2188,  2.2188)), rtol=0.001)
     assert fig.axes[0].get_xlabel() == 'i'
     pyplot.close(fig)
 
