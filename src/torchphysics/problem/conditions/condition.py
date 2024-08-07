@@ -51,7 +51,7 @@ class Condition(torch.nn.Module):
         self.track_gradients = track_gradients
 
     @abc.abstractmethod
-    def forward(self, device='cpu', iteration=None):
+    def forward(self, device="cpu", iteration=None):
         """
         The forward run performed by this condition.
 
@@ -69,12 +69,13 @@ class Condition(torch.nn.Module):
             for fun in data_functions:
                 points = sampler.sample_points()
                 data_fun_points = data_functions[fun](points)
-                #self.register_buffer(fun, data_fun_points)
+                # self.register_buffer(fun, data_fun_points)
                 data_functions[fun] = UserFunction(data_fun_points)
         return data_functions
 
     def _move_static_data(self, device):
         pass
+
 
 class DataCondition(Condition):
     """
@@ -111,9 +112,17 @@ class DataCondition(Condition):
         training.
     """
 
-    def __init__(self, module, dataloader, norm, root=1., use_full_dataset=False,
-                 name='datacondition', constrain_fn = None,
-                 weight=1.0):
+    def __init__(
+        self,
+        module,
+        dataloader,
+        norm,
+        root=1.0,
+        use_full_dataset=False,
+        name="datacondition",
+        constrain_fn=None,
+        weight=1.0,
+    ):
         super().__init__(name=name, weight=weight, track_gradients=False)
         self.module = module
         self.dataloader = dataloader
@@ -134,15 +143,15 @@ class DataCondition(Condition):
             model_out = model_out.as_tensor
         return torch.abs(model_out - y.as_tensor)
 
-    def forward(self, device='cpu', iteration=None):
+    def forward(self, device="cpu", iteration=None):
         if self.use_full_dataset:
             loss = torch.zeros(1, requires_grad=True, device=device)
             for batch in iter(self.dataloader):
                 a = self._compute_dist(batch, device)
-                if self.norm == 'inf':
+                if self.norm == "inf":
                     loss = torch.maximum(loss, torch.max(a))
                 else:
-                    loss = loss + torch.mean(a**self.norm)/len(self.dataloader)
+                    loss = loss + torch.mean(a**self.norm) / len(self.dataloader)
         else:
             try:
                 batch = next(self.iterator)
@@ -150,12 +159,12 @@ class DataCondition(Condition):
                 self.iterator = iter(self.dataloader)
                 batch = next(self.iterator)
             a = self._compute_dist(batch, device)
-            if self.norm == 'inf':
+            if self.norm == "inf":
                 loss = torch.max(a)
             else:
                 loss = torch.mean(a**self.norm)
         if self.root != 1.0:
-            loss = loss**(1/self.root)
+            loss = loss ** (1 / self.root)
         return loss
 
 
@@ -176,13 +185,13 @@ class ParameterCondition(Condition):
         The name of this condition which will be monitored in logging.
     """
 
-    def __init__(self, parameter, penalty, weight, name='parametercondition'):
+    def __init__(self, parameter, penalty, weight, name="parametercondition"):
         super().__init__(name=name, weight=weight, track_gradients=False)
         self.parameter = parameter
-        self.register_parameter(name + '_params', self.parameter.as_tensor)
+        self.register_parameter(name + "_params", self.parameter.as_tensor)
         self.penalty = UserFunction(penalty)
 
-    def forward(self, device='cpu', iteration=None):
+    def forward(self, device="cpu", iteration=None):
         return self.penalty(self.parameter.coordinates)
 
 
@@ -223,13 +232,23 @@ class SingleModuleCondition(Condition):
         training.
     """
 
-    def __init__(self, module, sampler, residual_fn, error_fn, reduce_fn=torch.mean,
-                 name='singlemodulecondition', track_gradients=True, data_functions={},
-                 parameter=Parameter.empty(), weight=1.0):
+    def __init__(
+        self,
+        module,
+        sampler,
+        residual_fn,
+        error_fn,
+        reduce_fn=torch.mean,
+        name="singlemodulecondition",
+        track_gradients=True,
+        data_functions={},
+        parameter=Parameter.empty(),
+        weight=1.0,
+    ):
         super().__init__(name=name, weight=weight, track_gradients=track_gradients)
         self.module = module
         self.parameter = parameter
-        self.register_parameter(name + '_params', self.parameter.as_tensor)
+        self.register_parameter(name + "_params", self.parameter.as_tensor)
         self.sampler = sampler
         self.residual_fn = UserFunction(residual_fn)
         self.error_fn = error_fn
@@ -239,10 +258,11 @@ class SingleModuleCondition(Condition):
         if self.sampler.is_adaptive:
             self.last_unreduced_loss = None
 
-    def forward(self, device='cpu', iteration=None):
+    def forward(self, device="cpu", iteration=None):
         if self.sampler.is_adaptive:
-            x = self.sampler.sample_points(unreduced_loss=self.last_unreduced_loss,
-                                           device=device)
+            x = self.sampler.sample_points(
+                unreduced_loss=self.last_unreduced_loss, device=device
+            )
             self.last_unreduced_loss = None
         else:
             x = self.sampler.sample_points(device=device)
@@ -255,10 +275,11 @@ class SingleModuleCondition(Condition):
 
         y = self.module(x)
 
-        unreduced_loss = self.error_fn(self.residual_fn({**y.coordinates,
-                                                         **x_coordinates,
-                                                         **self.parameter.coordinates,
-                                                         **data}))
+        unreduced_loss = self.error_fn(
+            self.residual_fn(
+                {**y.coordinates, **x_coordinates, **self.parameter.coordinates, **data}
+            )
+        )
 
         if self.sampler.is_adaptive:
             self.last_unreduced_loss = unreduced_loss
@@ -310,12 +331,29 @@ class MeanCondition(SingleModuleCondition):
         algorithm for solving variational problems", 2017
     """
 
-    def __init__(self, module, sampler, residual_fn, track_gradients=True,
-                 data_functions={}, parameter=Parameter.empty(), name='meancondition',
-                 weight=1.0):
-        super().__init__(module, sampler, residual_fn, error_fn=torch.nn.Identity(),
-                         reduce_fn=torch.mean, name=name, track_gradients=track_gradients,
-                         data_functions=data_functions, parameter=parameter, weight=weight)
+    def __init__(
+        self,
+        module,
+        sampler,
+        residual_fn,
+        track_gradients=True,
+        data_functions={},
+        parameter=Parameter.empty(),
+        name="meancondition",
+        weight=1.0,
+    ):
+        super().__init__(
+            module,
+            sampler,
+            residual_fn,
+            error_fn=torch.nn.Identity(),
+            reduce_fn=torch.mean,
+            name=name,
+            track_gradients=track_gradients,
+            data_functions=data_functions,
+            parameter=parameter,
+            weight=weight,
+        )
 
 
 class DeepRitzCondition(MeanCondition):
@@ -352,11 +390,28 @@ class DeepRitzCondition(MeanCondition):
     ..  [#] Weinan E and Bing Yu, "The Deep Ritz method: A deep learning-based numerical
         algorithm for solving variational problems", 2017
     """
-    def __init__(self, module, sampler, integrand_fn, track_gradients=True, data_functions={},
-                 parameter=Parameter.empty(), name='deepritzcondition', weight=1.0):
-        super().__init__(module, sampler, integrand_fn, track_gradients=track_gradients,
-                         data_functions=data_functions, parameter=parameter, name=name,
-                         weight=weight)
+
+    def __init__(
+        self,
+        module,
+        sampler,
+        integrand_fn,
+        track_gradients=True,
+        data_functions={},
+        parameter=Parameter.empty(),
+        name="deepritzcondition",
+        weight=1.0,
+    ):
+        super().__init__(
+            module,
+            sampler,
+            integrand_fn,
+            track_gradients=track_gradients,
+            data_functions=data_functions,
+            parameter=parameter,
+            name=name,
+            weight=weight,
+        )
 
 
 class PINNCondition(SingleModuleCondition):
@@ -398,12 +453,29 @@ class PINNCondition(SingleModuleCondition):
         equations", Journal of Computational Physics, vol. 378, pp. 686-707, 2019.
     """
 
-    def __init__(self, module, sampler, residual_fn, track_gradients=True,
-                 data_functions={}, parameter=Parameter.empty(), name='pinncondition',
-                 weight=1.0):
-        super().__init__(module, sampler, residual_fn, error_fn=SquaredError(),
-                         reduce_fn=torch.mean, name=name, track_gradients=track_gradients,
-                         data_functions=data_functions, parameter=parameter, weight=weight)
+    def __init__(
+        self,
+        module,
+        sampler,
+        residual_fn,
+        track_gradients=True,
+        data_functions={},
+        parameter=Parameter.empty(),
+        name="pinncondition",
+        weight=1.0,
+    ):
+        super().__init__(
+            module,
+            sampler,
+            residual_fn,
+            error_fn=SquaredError(),
+            reduce_fn=torch.mean,
+            name=name,
+            track_gradients=track_gradients,
+            data_functions=data_functions,
+            parameter=parameter,
+            weight=weight,
+        )
 
 
 class PeriodicCondition(Condition):
@@ -449,14 +521,24 @@ class PeriodicCondition(Condition):
         training.
     """
 
-    def __init__(self, module, periodic_interval, residual_fn,
-                 non_periodic_sampler=EmptySampler(), error_fn=SquaredError(),
-                 reduce_fn=torch.mean, name='periodiccondition', track_gradients=True,
-                 data_functions={}, parameter=Parameter.empty(), weight=1.0):
+    def __init__(
+        self,
+        module,
+        periodic_interval,
+        residual_fn,
+        non_periodic_sampler=EmptySampler(),
+        error_fn=SquaredError(),
+        reduce_fn=torch.mean,
+        name="periodiccondition",
+        track_gradients=True,
+        data_functions={},
+        parameter=Parameter.empty(),
+        weight=1.0,
+    ):
         super().__init__(name=name, weight=weight, track_gradients=track_gradients)
         self.module = module
         self.parameter = parameter
-        self.register_parameter(name + '_params', self.parameter.as_tensor)
+        self.register_parameter(name + "_params", self.parameter.as_tensor)
         self.periodic_interval = periodic_interval
         self.non_periodic_sampler = non_periodic_sampler
         self.residual_fn = UserFunction(residual_fn)
@@ -464,29 +546,33 @@ class PeriodicCondition(Condition):
         self.reduce_fn = reduce_fn
 
         n_points = max(len(self.non_periodic_sampler), 1)
-        self.left_sampler = GridSampler(self.periodic_interval.boundary_left,
-                                        n_points=n_points).make_static()
-        self.right_sampler = GridSampler(self.periodic_interval.boundary_right,
-                                         n_points=n_points).make_static()
+        self.left_sampler = GridSampler(
+            self.periodic_interval.boundary_left, n_points=n_points
+        ).make_static()
+        self.right_sampler = GridSampler(
+            self.periodic_interval.boundary_right, n_points=n_points
+        ).make_static()
 
-        tmp_left_sampler = self.left_sampler*self.non_periodic_sampler
-        tmp_right_sampler = self.right_sampler*self.non_periodic_sampler
+        tmp_left_sampler = self.left_sampler * self.non_periodic_sampler
+        tmp_right_sampler = self.right_sampler * self.non_periodic_sampler
         if self.non_periodic_sampler.is_static:
             tmp_left_sampler = tmp_left_sampler.make_static()
             tmp_right_sampler = tmp_right_sampler.make_static()
-        self.left_data_functions = self._setup_data_functions(data_functions,
-                                                              tmp_left_sampler)
-        self.right_data_functions = self._setup_data_functions(data_functions,
-                                                               tmp_right_sampler)
+        self.left_data_functions = self._setup_data_functions(
+            data_functions, tmp_left_sampler
+        )
+        self.right_data_functions = self._setup_data_functions(
+            data_functions, tmp_right_sampler
+        )
 
         if self.non_periodic_sampler.is_adaptive:
             self.last_unreduced_loss = None
 
-    def forward(self, device='cpu', iteration=None):
+    def forward(self, device="cpu", iteration=None):
         if self.non_periodic_sampler.is_adaptive:
             x_b = self.non_periodic_sampler.sample_points(
-                unreduced_loss=self.last_unreduced_loss,
-                device=device)
+                unreduced_loss=self.last_unreduced_loss, device=device
+            )
             self.last_unreduced_loss = None
         else:
             x_b = self.non_periodic_sampler.sample_points(device=device)
@@ -498,39 +584,52 @@ class PeriodicCondition(Condition):
         x_right_coordinates, x_right = x_right.track_coord_gradients()
         x_b_coordinates, x_b = x_b.track_coord_gradients()
 
-
         data_left = {}
         data_right = {}
         for fun in self.left_data_functions:
-            data_left[fun] = self.left_data_functions[fun]({**x_left_coordinates,
-                                                            **x_b_coordinates})
-        data_left = {f'{k}_left': data_left[k] for k in data_left}
+            data_left[fun] = self.left_data_functions[fun](
+                {**x_left_coordinates, **x_b_coordinates}
+            )
+        data_left = {f"{k}_left": data_left[k] for k in data_left}
         for fun in self.right_data_functions:
-            data_right[fun] = self.right_data_functions[fun]({**x_right_coordinates,
-                                                              **x_b_coordinates})
-        data_right = {f'{k}_right': data_right[k] for k in data_right}
+            data_right[fun] = self.right_data_functions[fun](
+                {**x_right_coordinates, **x_b_coordinates}
+            )
+        data_right = {f"{k}_right": data_right[k] for k in data_right}
 
         y_left = self.module(x_left.join(x_b))
         y_right = self.module(x_right.join(x_b))
 
         y_left_coordinates = y_left.coordinates
-        y_left_coordinates = {f'{k}_left': y_left_coordinates[k] for k in y_left_coordinates}
+        y_left_coordinates = {
+            f"{k}_left": y_left_coordinates[k] for k in y_left_coordinates
+        }
         y_right_coordinates = y_right.coordinates
-        y_right_coordinates = {f'{k}_right': y_right_coordinates[k] for k in y_right_coordinates}
+        y_right_coordinates = {
+            f"{k}_right": y_right_coordinates[k] for k in y_right_coordinates
+        }
 
+        x_left_coordinates = {
+            f"{k}_left": x_left_coordinates[k] for k in x_left_coordinates
+        }
+        x_right_coordinates = {
+            f"{k}_right": x_right_coordinates[k] for k in x_right_coordinates
+        }
 
-        x_left_coordinates = {f'{k}_left': x_left_coordinates[k] for k in x_left_coordinates}
-        x_right_coordinates = {f'{k}_right': x_right_coordinates[k] for k in x_right_coordinates}
-
-
-        unreduced_loss = self.error_fn(self.residual_fn({**y_left_coordinates,
-                                                         **y_right_coordinates,
-                                                         **x_left_coordinates,
-                                                         **x_right_coordinates,
-                                                         **x_b_coordinates,
-                                                         **self.parameter.coordinates,
-                                                         **data_right,
-                                                         **data_left}))
+        unreduced_loss = self.error_fn(
+            self.residual_fn(
+                {
+                    **y_left_coordinates,
+                    **y_right_coordinates,
+                    **x_left_coordinates,
+                    **x_right_coordinates,
+                    **x_b_coordinates,
+                    **self.parameter.coordinates,
+                    **data_right,
+                    **data_left,
+                }
+            )
+        )
 
         if self.non_periodic_sampler.is_adaptive:
             self.last_unreduced_loss = unreduced_loss
@@ -540,11 +639,13 @@ class PeriodicCondition(Condition):
     def _move_static_data(self, device):
         if self.non_periodic_sampler.is_static:
             for fn in self.left_data_functions:
-                self.left_data_functions[fn].fun = \
-                    self.left_data_functions[fn].fun.to(device)
+                self.left_data_functions[fn].fun = self.left_data_functions[fn].fun.to(
+                    device
+                )
             for fn in self.right_data_functions:
-                self.right_data_functions[fn].fun = \
-                    self.right_data_functions[fn].fun.to(device)
+                self.right_data_functions[fn].fun = self.right_data_functions[
+                    fn
+                ].fun.to(device)
 
 
 class IntegroPINNCondition(Condition):
@@ -588,14 +689,24 @@ class IntegroPINNCondition(Condition):
         training.
     """
 
-    def __init__(self, module, sampler, residual_fn,
-                 integral_sampler, error_fn=SquaredError(),
-                 reduce_fn=torch.mean, name='periodiccondition', track_gradients=True,
-                 data_functions={}, parameter=Parameter.empty(), weight=1.0):
+    def __init__(
+        self,
+        module,
+        sampler,
+        residual_fn,
+        integral_sampler,
+        error_fn=SquaredError(),
+        reduce_fn=torch.mean,
+        name="periodiccondition",
+        track_gradients=True,
+        data_functions={},
+        parameter=Parameter.empty(),
+        weight=1.0,
+    ):
         super().__init__(name=name, weight=weight, track_gradients=track_gradients)
         self.module = module
         self.parameter = parameter
-        self.register_parameter(name + '_params', self.parameter.as_tensor)
+        self.register_parameter(name + "_params", self.parameter.as_tensor)
         self.residual_fn = UserFunction(residual_fn)
         self.error_fn = error_fn
         self.reduce_fn = reduce_fn
@@ -603,17 +714,16 @@ class IntegroPINNCondition(Condition):
         self.sampler = sampler
         self.integral_sampler = integral_sampler
 
-        self.data_functions = self._setup_data_functions(data_functions,
-                                                         self.sampler)
+        self.data_functions = self._setup_data_functions(data_functions, self.sampler)
 
         if self.sampler.is_adaptive:
             self.last_unreduced_loss = None
 
-    def forward(self, device='cpu', iteration=None):
+    def forward(self, device="cpu", iteration=None):
         if self.sampler.is_adaptive:
             x = self.sampler.sample_points(
-                unreduced_loss=self.last_unreduced_loss,
-                device=device)
+                unreduced_loss=self.last_unreduced_loss, device=device
+            )
             self.last_unreduced_loss = None
         else:
             x = self.sampler.sample_points(device=device)
@@ -640,16 +750,26 @@ class IntegroPINNCondition(Condition):
         y_int = self.module(x_combined)
 
         y_int_coordinates = y_int.coordinates
-        y_int_coordinates = {f'{k}_integral': y_int_coordinates[k] for k in y_int_coordinates}
+        y_int_coordinates = {
+            f"{k}_integral": y_int_coordinates[k] for k in y_int_coordinates
+        }
 
-        x_int_coordinates = {f'{k}_integral': x_int_coordinates[k] for k in x_int_coordinates}
+        x_int_coordinates = {
+            f"{k}_integral": x_int_coordinates[k] for k in x_int_coordinates
+        }
 
-        unreduced_loss = self.error_fn(self.residual_fn({**y.coordinates,
-                                                         **y_int_coordinates,
-                                                         **x_coordinates,
-                                                         **x_int_coordinates,
-                                                         **self.parameter.coordinates,
-                                                         **data}))
+        unreduced_loss = self.error_fn(
+            self.residual_fn(
+                {
+                    **y.coordinates,
+                    **y_int_coordinates,
+                    **x_coordinates,
+                    **x_int_coordinates,
+                    **self.parameter.coordinates,
+                    **data,
+                }
+            )
+        )
 
         if self.sampler.is_adaptive:
             self.last_unreduced_loss = unreduced_loss
@@ -704,21 +824,306 @@ class AdaptiveWeightsCondition(SingleModuleCondition):
         Soft Attention Mechanism", CoRR, 2020
     """
 
-    def __init__(self, module, sampler, residual_fn, error_fn=SquaredError(),
-                 track_gradients=True, data_functions={}, parameter=Parameter.empty(),
-                 name='adaptive_w_condition', weight=1.0):
+    def __init__(
+        self,
+        module,
+        sampler,
+        residual_fn,
+        error_fn=SquaredError(),
+        track_gradients=True,
+        data_functions={},
+        parameter=Parameter.empty(),
+        name="adaptive_w_condition",
+        weight=1.0,
+    ):
 
         if not sampler.is_static:
-            raise ValueError("Adaptive point weights should only be used with static",
-                             "samplers.")
+            raise ValueError(
+                "Adaptive point weights should only be used with static", "samplers."
+            )
 
         adaptive_layer = AdaptiveWeightLayer(len(sampler))
 
         def adaptive_reduce_fun(x):
             return torch.mean(adaptive_layer(x))
 
-        super().__init__(module, sampler, residual_fn, error_fn=error_fn,
-                         reduce_fn=adaptive_reduce_fun, name=name, track_gradients=track_gradients,
-                         data_functions=data_functions, parameter=parameter, weight=weight)
+        super().__init__(
+            module,
+            sampler,
+            residual_fn,
+            error_fn=error_fn,
+            reduce_fn=adaptive_reduce_fun,
+            name=name,
+            track_gradients=track_gradients,
+            data_functions=data_functions,
+            parameter=parameter,
+            weight=weight,
+        )
 
         self.adaptive_layer = adaptive_layer
+
+
+class HPM_EquationLoss_at_DataPoints(Condition):
+    """
+    A condition that minimizes the mean squared error of the given residual with the help of data (handed through a PyTorch
+    dataloader), as required in the framework of HPM [1].
+
+    Parameters
+    -------
+    module : torchphysics.Model
+        The torch module which should be optimized.
+    dataloader : torch.utils.DataLoader
+        A PyTorch dataloader which supplies the iterator to load data-target pairs
+        from some given dataset. Data and target should be handed as points in input
+        or output spaces, i.e. with the correct point object.
+    norm : int or 'inf'
+        The 'norm' which should be computed for evaluation. If 'inf', maximum norm will
+        be used. Else, the result will be taken to the n-th potency (without computing the
+        root!)
+    residual_fn : callable
+        A user-defined function that computes the residual (unreduced loss) from
+        inputs and outputs of the model, e.g. by using utils.differentialoperators
+        and/or domain.normal
+    data_functions : dict
+        A dictionary of user-defined functions and their names (as keys). Can be
+        used e.g. for right sides in PDEs or functions in boundary conditions.
+    track_gradients : bool
+        Whether gradients w.r.t. the inputs should be tracked during training or
+        not. Defaults to true, since this is needed to compute differential operators
+        in PINNs.
+    parameter : Parameter
+        A Parameter that can be used in the residual_fn and should be learned in
+        parallel, e.g. based on data (in an additional DataCondition).
+    name : str
+        The name of this condition which will be monitored in logging.
+    weight : float
+        The weight multiplied with the loss of this condition during
+        training.
+
+    Notes
+    -----
+    . . [1] Raissi, M. (2018). Deep hidden physics models: Deep learning of nonlinear partial differential equations.
+        The Journal of Machine Learning Research, 19(1), 932-955.
+    """
+
+    def __init__(
+        self,
+        module,
+        dataloader,
+        norm,
+        residual_fn,
+        error_fn=SquaredError(),
+        root=1.0,
+        use_full_dataset=False,
+        name="HPMcondition",
+        reduce_fn=torch.mean,
+        parameter=Parameter.empty(),
+        weight=1.0,
+    ):
+        super().__init__(name=name, weight=weight, track_gradients=True)
+        self.module = module
+        self.dataloader = dataloader
+        self.norm = norm
+        self.root = root
+        self.use_full_dataset = use_full_dataset
+        self.parameter = parameter
+        self.register_parameter(name + "_params", self.parameter.as_tensor)
+        self.residual_fn = UserFunction(residual_fn)
+        self.error_fn = error_fn
+        self.reduce_fn = reduce_fn
+
+    def _compute_dist(self, batch, device):
+        x, y_reference = batch
+        x, y_reference = x.to(device), y_reference.to(device)
+
+        x_coordinates, x = x.track_coord_gradients()
+        unreduced_loss = self.error_fn(
+            self.residual_fn({**x_coordinates, **self.parameter.coordinates})
+        )
+
+        return self.reduce_fn(unreduced_loss)
+
+    def forward(self, device="cpu", iteration=None):
+        if self.use_full_dataset:
+            loss = torch.zeros(1, requires_grad=True, device=device)
+            for batch in iter(self.dataloader):
+                a = self._compute_dist(batch, device)
+                if self.norm == "inf":
+                    loss = torch.maximum(loss, torch.max(a))
+                else:
+                    loss = loss + torch.mean(a**self.norm) / len(self.dataloader)
+        else:
+            try:
+                batch = next(self.iterator)
+            except (StopIteration, AttributeError):
+                self.iterator = iter(self.dataloader)
+                batch = next(self.iterator)
+            a = self._compute_dist(batch, device)
+            if self.norm == "inf":
+                loss = torch.max(a)
+            else:
+                loss = torch.mean(a**self.norm)
+        if self.root != 1.0:
+            loss = loss ** (1 / self.root)
+        return loss
+
+    def _move_static_data(self, device):
+        pass
+
+
+class HPM_EquationLoss_at_Sampler(Condition):
+    """
+
+    A condition that minimizes the mean squared error of the given residual on sampled collocation points, instead of using the collocation points of the data set
+    as the original proposal HPM [1].
+
+    Parameters
+    -------
+    module : torchphysics.Model
+        The torch module which should be optimized.
+    sampler : torchphysics.samplers.PointSampler
+        A sampler that creates the points in the domain of the residual function,
+        could be an inner or a boundary domain.
+    residual_fn : callable
+        A user-defined function that computes the residual (unreduced loss) from
+        inputs and outputs of the model, e.g. by using utils.differentialoperators
+        and/or domain.normal
+    data_functions : dict
+        A dictionary of user-defined functions and their names (as keys). Can be
+        used e.g. for right sides in PDEs or functions in boundary conditions.
+    track_gradients : bool
+        Whether gradients w.r.t. the inputs should be tracked during training or
+        not. Defaults to true, since this is needed to compute differential operators
+        in PINNs.
+    parameter : Parameter
+        A Parameter that can be used in the residual_fn and should be learned in
+        parallel, e.g. based on data (in an additional DataCondition).
+    name : str
+        The name of this condition which will be monitored in logging.
+    weight : float
+        The weight multiplied with the loss of this condition during
+        training.
+
+    Notes
+    -----
+    . . [1] Raissi, M. (2018). Deep hidden physics models: Deep learning of nonlinear partial differential equations.
+        The Journal of Machine Learning Research, 19(1), 932-955.
+    """
+
+    def __init__(
+        self,
+        module,
+        sampler,
+        residual_fn,
+        error_fn=SquaredError(),
+        reduce_fn=torch.mean,
+        name="SampleHPMCondition",
+        track_gradients=True,
+        data_functions={},
+        parameter=Parameter.empty(),
+        weight=1.0,
+    ):
+        super().__init__(name=name, weight=weight, track_gradients=track_gradients)
+
+        self.module = module
+        self.parameter = parameter
+        self.register_parameter(name + "_params", self.parameter.as_tensor)
+        self.sampler = sampler
+        self.residual_fn = UserFunction(residual_fn)
+        self.error_fn = error_fn
+        self.reduce_fn = reduce_fn
+        self.data_functions = self._setup_data_functions(data_functions, sampler)
+
+        if self.sampler.is_adaptive:
+            self.last_unreduced_loss = None
+
+    def forward(self, device="cpu", iteration=None):
+        if self.sampler.is_adaptive:
+            x = self.sampler.sample_points(
+                unreduced_loss=self.last_unreduced_loss, device=device
+            )
+            self.last_unreduced_loss = None
+        else:
+            x = self.sampler.sample_points(device=device)
+
+        x_coordinates, x = x.track_coord_gradients()
+
+        data = {}
+        for fun in self.data_functions:
+            data[fun] = self.data_functions[fun](x_coordinates)
+
+        unreduced_loss = self.error_fn(
+            self.residual_fn({**x_coordinates, **self.parameter.coordinates, **data})
+        )
+
+        if self.sampler.is_adaptive:
+            self.last_unreduced_loss = unreduced_loss
+
+        return self.reduce_fn(unreduced_loss)
+
+    def _move_static_data(self, device):
+        if self.sampler.is_static:
+            for fn in self.data_functions:
+                self.data_functions[fn].fun = self.data_functions[fn].fun.to(device)
+
+
+class HPCMCondition(Condition):
+    def __init__(
+        self,
+        module_state,
+        module_corr,
+        dataloader_corr,
+        correction_fn,
+        norm=2,
+        root=1.0,
+        use_full_dataset=True,
+        name="hpcmcondition",
+        weight=1.0,
+    ):
+        super().__init__(name=name, weight=weight, track_gradients=False)
+        self.module_state = module_state
+        self.module_corr = module_corr
+        self.dataloader = dataloader_corr
+        self.norm = norm
+        self.root = root
+        self.use_full_dataset = use_full_dataset
+        self.correction_fn = UserFunction(correction_fn)
+
+    def _compute_dist(self, batch, device="cuda"):
+        x, y = batch
+
+        x, y = x.to(device), y.to(device)
+
+        model_state_out = self.module_state(x)
+
+        model_corr_out = self.correction_fn(
+            {**model_state_out.coordinates, **x.coordinates}
+        )
+
+        return torch.abs(
+            model_state_out.as_tensor - y.as_tensor - model_corr_out.as_tensor
+        )
+
+    def forward(self, device="cpu", iteration=None):
+        if self.use_full_dataset:
+            loss = torch.zeros(1, requires_grad=True, device=device)
+            for batch in iter(self.dataloader):
+                a = self._compute_dist(batch, device)
+                if self.norm == "inf":
+                    loss = torch.maximum(loss, torch.max(a))
+                else:
+                    loss = loss + torch.mean(a**self.norm) / len(self.dataloader)
+        else:
+            try:
+                batch = next(self.iterator)
+            except (StopIteration, AttributeError):
+                self.iterator = iter(self.dataloader)
+                batch = next(self.iterator)
+            a = self._compute_dist(batch, device)
+            if self.norm == "inf":
+                loss = torch.max(a)
+            else:
+                loss = torch.mean(a**self.norm)
+        if self.root != 1.0:
+            loss = loss ** (1 / self.root)
+        return loss

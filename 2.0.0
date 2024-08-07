@@ -1,0 +1,108 @@
+Collecting package metadata (current_repodata.json): ...working... done
+Solving environment: ...working... done
+
+## Package Plan ##
+
+  environment location: C:\python\torchphysics\_venv
+
+  added / updated specs:
+    - pytorch-lightning
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    comm-0.2.1                 |  py310haa95532_0          15 KB  defaults
+    debugpy-1.6.7              |  py310hd77b12b_0         2.9 MB  defaults
+    exceptiongroup-1.2.0       |  py310haa95532_0          31 KB  defaults
+    filelock-3.13.1            |  py310haa95532_0          22 KB  defaults
+    fsspec-2024.3.1            |  py310haa95532_0         278 KB  defaults
+    gmpy2-2.1.2                |  py310h7f96b67_0         160 KB  defaults
+    ipykernel-6.28.0           |  py310haa95532_0         199 KB  defaults
+    ipython-8.25.0             |  py310haa95532_0         1.2 MB  defaults
+    jupyter_client-7.1.2       |     pyhd3eb1b0_0          93 KB  defaults
+    jupyter_core-5.7.2         |  py310haa95532_0         110 KB  defaults
+    libuv-1.48.0               |       h827c3e9_0         322 KB  defaults
+    lightning-utilities-0.9.0  |  py310haa95532_0          38 KB  defaults
+    mpc-1.1.0                  |       h7edee0f_1         260 KB  defaults
+    mpfr-4.0.2                 |       h62dcd97_1         1.5 MB  defaults
+    mpir-3.0.0                 |       hec2e145_1         1.3 MB  defaults
+    mpmath-1.3.0               |  py310haa95532_0         834 KB  defaults
+    networkx-3.3               |  py310haa95532_0         2.5 MB  defaults
+    numpy-1.26.4               |  py310h055cbcc_0          11 KB  defaults
+    numpy-base-1.26.4          |  py310h65a83cf_0         8.6 MB  defaults
+    openssl-1.1.1w             |       h2bbff1b_0         5.5 MB  defaults
+    platformdirs-3.10.0        |  py310haa95532_0          36 KB  defaults
+    prompt-toolkit-3.0.43      |  py310haa95532_0         592 KB  defaults
+    prompt_toolkit-3.0.43      |       hd3eb1b0_0           5 KB  defaults
+    pytorch-2.3.0              |cpu_py310h9432977_0       111.3 MB  defaults
+    pytorch-lightning-2.3.0    |  py310haa95532_0         874 KB  defaults
+    pyyaml-6.0.1               |  py310h2bbff1b_0         155 KB  defaults
+    pyzmq-25.1.2               |  py310hd77b12b_0         412 KB  defaults
+    qtpy-2.4.1                 |  py310haa95532_0         127 KB  defaults
+    sympy-1.12                 |  py310haa95532_0        10.5 MB  defaults
+    torchmetrics-1.4.0.post0   |  py310haa95532_0         698 KB  defaults
+    tqdm-4.66.4                |  py310h9909e9c_0         162 KB  defaults
+    traitlets-5.14.3           |  py310haa95532_0         182 KB  defaults
+    typing-extensions-4.11.0   |  py310haa95532_0          10 KB  defaults
+    typing_extensions-4.11.0   |  py310haa95532_0          62 KB  defaults
+    ------------------------------------------------------------
+                                           Total:       150.9 MB
+
+The following NEW packages will be INSTALLED:
+
+  blas               artifactory/anaconda-pkgs-remote/main/win-64::blas-1.0-mkl
+  comm               artifactory/anaconda-pkgs-remote/main/win-64::comm-0.2.1-py310haa95532_0
+  exceptiongroup     artifactory/anaconda-pkgs-remote/main/win-64::exceptiongroup-1.2.0-py310haa95532_0
+  filelock           artifactory/anaconda-pkgs-remote/main/win-64::filelock-3.13.1-py310haa95532_0
+  fsspec             artifactory/anaconda-pkgs-remote/main/win-64::fsspec-2024.3.1-py310haa95532_0
+  gmpy2              artifactory/anaconda-pkgs-remote/main/win-64::gmpy2-2.1.2-py310h7f96b67_0
+  intel-openmp       artifactory/anaconda-pkgs-remote/main/win-64::intel-openmp-2023.1.0-h59b6b97_46320
+  ipykernel          artifactory/anaconda-pkgs-remote/main/win-64::ipykernel-6.28.0-py310haa95532_0
+  ipython            artifactory/anaconda-pkgs-remote/main/win-64::ipython-8.25.0-py310haa95532_0
+  jupyter_client     artifactory/anaconda-pkgs-remote/main/noarch::jupyter_client-7.1.2-pyhd3eb1b0_0
+  libsodium          artifactory/anaconda-pkgs-remote/main/win-64::libsodium-1.0.18-h62dcd97_0
+  libuv              artifactory/anaconda-pkgs-remote/main/win-64::libuv-1.48.0-h827c3e9_0
+  lightning-utiliti~ artifactory/anaconda-pkgs-remote/main/win-64::lightning-utilities-0.9.0-py310haa95532_0
+  mkl                artifactory/anaconda-pkgs-remote/main/win-64::mkl-2023.1.0-h6b88ed4_46358
+  mkl-service        artifactory/anaconda-pkgs-remote/main/win-64::mkl-service-2.4.0-py310h2bbff1b_1
+  mkl_fft            artifactory/anaconda-pkgs-remote/main/win-64::mkl_fft-1.3.8-py310h2bbff1b_0
+  mkl_random         artifactory/anaconda-pkgs-remote/main/win-64::mkl_random-1.2.4-py310h59b6b97_0
+  mpc                artifactory/anaconda-pkgs-remote/main/win-64::mpc-1.1.0-h7edee0f_1
+  mpfr               artifactory/anaconda-pkgs-remote/main/win-64::mpfr-4.0.2-h62dcd97_1
+  mpir               artifactory/anaconda-pkgs-remote/main/win-64::mpir-3.0.0-hec2e145_1
+  mpmath             artifactory/anaconda-pkgs-remote/main/win-64::mpmath-1.3.0-py310haa95532_0
+  networkx           artifactory/anaconda-pkgs-remote/main/win-64::networkx-3.3-py310haa95532_0
+  numpy              artifactory/anaconda-pkgs-remote/main/win-64::numpy-1.26.4-py310h055cbcc_0
+  numpy-base         artifactory/anaconda-pkgs-remote/main/win-64::numpy-base-1.26.4-py310h65a83cf_0
+  platformdirs       artifactory/anaconda-pkgs-remote/main/win-64::platformdirs-3.10.0-py310haa95532_0
+  psutil             artifactory/anaconda-pkgs-remote/main/win-64::psutil-5.9.0-py310h2bbff1b_0
+  pytorch            artifactory/anaconda-pkgs-remote/main/win-64::pytorch-2.3.0-cpu_py310h9432977_0
+  pytorch-lightning  artifactory/anaconda-pkgs-remote/main/win-64::pytorch-lightning-2.3.0-py310haa95532_0
+  pyyaml             artifactory/anaconda-pkgs-remote/main/win-64::pyyaml-6.0.1-py310h2bbff1b_0
+  pyzmq              artifactory/anaconda-pkgs-remote/main/win-64::pyzmq-25.1.2-py310hd77b12b_0
+  qtpy               artifactory/anaconda-pkgs-remote/main/win-64::qtpy-2.4.1-py310haa95532_0
+  sympy              artifactory/anaconda-pkgs-remote/main/win-64::sympy-1.12-py310haa95532_0
+  tbb                artifactory/anaconda-pkgs-remote/main/win-64::tbb-2021.8.0-h59b6b97_0
+  torchmetrics       artifactory/anaconda-pkgs-remote/main/win-64::torchmetrics-1.4.0.post0-py310haa95532_0
+  tqdm               artifactory/anaconda-pkgs-remote/main/win-64::tqdm-4.66.4-py310h9909e9c_0
+  yaml               artifactory/anaconda-pkgs-remote/main/win-64::yaml-0.2.5-he774522_0
+  zeromq             artifactory/anaconda-pkgs-remote/main/win-64::zeromq-4.3.5-hd77b12b_0
+
+The following packages will be UPDATED:
+
+  ca-certificates              2022.6.15-boschca_h5b45459_0 --> 2024.7.4-boschca_h56e8100_0
+  certifi            bosch-ca-injected/win-64::certifi-202~ --> bosch-ca-injected/noarch::certifi-2024.7.4-boschca_pyhd8ed1ab_0
+  debugpy                             1.5.1-py310hd77b12b_0 --> 1.6.7-py310hd77b12b_0
+  jupyter_core                       4.10.0-py310haa95532_0 --> 5.7.2-py310haa95532_0
+  openssl                                 1.1.1p-h2bbff1b_0 --> 1.1.1w-h2bbff1b_0
+  prompt-toolkit     artifactory/anaconda-pkgs-remote/main~ --> artifactory/anaconda-pkgs-remote/main/win-64::prompt-toolkit-3.0.43-py310haa95532_0
+  prompt_toolkit                          3.0.20-hd3eb1b0_0 --> 3.0.43-hd3eb1b0_0
+  traitlets          artifactory/anaconda-pkgs-remote/main~ --> artifactory/anaconda-pkgs-remote/main/win-64::traitlets-5.14.3-py310haa95532_0
+  typing-extensions  artifactory/anaconda-pkgs-remote/main~ --> artifactory/anaconda-pkgs-remote/main/win-64::typing-extensions-4.11.0-py310haa95532_0
+  typing_extensions  artifactory/anaconda-pkgs-remote/main~ --> artifactory/anaconda-pkgs-remote/main/win-64::typing_extensions-4.11.0-py310haa95532_0
+  vs2015_runtime                     14.27.29016-h5e58377_2 --> 14.29.30133-h43f2093_4
+
+
+Proceed ([y]/n)? 

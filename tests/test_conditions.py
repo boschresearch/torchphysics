@@ -1,15 +1,13 @@
+#%%
 import torch
 import pytest
-
-
 from torchphysics.problem.conditions import *
 from torchphysics.problem.spaces import Points, R1, R2
 from torchphysics.problem.domains import Interval
 from torchphysics.problem.samplers import GridSampler, DataSampler
 from torchphysics.utils import UserFunction, laplacian, PointsDataLoader
 from torchphysics.models import Parameter
-
-
+#%%
 def helper_fn(x, D=0.0):
     return Points(x**2 + D, R1('u'))
 
@@ -242,3 +240,28 @@ def test_parameter_condition_forward():
     assert isinstance(out, torch.Tensor)
     assert out.requires_grad
     assert out == -1.0
+
+def test_HPM_EquationLoss_at_DataPoints():
+    module = UserFunction(helper_fn)
+       
+    loader = PointsDataLoader((Points(torch.tensor([[0.0], [2.0]]), R1('x')),
+                               Points(torch.tensor([[0.0], [1.0]]), R1('u'))),
+                              batch_size=1)
+
+    cond = HPM_EquationLoss_at_DataPoints(module=module, dataloader=loader, norm= 2, residual_fn=lambda u: u, name='EquationLoss_at_DataPoints')
+    assert isinstance(cond, torch.nn.Module)
+    assert cond.name == 'EquationLoss_at_DataPoints'
+    assert cond.module == module
+    assert cond.dataloader == loader
+    assert isinstance(cond.residual_fn, UserFunction)
+    
+def test_HPM_EquationLoss_at_Sampler():
+    module = UserFunction(helper_fn)
+    ps = GridSampler(Interval(R1('x'), 0, 1), n_points=25)    
+    
+    cond = HPM_EquationLoss_at_Sampler(module=module, sampler=ps, residual_fn=lambda u: u, name='EquationLoss_at_Sampler')
+    assert isinstance(cond, torch.nn.Module)
+    assert cond.name == 'EquationLoss_at_Sampler'
+    assert cond.module == module
+    assert cond.sampler == ps
+    assert isinstance(cond.residual_fn, UserFunction)
