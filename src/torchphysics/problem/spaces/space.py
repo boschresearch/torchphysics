@@ -2,7 +2,7 @@ from collections import Counter, OrderedDict
 
 
 class Space(Counter, OrderedDict):
-    """A Space defines (and assigns) the dimensions of the variables 
+    """A Space defines (and assigns) the dimensions of the variables
     that appear in the differentialequation. This class sholud not be instanced
     directly, rather the corresponding child classes.
 
@@ -12,12 +12,13 @@ class Space(Counter, OrderedDict):
         A dictionary containing the name of the variables and the dimension
         of the respective variable.
     """
+
     def __init__(self, variables_dims):
         # set counter of variable names and their dimensionalities
         super().__init__(variables_dims)
 
     def __mul__(self, other):
-        """Creates the product space of the two input spaces. Allows the 
+        """Creates the product space of the two input spaces. Allows the
         construction of higher dimensional spaces with 'mixed' variable names.
         E.g R1('x')*R1('y') is a two dimensional space where one axis is 'x'
         and the other stands for 'y'.
@@ -40,22 +41,24 @@ class Space(Counter, OrderedDict):
             return (self & space) == space
         else:
             return False
-    
+
     def __getitem__(self, val):
         """Returns a part of the Space dicitionary, specified in the
-        input. Mathematically, this constructs a subspace. 
+        input. Mathematically, this constructs a subspace.
 
         Parameters
         ----------
         val : str, slice, list or tuple
-            The keys that correspond to the variables that should be used in the 
+            The keys that correspond to the variables that should be used in the
             subspace.
         """
         if isinstance(val, slice):
             keys = list(self.keys())
-            new_slice = slice(keys.index(val.start) if val.start is not None else None,
-                              keys.index(val.stop) if val.stop is not None else None,
-                              val.step)
+            new_slice = slice(
+                keys.index(val.start) if val.start is not None else None,
+                keys.index(val.stop) if val.stop is not None else None,
+                val.step,
+            )
             new_keys = keys[new_slice]
             return Space({k: self[k] for k in new_keys})
         if isinstance(val, list) or isinstance(val, tuple):
@@ -65,10 +68,9 @@ class Space(Counter, OrderedDict):
 
     @property
     def dim(self):
-        """Returns the dimension of the space (sum of factor spaces)
-        """
+        """Returns the dimension of the space (sum of factor spaces)"""
         return sum(self.values())
-    
+
     @property
     def variables(self):
         """
@@ -89,8 +91,9 @@ class Space(Counter, OrderedDict):
     other dimensions will be kept in the order of their creation by products
     or __init__.
     """
+
     def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, dict(OrderedDict(self)))
+        return "%s(%r)" % (self.__class__.__name__, dict(OrderedDict(self)))
 
     def __reduce__(self):
         return self.__class__, (OrderedDict(self),)
@@ -102,14 +105,14 @@ class Space(Counter, OrderedDict):
         ----------
         values : torch.tensor
             A tensor of values that should be checked.
-            Generally the last dimension of the tensor has to fit 
+            Generally the last dimension of the tensor has to fit
             the dimension of this space.
 
         Returns
         -------
         torch.tensor
             In the case, that the values have not the corrected shape, but can
-            be reshaped, thet reshaped values are returned. 
+            be reshaped, thet reshaped values are returned.
             This is used in the matrix-space.
         """
         assert values.shape[-1] == self.dim
@@ -124,6 +127,7 @@ class R1(Space):
     variable_name: str
         The name of the variable that belongs to this space.
     """
+
     def __init__(self, variable_name):
         super().__init__({variable_name: 1})
 
@@ -136,6 +140,7 @@ class R2(Space):
     variable_name: str
         The name of the variable that belongs to this space.
     """
+
     def __init__(self, variable_name):
         super().__init__({variable_name: 2})
 
@@ -148,6 +153,7 @@ class R3(Space):
     variable_name: str
         The name of the variable that belongs to this space.
     """
+
     def __init__(self, variable_name):
         super().__init__({variable_name: 3})
 
@@ -162,7 +168,8 @@ class Rn(Space):
     n : int
         The dimension of this space.
     """
-    def __init__(self, variable_name, n : int):
+
+    def __init__(self, variable_name, n: int):
         super().__init__({variable_name: n})
 
 
@@ -193,6 +200,6 @@ class Rn(Space):
 #             return values
 #         if values.shape[-1] == self.dim:
 #             # maybe values are given as a vector with correct dimension
-#             # -> reshape to matrix 
+#             # -> reshape to matrix
 #             return values.reshape(-1, self.rows, self.columns)
 #         raise AssertionError("Values do not belong to a matrix-space")

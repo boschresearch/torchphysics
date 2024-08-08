@@ -25,6 +25,7 @@ class AdaptiveActivationFunction(nn.Module):
         "Adaptive activation functions accelerate convergence in deep and
         physics-informed neural networks", 2020
     """
+
     def __init__(self, activation_fn, inital_a=1.0, scaling=1.0):
         super().__init__()
         self.activation_fn = activation_fn
@@ -32,7 +33,7 @@ class AdaptiveActivationFunction(nn.Module):
         self.scaling = scaling
 
     def forward(self, x):
-        return self.activation_fn(self.scaling*self.a*x)
+        return self.activation_fn(self.scaling * self.a * x)
 
 
 class relu_n(torch.autograd.Function):
@@ -41,17 +42,17 @@ class relu_n(torch.autograd.Function):
     def forward(ctx, x, n):
         ctx.save_for_backward(x)
         ctx.n = n
-        return torch.nn.functional.relu(x)**n
+        return torch.nn.functional.relu(x) ** n
 
     @staticmethod
     def backward(ctx, grad_output):
-        input, = ctx.saved_tensors
+        (input,) = ctx.saved_tensors
         n = ctx.n
         grad_input = grad_output.clone()
         slice_idx = input > 0
-        grad_input[slice_idx] = grad_input[slice_idx] * n*input[slice_idx]**(n-1)
+        grad_input[slice_idx] = grad_input[slice_idx] * n * input[slice_idx] ** (n - 1)
         grad_input[torch.logical_not(slice_idx)] = 0
-        return grad_input, None # <- for n gradient, not needed
+        return grad_input, None  # <- for n gradient, not needed
 
 
 class ReLUn(nn.Module):
@@ -64,6 +65,7 @@ class ReLUn(nn.Module):
         The power to which the inputs should be rasied before appplying the
         rectified linear unit function.
     """
+
     def __init__(self, n):
         super().__init__()
         self.n = n
@@ -74,8 +76,8 @@ class ReLUn(nn.Module):
 
 
 class Sinus(torch.nn.Module):
-    """Implementation of a sinus activation.
-    """
+    """Implementation of a sinus activation."""
+
     def __init__(self):
         super().__init__()
 

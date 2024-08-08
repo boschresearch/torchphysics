@@ -3,6 +3,7 @@ import torch
 
 from ...problem.spaces import Points
 
+
 class PointsDataset(torch.utils.data.Dataset):
     """
     A PyTorch Dataset to load tuples of data points.
@@ -20,6 +21,7 @@ class PointsDataset(torch.utils.data.Dataset):
     drop_last : bool
         Whether to drop the last (and non-batch-size-) minibatch.
     """
+
     def __init__(self, data_points, batch_size, shuffle=False, drop_last=False):
         if isinstance(data_points, Points):
             self.data_points = [data_points]
@@ -33,10 +35,9 @@ class PointsDataset(torch.utils.data.Dataset):
 
         self.batch_size = batch_size
         self.drop_last = drop_last
-    
+
     def __len__(self):
-        """Returns the number of points of this dataset.
-        """
+        """Returns the number of points of this dataset."""
         if self.drop_last:
             return len(self.data_points[0]) // self.batch_size
         else:
@@ -53,8 +54,11 @@ class PointsDataset(torch.utils.data.Dataset):
         l = len(self.data_points[0])
         out = []
         for points in self.data_points:
-            out.append(points[idx*self.batch_size:min((idx+1)*self.batch_size, l), :])
+            out.append(
+                points[idx * self.batch_size : min((idx + 1) * self.batch_size, l), :]
+            )
         return tuple(out)
+
 
 class PointsDataLoader(torch.utils.data.DataLoader):
     """
@@ -78,12 +82,22 @@ class PointsDataLoader(torch.utils.data.DataLoader):
     drop_last : bool
         Whether to drop the last (and non-batch-size-) minibatch.
     """
-    def __init__(self, data_points, batch_size, shuffle=False,
-                 num_workers=0, pin_memory=False, drop_last=False):
-        super().__init__(PointsDataset(data_points, batch_size,
-                                       shuffle=shuffle, drop_last=drop_last),
-                         batch_size=None,
-                         shuffle=False,
-                         num_workers=num_workers,
-                         pin_memory=pin_memory)
 
+    def __init__(
+        self,
+        data_points,
+        batch_size,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=False,
+        drop_last=False,
+    ):
+        super().__init__(
+            PointsDataset(
+                data_points, batch_size, shuffle=shuffle, drop_last=drop_last
+            ),
+            batch_size=None,
+            shuffle=False,
+            num_workers=num_workers,
+            pin_memory=pin_memory,
+        )

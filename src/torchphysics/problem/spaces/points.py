@@ -1,5 +1,6 @@
 """Contains a class that handles the storage of all created data points.
 """
+
 from typing import Iterable
 import torch
 import numpy as np
@@ -7,7 +8,7 @@ import numpy as np
 from .space import Space
 
 
-class Points():
+class Points:
     """A set of points in a space, stored as a torch.Tensor. Can contain
     multiple axis which keep batch-dimensions.
 
@@ -31,8 +32,11 @@ class Points():
         self._t = torch.as_tensor(data, **kwargs)
         self.space = space
         assert len(self._t.shape) >= 2
-        assert self._t.shape[-1] == self.space.dim, \
-            "Data dimension does not fit dimension of the space " + str(list(self.space.keys()))
+        assert (
+            self._t.shape[-1] == self.space.dim
+        ), "Data dimension does not fit dimension of the space " + str(
+            list(self.space.keys())
+        )
 
     @classmethod
     def empty(cls, **kwargs):
@@ -48,7 +52,7 @@ class Points():
     @classmethod
     def joined(cls, *points_l):
         """Concatenates different Points to one single Points-Object.
-        Will we use torch.cat on the data of the different Points and 
+        Will we use torch.cat on the data of the different Points and
         create the product space of the Points spaces.
 
         Parameters
@@ -102,14 +106,12 @@ class Points():
 
     @property
     def dim(self):
-        """Returns the dimension of the points.
-        """
+        """Returns the dimension of the points."""
         return self.space.dim
 
     @property
     def variables(self):
-        """Returns variables of the points as an unordered set, e.g {'x', 't'}.
-        """
+        """Returns variables of the points as an unordered set, e.g {'x', 't'}."""
         return self.space.variables
 
     @property
@@ -174,24 +176,27 @@ class Points():
     def _compute_slice(self, val):
         if isinstance(val, tuple):
             val = list(val)
-        
-        if isinstance(val, (np.ndarray, torch.Tensor)) and val.dtype in (bool, torch.bool):
+
+        if isinstance(val, (np.ndarray, torch.Tensor)) and val.dtype in (
+            bool,
+            torch.bool,
+        ):
             if len(val.shape) == len(self._t.shape):
                 raise IndexError("Boolean slicing in last dimension is not supported.")
 
         out_space = self.space
         if isinstance(val, list):
             # check if Ellipsis(...) is inside the slicing input.
-            # Here we have to be carefull if specific indices are passed in, as an 
+            # Here we have to be carefull if specific indices are passed in, as an
             # array/tensor since they do not allow to check: Ellipse in val
             # because then the check Ellipse == val[i] is used -> returns array
             slice_is_correct = True
             for slice_value in val:
-                slice_is_correct = (slice_value is Ellipsis)
+                slice_is_correct = slice_value is Ellipsis
                 if slice_is_correct:
                     break
             # check last element is not Ellipsis:
-            slice_is_correct = (slice_is_correct and not val[-1] is Ellipsis)
+            slice_is_correct = slice_is_correct and not val[-1] is Ellipsis
             # compute slice structure
             if (len(val) == len(self._t.shape)) or slice_is_correct:
                 slc = self._variable_slices
@@ -238,26 +243,23 @@ class Points():
             yield self[i]
 
     def __eq__(self, other):
-        """Compares two Points if they are equal.
-        """
+        """Compares two Points if they are equal."""
         return self.space == other.space and torch.equal(self._t, other._t)
 
     def __add__(self, other):
-        """Adds the data of two Points, have to lay in the same space.
-        """
+        """Adds the data of two Points, have to lay in the same space."""
         assert isinstance(other, Points)
         assert other.space == self.space
         return Points(self._t + other._t, self.space)
 
     def __sub__(self, other):
-        """Substracts the data of two Points, have to lay in the same space.
-        """
+        """Substracts the data of two Points, have to lay in the same space."""
         assert isinstance(other, Points)
         assert other.space == self.space
         return Points(self._t - other._t, self.space)
 
     def __mul__(self, other):
-        """Pointwise multiplies the data of two Points, 
+        """Pointwise multiplies the data of two Points,
         have to lay in the same space.
         """
         assert isinstance(other, Points)
@@ -270,10 +272,10 @@ class Points():
         """
         assert isinstance(other, Points)
         assert other.space == self.space
-        return Points(self._t ** other._t, self.space)
+        return Points(self._t**other._t, self.space)
 
     def __truediv__(self, other):
-        """Pointwise divides the data of two Points, 
+        """Pointwise divides the data of two Points,
         have to lay in the same space.
         """
         assert isinstance(other, Points)
@@ -281,7 +283,7 @@ class Points():
         return Points(self._t / other._t, self.space)
 
     def __or__(self, other):
-        """Appends the data points of the second Points behind the 
+        """Appends the data points of the second Points behind the
         data of the first Points in the first batch-dim.
         (torch.cat((data_1, data_2), dim=0))
         """
@@ -294,7 +296,7 @@ class Points():
         return Points(torch.cat([self._t, other._t], dim=0), self.space)
 
     def join(self, other):
-        """Stacks the data points of the second Point behind the 
+        """Stacks the data points of the second Point behind the
         data of the first Point. (torch.cat((data_1, data_2), dim=-1))
         """
         assert isinstance(other, Points)
@@ -306,16 +308,18 @@ class Points():
         return Points(torch.cat([self._t, other._t], dim=-1), self.space * other.space)
 
     def repeat(self, *n):
-        """Repeats this points data along the first batch-dimension. 
+        """Repeats this points data along the first batch-dimension.
         Uses torch.repeat and will therefore repeat the data 'batchwise'.
 
         Parameters
         ----------
         n :
-            The number of repeats. 
+            The number of repeats.
         """
-        return Points(self._t.repeat(*n, *(((len(self._t.shape)-len(n)))*[1])), self.space)
-    
+        return Points(
+            self._t.repeat(*n, *(((len(self._t.shape) - len(n))) * [1])), self.space
+        )
+
     def unsqueeze(self, dim):
         """Adds an additional dimension inside the batch dimensions.
 
@@ -337,16 +341,15 @@ class Points():
         """
         if kwargs is None:
             kwargs = {}
-        args_list = [a._t if hasattr(a, '_t') else a for a in args]
-        spaces = tuple(a.space for a in args if hasattr(a, 'space'))
+        args_list = [a._t if hasattr(a, "_t") else a for a in args]
+        spaces = tuple(a.space for a in args if hasattr(a, "space"))
         assert len(spaces) > 0
         ret = func(*args_list, **kwargs)
         return ret
 
     @property
     def requires_grad(self):
-        """Returns the '.requires_grad' property of the underlying Tensor.
-        """
+        """Returns the '.requires_grad' property of the underlying Tensor."""
         return self._t.requires_grad
 
     @requires_grad.setter
@@ -365,11 +368,10 @@ class Points():
         return self
 
     def to(self, *args, **kwargs):
-        """Moves the underlying Tensor to other hardware parts.
-        """
+        """Moves the underlying Tensor to other hardware parts."""
         self._t = self._t.to(*args, **kwargs)
         return self
-    
+
     def track_coord_gradients(self):
         points_coordinates = self.coordinates
         for var in points_coordinates:

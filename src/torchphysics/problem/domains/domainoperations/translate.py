@@ -6,13 +6,13 @@ from ...spaces import Points
 
 class Translate(Domain):
     """Class that translates a given domain by a given vector (or vector function).
-    
+
     Parameters
     ----------
     domain : torchphysics.domain.Domain
         The domain that should be translated.
     translation : array_like or callable
-        The vector that describes the translation, can also be a function that 
+        The vector that describes the translation, can also be a function that
         returns different vectors.
 
     Notes
@@ -20,8 +20,9 @@ class Translate(Domain):
     All domains can already be moved by passing in a function as the needed domain
     parameter. But for complex domains (cut, etc.) or objects with many corners
     (cube, square) it is easier to just translate the whole domain with this class.
-    """ 
-    def __init__(self, domain : Domain, translation):
+    """
+
+    def __init__(self, domain: Domain, translation):
         self.domain = domain
         self.translate_fn = self.transform_to_user_functions(translation)[0]
         super().__init__(self.domain.space, self.domain.dim)
@@ -34,25 +35,29 @@ class Translate(Domain):
         return Translate(domain=new_domain, translation=new_translate_fn)
 
     def _contains(self, points, params=Points.empty()):
-        translate_values = self.translate_fn(points.join(params)).reshape(-1, self.space.dim)
-        shifted_points = points[:, list(self.space.keys())].as_tensor \
-                        - translate_values
-        #points[:, list(self.space.keys())] = Points(shifted_points, self.space)
+        translate_values = self.translate_fn(points.join(params)).reshape(
+            -1, self.space.dim
+        )
+        shifted_points = points[:, list(self.space.keys())].as_tensor - translate_values
+        # points[:, list(self.space.keys())] = Points(shifted_points, self.space)
         return self.domain._contains(Points(shifted_points, self.space), params)
 
-    def sample_random_uniform(self, n=None, d=None, params=Points.empty(),
-                              device='cpu'):
-        original_points = self.domain.sample_random_uniform(n=n, d=d, params=params, 
-                                                            device=device).as_tensor
+    def sample_random_uniform(
+        self, n=None, d=None, params=Points.empty(), device="cpu"
+    ):
+        original_points = self.domain.sample_random_uniform(
+            n=n, d=d, params=params, device=device
+        ).as_tensor
         n = int(len(original_points) / (len(params) + 1))
-        _, params = self._repeat_params(n + 1, params) # round up n
+        _, params = self._repeat_params(n + 1, params)  # round up n
         translate_values = self.translate_fn(params).squeeze(-1)
         translated_points = original_points + translate_values
         return Points(translated_points, self.space)
 
-    def sample_grid(self, n=None, d=None, params=Points.empty(), device='cpu'):
-        original_points = self.domain.sample_grid(n=n, d=d, params=params, 
-                                                            device=device).as_tensor
+    def sample_grid(self, n=None, d=None, params=Points.empty(), device="cpu"):
+        original_points = self.domain.sample_grid(
+            n=n, d=d, params=params, device=device
+        ).as_tensor
         translated_points = self._translate_points(original_points, params)
         return Points(translated_points, self.space)
 
@@ -70,13 +75,13 @@ class Translate(Domain):
         points += translate_values
         return points
 
-    def volume(self, params=Points.empty(), device='cpu'):
+    def volume(self, params=Points.empty(), device="cpu"):
         return self.domain.volume(params=params, device=device)
 
     def set_volume(self, volume):
         return self.domain.set_volume(volume)
 
-    def bounding_box(self, params=Points.empty(), device='cpu'):
+    def bounding_box(self, params=Points.empty(), device="cpu"):
         domain_bounds = self.domain.bounding_box(params=params, device=device)
         translation_values = self.translate_fn(params).reshape(-1, self.space.dim)
         translation_values = torch.repeat_interleave(translation_values, 2, 1)

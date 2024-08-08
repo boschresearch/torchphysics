@@ -16,6 +16,7 @@ class Domain:
         The dimension of this domain.
         (if not specified, implicit given through the space)
     """
+
     def __init__(self, space, dim=None):
         self.space = space
         if dim is None:
@@ -25,7 +26,7 @@ class Domain:
         self._user_volume = None
 
     def set_necessary_variables(self, *domain_params):
-        """Registers the variables/spaces that this domain needs to be 
+        """Registers the variables/spaces that this domain needs to be
         properly defined
         """
         self.necessary_variables = set()
@@ -35,7 +36,7 @@ class Domain:
         assert not any(var in self.necessary_variables for var in self.space)
 
     def transform_to_user_functions(self, *domain_params):
-        """Transforms all parameters that define a given domain to 
+        """Transforms all parameters that define a given domain to
         a UserFunction. This enables that the domain can dependt on other variables.
 
         Parameters
@@ -73,18 +74,18 @@ class Domain:
 
         Notes
         -----
-        For all basic domains the volume (and surface) are implemented. 
-        But if the given domain has a complex shape or is 
+        For all basic domains the volume (and surface) are implemented.
+        But if the given domain has a complex shape or is
         dependent on other variables, the volume can only be approixmated.
-        Therefore one can set here a exact expression for the volume, if known. 
+        Therefore one can set here a exact expression for the volume, if known.
         """
         self._user_volume = DomainUserFunction(volume)
 
     @abc.abstractmethod
-    def _get_volume(self, params=Points.empty(), device='cpu'):
+    def _get_volume(self, params=Points.empty(), device="cpu"):
         raise NotImplementedError
 
-    def volume(self, params=Points.empty(), device='cpu'):
+    def volume(self, params=Points.empty(), device="cpu"):
         """Computes the volume of the current domain.
 
         Parameters
@@ -98,7 +99,7 @@ class Domain:
             Returns the volume of the domain. If dependent on other parameters,
             the value will be returned as tensor with the shape (len(params), 1).
             Where each row corresponds to the volume of the given values in the
-            params row. 
+            params row.
         """
         if self._user_volume is None:
             return self._get_volume(params, device=device)
@@ -117,6 +118,7 @@ class Domain:
         if self.space != other.space:
             raise ValueError("""united domains should lie in the same space.""")
         from .domainoperations.union import UnionDomain
+
         return UnionDomain(self, other)
 
     def __sub__(self, other):
@@ -131,6 +133,7 @@ class Domain:
         if self.space != other.space:
             raise ValueError("""complemented domains should lie in the same space.""")
         from .domainoperations.cut import CutDomain
+
         return CutDomain(self, other)
 
     def __and__(self, other):
@@ -145,6 +148,7 @@ class Domain:
         if self.space != other.space:
             raise ValueError("""Intersected domains should lie in the same space.""")
         from .domainoperations.intersection import IntersectionDomain
+
         return IntersectionDomain(self, other)
 
     def __mul__(self, other):
@@ -157,6 +161,7 @@ class Domain:
             Should lie in a disjoint space.
         """
         from .domainoperations.product import ProductDomain
+
         return ProductDomain(self, other)
 
     def __contains__(self, points):
@@ -180,21 +185,21 @@ class Domain:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def bounding_box(self, params=Points.empty(), device='cpu'):
+    def bounding_box(self, params=Points.empty(), device="cpu"):
         """Computes the bounds of the domain.
 
         Returns
         -------
         tensor :
             A torch.Tensor with the length of 2*self.dim.
-            It has the form [axis_1_min, axis_1_max, axis_2_min, axis_2_max, ...], 
+            It has the form [axis_1_min, axis_1_max, axis_2_min, axis_2_max, ...],
             where min and max are the minimum and maximum value that the domain
             reaches in each dimension-axis.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def sample_grid(self, n=None, d=None, params=Points.empty(), device='cpu'):
+    def sample_grid(self, n=None, d=None, params=Points.empty(), device="cpu"):
         """Creates an equdistant grid in the domain.
 
         Parameters
@@ -218,13 +223,14 @@ class Domain:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def sample_random_uniform(self, n=None, d=None, params=Points.empty(),
-                              device='cpu'):
+    def sample_random_uniform(
+        self, n=None, d=None, params=Points.empty(), device="cpu"
+    ):
         """Creates random uniformly distributed points in the domain.
 
         Parameters
         ----------
-        n : int, optional 
+        n : int, optional
             The number of points that should be created.
         d : float, optional
             The density of points that should be created, if
@@ -243,13 +249,11 @@ class Domain:
         raise NotImplementedError
 
     def __call__(self, **data):
-        """Evaluates the domain at the given data.
-        """
+        """Evaluates the domain at the given data."""
         raise NotImplementedError
 
     def len_of_params(self, params):
-        """Finds the number of params, for which points should be sampled.
-        """
+        """Finds the number of params, for which points should be sampled."""
         num_of_params = 1
         if len(params) > 0:
             num_of_params = len(params)
@@ -261,15 +265,19 @@ class Domain:
         """
         volume = self.volume(params)
         if len(volume) > 1:
-            raise ValueError(f"""Sampling with a density is only possible for one
+            raise ValueError(
+                f"""Sampling with a density is only possible for one
                                 given pair of parameters. Found {len(volume)} 
                                 different pairs. If sampling with a density is needed, 
-                                a loop should be used.""")
+                                a loop should be used."""
+            )
         n = torch.ceil(d * volume)
         return int(n)
 
     def _repeat_params(self, n, params):
-        repeated_params = Points(torch.repeat_interleave(params, n, dim=0), params.space)
+        repeated_params = Points(
+            torch.repeat_interleave(params, n, dim=0), params.space
+        )
         return 1 if len(repeated_params) else n, repeated_params
 
 
@@ -281,10 +289,11 @@ class BoundaryDomain(Domain):
     ----------
     domain : Domain
         The domain of which this object is the boundary.
-    """  
+    """
+
     def __init__(self, domain):
         assert isinstance(domain, Domain)
-        super().__init__(space=domain.space, dim=domain.dim-1)
+        super().__init__(space=domain.space, dim=domain.dim - 1)
         self.domain = domain
         self.necessary_variables = self.domain.necessary_variables
 
@@ -292,11 +301,11 @@ class BoundaryDomain(Domain):
         evaluated_domain = self.domain(**data)
         return evaluated_domain.boundary
 
-    def bounding_box(self, params=Points.empty(), device='cpu'):
+    def bounding_box(self, params=Points.empty(), device="cpu"):
         return self.domain.bounding_box(params)
 
     @abc.abstractmethod
-    def normal(self, points, params=Points.empty(), device='cpu'):
+    def normal(self, points, params=Points.empty(), device="cpu"):
         """Computes the normal vector at each point in points.
 
         Parameters
@@ -304,7 +313,7 @@ class BoundaryDomain(Domain):
         points : torch.tensor or torchphysics.problem.Points
             Different points for which the normal vector should be computed.
             The points should lay on the boundary of the domain, to get correct results.
-            E.g in 2D: points = Points(torch.tensor([[2, 4], [9, 6], ....]), R2(...))        
+            E.g in 2D: points = Points(torch.tensor([[2, 4], [9, 6], ....]), R2(...))
         params : dict or torchphysics.problem.Points, optional
             Additional parameters that are maybe needed to evaluate the domain.
         device : str, optional
@@ -314,7 +323,7 @@ class BoundaryDomain(Domain):
         Returns
         -------
         torch.tensor
-            The tensor is of the shape (len(points), self.dim) and contains the 
+            The tensor is of the shape (len(points), self.dim) and contains the
             normal vector at each entry from points.
         """
         raise NotImplementedError

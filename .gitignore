@@ -57,3 +57,4 @@ MANIFEST
 .venv*/
 .conda*/
 _venv/
+.env/

@@ -1,5 +1,6 @@
 """File with samplers that create random distributed points.
 """
+
 import torch
 import numbers
 
@@ -26,25 +27,27 @@ class RandomUniformSampler(PointSampler):
         of inputs.
         The Sampler will use a rejection sampling to find the right amount of points.
     """
+
     def __init__(self, domain, n_points=None, density=None, filter_fn=None):
         super().__init__(n_points=n_points, density=density, filter_fn=filter_fn)
         self.domain = domain
 
-    def _sample_points(self, params=Points.empty(), device='cpu'):
+    def _sample_points(self, params=Points.empty(), device="cpu"):
         if self.n_points:
-            rand_points = self.domain.sample_random_uniform(self.n_points,
-                                                            params=params,
-                                                            device=device)
+            rand_points = self.domain.sample_random_uniform(
+                self.n_points, params=params, device=device
+            )
             repeated_params = self._repeat_params(params, len(self))
             return rand_points.join(repeated_params)
-        else: # density is used
+        else:  # density is used
             sample_function = self.domain.sample_random_uniform
-            if any(var in self.domain.necessary_variables for \
-                    var in params.space.keys()):
+            if any(
+                var in self.domain.necessary_variables for var in params.space.keys()
+            ):
                 return self._sample_params_dependent(sample_function, params, device)
             return self._sample_params_independent(sample_function, params, device)
 
-    def _sample_points_with_filter(self, params=Points.empty(), device='cpu'):
+    def _sample_points_with_filter(self, params=Points.empty(), device="cpu"):
         if self.n_points:
             sample_points = self._sample_n_points_with_filter(params, device)
         else:
@@ -65,13 +68,15 @@ class RandomUniformSampler(PointSampler):
             # we have to make sure to sample for each param exactly n points
             while num_of_new_points < self.n_points:
                 # sample points
-                new_points = self._sample_for_ith_param(sample_function, params,
-                                                        i, device)
+                new_points = self._sample_for_ith_param(
+                    sample_function, params, i, device
+                )
                 # apply filter and save valid points
                 new_points = self._apply_filter(new_points)
                 num_of_new_points += len(new_points)
-                new_sample_points = self._set_sampled_points(new_sample_points,
-                                                             new_points)
+                new_sample_points = self._set_sampled_points(
+                    new_sample_points, new_points
+                )
                 iterations += 1
                 self._check_iteration_number(iterations, num_of_new_points)
             # if to many points were sampled, delete them.
@@ -96,9 +101,11 @@ class GaussianSampler(PointSampler):
     std : number
         The standard deviation of the distribution.
     """
+
     def __init__(self, domain, n_points, mean, std):
-        assert not isinstance(domain, BoundaryDomain), \
-            """Gaussian sampling is not implemented for boundaries."""
+        assert not isinstance(
+            domain, BoundaryDomain
+        ), """Gaussian sampling is not implemented for boundaries."""
         super().__init__(n_points=n_points)
         self.domain = domain
         self.mean = mean
@@ -110,10 +117,11 @@ class GaussianSampler(PointSampler):
             self.mean = torch.FloatTensor([self.mean])
         elif not isinstance(self.mean, torch.Tensor):
             self.mean = torch.FloatTensor(self.mean)
-        assert len(self.mean) == self.domain.dim, \
-            f"""Dimension of mean: {self.mean}, does not fit the domain."""
+        assert (
+            len(self.mean) == self.domain.dim
+        ), f"""Dimension of mean: {self.mean}, does not fit the domain."""
 
-    def _sample_points(self, params=Points.empty(), device='cpu'):
+    def _sample_points(self, params=Points.empty(), device="cpu"):
         self._set_device_of_mean_and_std(device)
         num_of_params = max(1, len(params))
         sample_points = None
@@ -121,7 +129,7 @@ class GaussianSampler(PointSampler):
         for i in range(num_of_params):
             current_num_of_points = 0
             new_sample_points = None
-            ith_params = params[i, ] if len(params) > 0 else Points.empty()
+            ith_params = params[i,] if len(params) > 0 else Points.empty()
             repeat_params = self._repeat_params(ith_params, len(self))
             while current_num_of_points < self.n_points:
                 new_points = torch_dis.sample((self.n_points,))
@@ -129,8 +137,9 @@ class GaussianSampler(PointSampler):
                 new_points = new_points.join(repeat_params)
                 new_points = self._check_inside_domain(new_points)
                 current_num_of_points += len(new_points)
-                new_sample_points = self._set_sampled_points(new_sample_points,
-                                                             new_points)
+                new_sample_points = self._set_sampled_points(
+                    new_sample_points, new_points
+                )
             # if to many points were sampled, delete them.
             cuted_points = self._cut_tensor_to_length_n(new_sample_points)
             sample_points = self._set_sampled_points(sample_points, cuted_points)
@@ -143,7 +152,7 @@ class GaussianSampler(PointSampler):
     def _check_inside_domain(self, new_points):
         inside = self.domain._contains(new_points)
         index = torch.where(inside)[0]
-        return new_points[index, ]
+        return new_points[index,]
 
 
 class LHSSampler(PointSampler):
@@ -164,17 +173,19 @@ class LHSSampler(PointSampler):
     added to get a total number of n_points.
     ..  [#] https://en.wikipedia.org/wiki/Latin_hypercube_sampling
     """
+
     def __init__(self, domain, n_points):
-        assert not isinstance(domain, BoundaryDomain), \
-            """LHS sampling is not implemented for boundaries."""
+        assert not isinstance(
+            domain, BoundaryDomain
+        ), """LHS sampling is not implemented for boundaries."""
         super().__init__(n_points=n_points)
         self.domain = domain
 
-    def _sample_points(self, params=Points.empty(), device='cpu'):
+    def _sample_points(self, params=Points.empty(), device="cpu"):
         num_of_params = max(1, len(params))
         sample_points = None
         for i in range(num_of_params):
-            ith_params = params[i, ] if len(params) > 0 else Points.empty()
+            ith_params = params[i,] if len(params) > 0 else Points.empty()
             bounding_box = self.domain.bounding_box(ith_params, device=device)
             lhs_in_box = self._create_lhs_in_bounding_box(bounding_box, device)
             new_points = self._check_lhs_inside(lhs_in_box, ith_params)
@@ -186,11 +197,18 @@ class LHSSampler(PointSampler):
         lhs_points = torch.zeros((self.n_points, self.domain.dim), device=device)
         # for each axis apply the lhs strategy
         for i in range(self.domain.dim):
-            axis_grid = torch.linspace(bounding_box[2*i], bounding_box[2*i+1],
-                                       steps=self.n_points+1, device=device)[:-1] # dont need endpoint
-            axis_length = bounding_box[2*i+1] - bounding_box[2*i]
-            random_shift = axis_length/self.n_points * torch.rand(self.n_points,
-                                                                  device=device)
+            axis_grid = torch.linspace(
+                bounding_box[2 * i],
+                bounding_box[2 * i + 1],
+                steps=self.n_points + 1,
+                device=device,
+            )[
+                :-1
+            ]  # dont need endpoint
+            axis_length = bounding_box[2 * i + 1] - bounding_box[2 * i]
+            random_shift = (
+                axis_length / self.n_points * torch.rand(self.n_points, device=device)
+            )
             axis_points = torch.add(axis_grid, random_shift)
             # change order of points, to get 'lhs-grid' at the end
             permutation = torch.randperm(self.n_points)
@@ -203,15 +221,17 @@ class LHSSampler(PointSampler):
         new_points = new_points.join(repeat_params)
         inside = self.domain._contains(new_points)
         index = torch.where(inside)[0]
-        return new_points[index, ]
+        return new_points[index,]
 
     def _append_random_points(self, new_points, current_params):
         if len(new_points) == self.n_points:
             return new_points
-        random_sampler = RandomUniformSampler(domain=self.domain,
-                                              n_points=self.n_points-len(new_points))
+        random_sampler = RandomUniformSampler(
+            domain=self.domain, n_points=self.n_points - len(new_points)
+        )
         random_points = random_sampler.sample_points(current_params)
         return new_points | random_points
+
 
 class AdaptiveThresholdRejectionSampler(AdaptiveSampler):
     """
@@ -241,26 +261,29 @@ class AdaptiveThresholdRejectionSampler(AdaptiveSampler):
         The Sampler will use a rejection sampling to find the right amount of points.
 
     """
-    def __init__(self, domain, resample_ratio, n_points=None, density=None,
-                 filter_fn=None):
+
+    def __init__(
+        self, domain, resample_ratio, n_points=None, density=None, filter_fn=None
+    ):
         super().__init__(n_points=n_points, density=density, filter_fn=filter_fn)
         self.domain = domain
         self.resample_ratio = resample_ratio
-        self.random_sampler = RandomUniformSampler(domain,
-            n_points=n_points,
-            density=density,
-            filter_fn=filter_fn)
+        self.random_sampler = RandomUniformSampler(
+            domain, n_points=n_points, density=density, filter_fn=filter_fn
+        )
 
         self.last_points = None
 
-    def sample_points(self, unreduced_loss=None, params=Points.empty(), device='cpu'):
+    def sample_points(self, unreduced_loss=None, params=Points.empty(), device="cpu"):
         new_points = self.random_sampler.sample_points(params, device=device)
         if self.last_points is None or unreduced_loss is None:
             self.last_points = new_points
         else:
             max_l, min_l = torch.max(unreduced_loss), torch.min(unreduced_loss)
-            filter_tensor = unreduced_loss < min_l + (max_l-min_l)*self.resample_ratio
-            self.last_points._t[filter_tensor,:] = new_points._t[filter_tensor,:]
+            filter_tensor = (
+                unreduced_loss < min_l + (max_l - min_l) * self.resample_ratio
+            )
+            self.last_points._t[filter_tensor, :] = new_points._t[filter_tensor, :]
         return self.last_points
 
 
@@ -288,23 +311,24 @@ class AdaptiveRandomRejectionSampler(AdaptiveSampler):
         The Sampler will use a rejection sampling to find the right amount of points.
 
     """
-    def __init__(self, domain, n_points=None, density=None,
-                 filter_fn=None):
+
+    def __init__(self, domain, n_points=None, density=None, filter_fn=None):
         super().__init__(n_points=n_points, density=density, filter_fn=filter_fn)
         self.domain = domain
-        self.random_sampler = RandomUniformSampler(domain,
-            n_points=n_points,
-            density=density,
-            filter_fn=filter_fn)
+        self.random_sampler = RandomUniformSampler(
+            domain, n_points=n_points, density=density, filter_fn=filter_fn
+        )
 
         self.last_points = None
 
-    def sample_points(self, unreduced_loss=None, params=Points.empty(), device='cpu'):
+    def sample_points(self, unreduced_loss=None, params=Points.empty(), device="cpu"):
         new_points = self.random_sampler.sample_points(params, device=device)
         if self.last_points is None or unreduced_loss is None:
             self.last_points = new_points
         else:
             max_l, min_l = torch.max(unreduced_loss), torch.min(unreduced_loss)
-            filter_tensor = unreduced_loss < min_l + (max_l-min_l)*torch.rand_like(unreduced_loss)
-            self.last_points._t[filter_tensor,:] = new_points._t[filter_tensor,:]
+            filter_tensor = unreduced_loss < min_l + (max_l - min_l) * torch.rand_like(
+                unreduced_loss
+            )
+            self.last_points._t[filter_tensor, :] = new_points._t[filter_tensor, :]
         return self.last_points
