@@ -1,5 +1,6 @@
 """Function to show an example of the created points of the sampler. 
 """
+
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -8,7 +9,7 @@ import matplotlib.pyplot as plt
 def scatter(subspace, *samplers):
     """Shows (one batch) of used points in the training. If the sampler is
     static, the shown points will be the points for the training. If not
-    the points may vary, depending of the sampler. 
+    the points may vary, depending of the sampler.
 
     Parameters
     ----------
@@ -36,6 +37,7 @@ def scatter(subspace, *samplers):
         scatter_fn(ax, numpy_points, labels)
     return fig
 
+
 def _create_labels(subspace):
     labels = []
     for var in subspace:
@@ -43,8 +45,9 @@ def _create_labels(subspace):
             labels.append(var)
         else:
             for i in range(subspace[var]):
-                labels.append(var+f'_{i+1}')
+                labels.append(var + f"_{i+1}")
     return labels
+
 
 def _choose_scatter_function(space_dim):
     fig = plt.figure()
@@ -53,10 +56,10 @@ def _choose_scatter_function(space_dim):
         return fig, ax, _scatter_1D
     elif space_dim == 2:
         ax = fig.add_subplot()
-        return fig, ax, _scatter_2D    
+        return fig, ax, _scatter_2D
     else:
-        ax = fig.add_subplot(projection='3d')
-        return fig, ax, _scatter_3D  
+        ax = fig.add_subplot(projection="3d")
+        return fig, ax, _scatter_3D
 
 
 def _scatter_1D(ax, points, labels):

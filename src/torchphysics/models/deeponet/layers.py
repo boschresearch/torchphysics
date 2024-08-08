@@ -12,11 +12,11 @@ class linear(torch.autograd.Function):
         n_inputs = input.shape[0]
         input = input[0]
         ctx.save_for_backward(input, weight, bias)
-        output = input.matmul(weight.transpose(-1,-2))
+        output = input.matmul(weight.transpose(-1, -2))
         if bias is not None:
             output += bias.unsqueeze(0).expand_as(output)
         # reshape to the larger shape
-        size = [n_inputs] + len(output.shape)*[-1]
+        size = [n_inputs] + len(output.shape) * [-1]
         return output.expand(*size)
 
     @staticmethod
@@ -27,11 +27,12 @@ class linear(torch.autograd.Function):
         if ctx.needs_input_grad[0]:
             grad_input = grad_output.matmul(weight)
         if ctx.needs_input_grad[1]:
-            grad_weight = grad_output.transpose(-1,-2).matmul(input)
+            grad_weight = grad_output.transpose(-1, -2).matmul(input)
         if bias is not None and ctx.needs_input_grad[2]:
-            grad_bias = grad_output.reshape(-1,bias.shape[-1]).sum(0)
+            grad_bias = grad_output.reshape(-1, bias.shape[-1]).sum(0)
 
         return grad_input, grad_weight, grad_bias
+
 
 class TrunkLinear(torch.nn.Module):
     """Applies a linear transformation to the incoming data: :math:`y = xA^T + b`, similar
@@ -65,19 +66,28 @@ class TrunkLinear(torch.nn.Module):
         torch.Size([128, 30])
 
     """
-    __constants__ = ['in_features', 'out_features']
 
-    def __init__(self, in_features: int, out_features: int, bias: bool = True,
-                 device=None, dtype=None) -> None:
-        factory_kwargs = {'device': device, 'dtype': dtype}
+    __constants__ = ["in_features", "out_features"]
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        bias: bool = True,
+        device=None,
+        dtype=None,
+    ) -> None:
+        factory_kwargs = {"device": device, "dtype": dtype}
         super(TrunkLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = torch.nn.Parameter(torch.empty((out_features, in_features), **factory_kwargs))
+        self.weight = torch.nn.Parameter(
+            torch.empty((out_features, in_features), **factory_kwargs)
+        )
         if bias:
             self.bias = torch.nn.Parameter(torch.empty(out_features, **factory_kwargs))
         else:
-            self.register_parameter('bias', None)
+            self.register_parameter("bias", None)
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
@@ -94,6 +104,6 @@ class TrunkLinear(torch.nn.Module):
         return linear.apply(input, self.weight, self.bias)
 
     def extra_repr(self) -> str:
-        return 'in_features={}, out_features={}, bias={}'.format(
+        return "in_features={}, out_features={}, bias={}".format(
             self.in_features, self.out_features, self.bias is not None
         )

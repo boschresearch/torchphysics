@@ -169,11 +169,12 @@ Afterwards we switch to LBFGS:
 
     solver = tp.solver.Solver(train_conditions=[bound_cond, pde_cond], optimizer_setting=optim)
 
-    trainer = pl.Trainer(gpus=1,
-                         max_steps=3000, # number of training steps
-                         logger=False,
-                         benchmark=True,
-                         checkpoint_callback=False)
+    trainer = pl.Trainer(devices=1, accelerator="gpu",
+                        num_sanity_val_steps=0,
+                        benchmark=True,
+                        max_steps=3000, 
+                        logger=False, 
+                        enable_checkpointing=False)
                         
     trainer.fit(solver)
 

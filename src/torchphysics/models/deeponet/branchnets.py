@@ -23,11 +23,14 @@ class BranchNet(Model):
         Therefore, the sampler should always return the same number of points!
 
     """
+
     def __init__(self, function_space, discretization_sampler):
         super().__init__(function_space, output_space=None)
         self.output_neurons = 0
         self.discretization_sampler = discretization_sampler
-        self.input_dim = len(self.discretization_sampler) * function_space.output_space.dim
+        self.input_dim = (
+            len(self.discretization_sampler) * function_space.output_space.dim
+        )
         self.current_out = torch.empty(0)
 
     def finalize(self, output_space, output_neurons):
@@ -46,11 +49,12 @@ class BranchNet(Model):
         self.output_space = output_space
 
     def _reshape_multidimensional_output(self, output):
-        return output.reshape(-1, self.output_space.dim,
-                              int(self.output_neurons/self.output_space.dim))
+        return output.reshape(
+            -1, self.output_space.dim, int(self.output_neurons / self.output_space.dim)
+        )
 
     @abc.abstractmethod
-    def forward(self, discrete_function_batch, device='cpu'):
+    def forward(self, discrete_function_batch, device="cpu"):
         """Evaluated the network at a given function batch. Should not be called
         directly, rather use the method ``.fix_input``.
 
@@ -68,15 +72,14 @@ class BranchNet(Model):
         """
         raise NotImplementedError
 
-    def _discretize_function_set(self, function_set, device='cpu'):
-        """Internal discretization of the training set.
-        """
+    def _discretize_function_set(self, function_set, device="cpu"):
+        """Internal discretization of the training set."""
         input_points = self.discretization_sampler.sample_points(device=device)
-        #self.input_points = input_points
+        # self.input_points = input_points
         fn_out = function_set.create_function_batch(input_points)
         return fn_out
 
-    def fix_input(self, function, device='cpu'):
+    def fix_input(self, function, device="cpu"):
         """Fixes the branch net for a given function. The branch net will
         be evaluated for the given function and the output saved in ``current_out``.
 
@@ -100,12 +103,14 @@ class BranchNet(Model):
             function = UserFunction(function)
             discrete_points = self.discretization_sampler.sample_points(device=device)
             discrete_fn = function(discrete_points)
-            discrete_fn = discrete_fn.unsqueeze(0) # add batch dimension
+            discrete_fn = discrete_fn.unsqueeze(0)  # add batch dimension
             discrete_fn = Points(discrete_fn, self.input_space.output_space)
         elif isinstance(function, Points):
             # check if we have to add batch dimension
             if len(function._t.shape) < 3:
-                discrete_fn = Points(function._t.unsqueeze(0), self.input_space.output_space)
+                discrete_fn = Points(
+                    function._t.unsqueeze(0), self.input_space.output_space
+                )
             else:
                 discrete_fn = function
         elif isinstance(function, torch.Tensor):
@@ -116,7 +121,9 @@ class BranchNet(Model):
             else:
                 discrete_fn = Points(function, self.input_space.output_space)
         else:
-            raise NotImplementedError("Function has to be callable, a FunctionSet, a tensor, or a tp.Point")
+            raise NotImplementedError(
+                "Function has to be callable, a FunctionSet, a tensor, or a tp.Point"
+            )
         self(discrete_fn)
 
 
@@ -144,8 +151,15 @@ class FCBranchNet(BranchNet):
         For the weight initialization a Xavier/Glorot algorithm will be used.
         Default is 5/3.
     """
-    def __init__(self, function_space, discretization_sampler, hidden=(20,20,20),
-                 activations=nn.Tanh(), xavier_gains=5/3):
+
+    def __init__(
+        self,
+        function_space,
+        discretization_sampler,
+        hidden=(20, 20, 20),
+        activations=nn.Tanh(),
+        xavier_gains=5 / 3,
+    ):
         super().__init__(function_space, discretization_sampler)
         self.hidden = hidden
         self.activations = activations
@@ -153,15 +167,23 @@ class FCBranchNet(BranchNet):
 
     def finalize(self, output_space, output_neurons):
         super().finalize(output_space, output_neurons)
-        layers = _construct_FC_layers(hidden=self.hidden, input_dim=self.input_dim,
-                        output_dim=self.output_neurons, activations=self.activations,
-                        xavier_gains=self.xavier_gains)
+        layers = _construct_FC_layers(
+            hidden=self.hidden,
+            input_dim=self.input_dim,
+            output_dim=self.output_neurons,
+            activations=self.activations,
+            xavier_gains=self.xavier_gains,
+        )
 
         self.sequential = nn.Sequential(*layers)
 
     def forward(self, discrete_function_batch):
-        discrete_function_batch = discrete_function_batch.as_tensor.reshape(-1, self.input_dim)
-        self.current_out = self._reshape_multidimensional_output(self.sequential(discrete_function_batch))
+        discrete_function_batch = discrete_function_batch.as_tensor.reshape(
+            -1, self.input_dim
+        )
+        self.current_out = self._reshape_multidimensional_output(
+            self.sequential(discrete_function_batch)
+        )
 
 
 class ConvBranchNet1D(BranchNet):
@@ -200,8 +222,16 @@ class ConvBranchNet1D(BranchNet):
         For the weight initialization a Xavier/Glorot algorithm will be used.
         Default is 5/3.
     """
-    def __init__(self, function_space, discretization_sampler, convolutional_network,
-                 hidden=(20,20,20), activations=nn.Tanh(), xavier_gains=5/3):
+
+    def __init__(
+        self,
+        function_space,
+        discretization_sampler,
+        convolutional_network,
+        hidden=(20, 20, 20),
+        activations=nn.Tanh(),
+        xavier_gains=5 / 3,
+    ):
         super().__init__(function_space, discretization_sampler)
         self.conv_net = convolutional_network
         self.hidden = hidden
@@ -210,9 +240,13 @@ class ConvBranchNet1D(BranchNet):
 
     def finalize(self, output_space, output_neurons):
         super().finalize(output_space, output_neurons)
-        layers = _construct_FC_layers(hidden=self.hidden, input_dim=self.input_dim,
-                        output_dim=self.output_neurons, activations=self.activations,
-                        xavier_gains=self.xavier_gains)
+        layers = _construct_FC_layers(
+            hidden=self.hidden,
+            input_dim=self.input_dim,
+            output_dim=self.output_neurons,
+            activations=self.activations,
+            xavier_gains=self.xavier_gains,
+        )
 
         self.sequential = nn.Sequential(*layers)
 

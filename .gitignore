@@ -16,9 +16,9 @@ __pycache__/*
 
 # Log folders
 **/lightning_logs/**
-**/fluid_logs/**
-**/Multiscale/**
 **/bosch/**
+**/experiments/**
+**/fluid_logs/**
 # Project files
 .ropeproject
 .project
@@ -57,3 +57,4 @@ MANIFEST
 .venv*/
 .conda*/
 _venv/
+.env/

@@ -5,39 +5,58 @@ from ...models import Parameter
 from ...utils import UserFunction
 from ...models import DeepONet
 
+
 class DeepONetSingleModuleCondition(Condition):
 
-    def __init__(self, deeponet_model, function_set, input_sampler, residual_fn,
-                 error_fn, reduce_fn=torch.mean,
-                 name='singlemodulecondition', track_gradients=True, data_functions={},
-                 parameter=Parameter.empty(), weight=1.0):
+    def __init__(
+        self,
+        deeponet_model,
+        function_set,
+        input_sampler,
+        residual_fn,
+        error_fn,
+        reduce_fn=torch.mean,
+        name="singlemodulecondition",
+        track_gradients=True,
+        data_functions={},
+        parameter=Parameter.empty(),
+        weight=1.0,
+    ):
         super().__init__(name=name, weight=weight, track_gradients=track_gradients)
         self.net = deeponet_model
         assert isinstance(self.net, DeepONet)
         self.function_set = function_set
 
         self.parameter = parameter
-        self.register_parameter(name + '_params', self.parameter.as_tensor)
+        self.register_parameter(name + "_params", self.parameter.as_tensor)
         self.input_sampler = input_sampler
 
         self.residual_fn = UserFunction(residual_fn)
         self.error_fn = error_fn
         self.reduce_fn = reduce_fn
-        self.data_functions = self._setup_data_functions(data_functions, self.input_sampler)
+        self.data_functions = self._setup_data_functions(
+            data_functions, self.input_sampler
+        )
 
-        self.eval_function_set = len(
-            self.function_set.function_space.output_space.variables & set(self.residual_fn.args)
-            ) > 0
+        self.eval_function_set = (
+            len(
+                self.function_set.function_space.output_space.variables
+                & set(self.residual_fn.args)
+            )
+            > 0
+        )
 
-
-    def forward(self, device='cpu', iteration=None):
+    def forward(self, device="cpu", iteration=None):
         # 1) if necessary, sample input function and evaluate branch net
-        self.net._forward_branch(self.function_set, iteration_num=iteration, device=device)
+        self.net._forward_branch(
+            self.function_set, iteration_num=iteration, device=device
+        )
 
         # 2) sample output points
         if self.input_sampler.is_adaptive:
-            x = self.input_sampler.sample_points(unreduced_loss=self.last_unreduced_loss,
-                                                  device=device)
+            x = self.input_sampler.sample_points(
+                unreduced_loss=self.last_unreduced_loss, device=device
+            )
             self.last_unreduced_loss = None
         else:
             x = self.input_sampler.sample_points(device=device)
@@ -55,13 +74,21 @@ class DeepONetSingleModuleCondition(Condition):
         # whether the functions are part of the loss
         function_set_output = {}
         if self.eval_function_set:
-            function_set_output = self.function_set.create_function_batch(x[0,:,:]).coordinates
+            function_set_output = self.function_set.create_function_batch(
+                x[0, :, :]
+            ).coordinates
 
-        unreduced_loss = self.error_fn(self.residual_fn({**y.coordinates,
-                                                         **x_coordinates,
-                                                         **function_set_output,
-                                                         **self.parameter.coordinates,
-                                                         **data}))
+        unreduced_loss = self.error_fn(
+            self.residual_fn(
+                {
+                    **y.coordinates,
+                    **x_coordinates,
+                    **function_set_output,
+                    **self.parameter.coordinates,
+                    **data,
+                }
+            )
+        )
 
         if self.input_sampler.is_adaptive:
             self.last_unreduced_loss = unreduced_loss
@@ -110,14 +137,32 @@ class PIDeepONetCondition(DeepONetSingleModuleCondition):
         differential equations with physics-informed DeepOnets",
         https://arxiv.org/abs/2103.10974, 2021.
     """
-    def __init__(self, deeponet_model, function_set, input_sampler, residual_fn,
-                 name='pinncondition', track_gradients=True, data_functions={},
-                 parameter=Parameter.empty(), weight=1.0):
-        super().__init__(deeponet_model, function_set, input_sampler,
-                         residual_fn=residual_fn, error_fn=SquaredError(),
-                         reduce_fn=torch.mean, name=name,
-                         track_gradients=track_gradients, data_functions=data_functions,
-                         parameter=parameter, weight=weight)
+
+    def __init__(
+        self,
+        deeponet_model,
+        function_set,
+        input_sampler,
+        residual_fn,
+        name="pinncondition",
+        track_gradients=True,
+        data_functions={},
+        parameter=Parameter.empty(),
+        weight=1.0,
+    ):
+        super().__init__(
+            deeponet_model,
+            function_set,
+            input_sampler,
+            residual_fn=residual_fn,
+            error_fn=SquaredError(),
+            reduce_fn=torch.mean,
+            name=name,
+            track_gradients=track_gradients,
+            data_functions=data_functions,
+            parameter=parameter,
+            weight=weight,
+        )
 
 
 class DeepONetDataCondition(DataCondition):
@@ -155,21 +200,42 @@ class DeepONetDataCondition(DataCondition):
         training.
     """
 
-    def __init__(self, module, dataloader, norm, constrain_fn = None,
-                 root=1., use_full_dataset=False, name='datacondition', weight=1.0):
-        super().__init__(module=module, dataloader=dataloader,
-                         norm=norm, root=root, use_full_dataset=use_full_dataset,
-                         name=name, weight=weight, constrain_fn=constrain_fn)
+    def __init__(
+        self,
+        module,
+        dataloader,
+        norm,
+        constrain_fn=None,
+        root=1.0,
+        use_full_dataset=False,
+        name="datacondition",
+        weight=1.0,
+    ):
+        super().__init__(
+            module=module,
+            dataloader=dataloader,
+            norm=norm,
+            root=root,
+            use_full_dataset=use_full_dataset,
+            name=name,
+            weight=weight,
+            constrain_fn=constrain_fn,
+        )
         assert isinstance(self.module, DeepONet)
 
     def _compute_dist(self, batch, device):
         branch_in, trunk_in, out = batch
-        branch_in, trunk_in, out = branch_in.to(device), trunk_in.to(device), \
-                                   out.to(device)
+        branch_in, trunk_in, out = (
+            branch_in.to(device),
+            trunk_in.to(device),
+            out.to(device),
+        )
         self.module.branch(branch_in)
         model_out = self.module(trunk_in)
         if self.constrain_fn:
-            model_out = self.constrain_fn({**model_out.coordinates, **trunk_in.coordinates})
+            model_out = self.constrain_fn(
+                {**model_out.coordinates, **trunk_in.coordinates}
+            )
         else:
             model_out = model_out.as_tensor
         return torch.abs(model_out - out.as_tensor)

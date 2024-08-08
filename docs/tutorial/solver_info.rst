@@ -22,15 +22,20 @@ the basic trainer is defined as follows:
   
   import pytorch_lightning as pl
 
-  trainer = pl.Trainer(gpus=1, max_steps=4000, check_val_every_n_epoch=10)
+  trainer = pl.Trainer(devices=1, accelerator="gpu", 
+                        max_steps=4000, check_val_every_n_epoch=10)
   trainer.fit(solver) # start training
 
 Some important keywords are:
 
-- **gpus**: The number of GPUs that should be used. If only one or more CPUs are available
-  set ```gpus=None``. Depending on the operating system, the GPUs may have to be further
-  specified beforehand via ``os.environ`` or other ways. There are more different possiblities to 
-  specify the used device, see the above mentionde documentation.
+- **devices**: The number of devices that should be used. 
+- **accelerator**: On what kind of device the network will be trained.
+  Usually, one needs at least one GPU to train a neural network sufficiently well. If only 
+  CPUs are available set ``"cpu"``. 
+  Depending on the operating system, the GPUs may have to be further
+  specified beforehand via ``os.environ`` or other ways. 
+  There are more different possibilities to specify the used device, 
+  see the above-mentioned documentation.
 - **max_steps**: The maximum number of training iterations. In each iteration
   all defined training conditions will be evaluated 
   (e.g. points sampled, model output computed, residuals evaluated, etc.) and a 

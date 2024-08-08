@@ -7,17 +7,24 @@ A tutorial on the usage of Conditions can be found here_.
 .. _here: https://boschresearch.github.io/torchphysics/tutorial/tutorial_start.html
 """
 
-from .condition import (Condition,
-                        PINNCondition,
-                        DataCondition,
-                        DeepRitzCondition,
-                        ParameterCondition,
-                        MeanCondition,
-                        AdaptiveWeightsCondition,
-                        SingleModuleCondition,
-                        PeriodicCondition,
-                        IntegroPINNCondition)
+from .condition import (
+    Condition,
+    PINNCondition,
+    DataCondition,
+    DeepRitzCondition,
+    ParameterCondition,
+    MeanCondition,
+    AdaptiveWeightsCondition,
+    SingleModuleCondition,
+    PeriodicCondition,
+    IntegroPINNCondition,
+    HPM_EquationLoss_at_DataPoints,
+    HPM_EquationLoss_at_Sampler,
+    HPCMCondition,
+)
 
-from .deeponet_condition import (DeepONetSingleModuleCondition, 
-                                 PIDeepONetCondition, 
-                                 DeepONetDataCondition)
+from .deeponet_condition import (
+    DeepONetSingleModuleCondition,
+    PIDeepONetCondition,
+    DeepONetDataCondition,
+)
