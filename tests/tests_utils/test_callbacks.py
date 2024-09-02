@@ -1,9 +1,9 @@
 import os
 import torch
-import pytest
 import pytorch_lightning as pl
 import torchphysics as tp
-
+from pytorch_lightning import loggers as pl_loggers
+import shutil
 
 def helper_setup():
     X = tp.spaces.R1("x")
@@ -26,9 +26,12 @@ def helper_setup():
     return model, solver, x_smapler.domain
 
 
-def helper_cleaner(path_to_file):
+def helper_cleaner(path_to_file, delete_dict=False):
     try:
-        os.remove(path_to_file)
+        if delete_dict:
+            shutil.rmtree(path_to_file)
+        else:
+            os.remove(path_to_file)
     except OSError:
         raise AssertionError(f"File {path_to_file} does not exist! Callback did not work")
 
@@ -64,12 +67,14 @@ def test_weight_save_callback_start():
 
 
 def test_plotter_callback():
+    tensorboard_logger = pl_loggers.TensorBoardLogger('./tests/logdata')
     model, solver, domain = helper_setup()
     plot_sampler = tp.samplers.PlotSampler(domain, 100)
     plot_callback = tp.callbacks.PlotterCallback(model, lambda u : u, 
                                                  plot_sampler)
-    trainer = pl.Trainer( max_steps=2, callbacks=[plot_callback])
+    trainer = pl.Trainer( max_steps=2, callbacks=[plot_callback], logger=tensorboard_logger)
     trainer.fit(solver)
+    helper_cleaner("./tests/logdata", True)
 
 
 def test_state_checkpoint():
