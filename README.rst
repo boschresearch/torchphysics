@@ -26,7 +26,7 @@ TorchPhysics is build upon the machine learning library PyTorch_.
 
 Features
 ========
-The Goal of this library is to create a basic framework that can be used in many
+The goal of this library is to create a basic framework that can be used in many
 different applications and with different deep learning methods.
 To this end, TorchPhysics aims at a:
 
@@ -61,6 +61,14 @@ Some built-in features are:
 .. _Shapely: https://github.com/shapely/shapely
 .. _`PyTorch Lightning`: https://www.pytorchlightning.ai/
 
+Additional module:
+
+- TorchPhysics comes with a wrapper module for `NVIDIA Modulus`_.
+This module serves as a bridge between the two frameworks and allows users to train TorchPhysics models with the Modulus training framework with minimal changes to their existing code. The additional installation of Modulus is required and documented in the `Wrapper Readme`_.
+
+.. _`NVIDIA Modulus`: https://developer.nvidia.com/modulus
+.. _`Wrapper Readme`: https://github.com/boschresearch/torchphysics/blob/main/src/wrapper/TPModulusWrapper.rst
+
 
 Getting Started
 ===============
@@ -78,7 +86,7 @@ to have a look at the following sections:
 
 Installation
 ============
-TorchPhysics reqiueres the follwing dependencies to be installed: 
+TorchPhysics requires the following dependencies to be installed: 
 
 - Python >= 3.8
 - PyTorch_ >= 2.0.0
@@ -99,7 +107,7 @@ Or by
 
   git clone https://github.com/boschresearch/torchphysics 
   cd path_to_torchphysics_folder
-  pip install .[all]
+  pip install -e .
 
 if you want to modify the code.
 

@@ -6,6 +6,7 @@ from .problem import conditions
 from .models import *
 from .utils import *
 from .solver import Solver, OptimizerSetting
+from .wrapper import TPModulusWrapper, ModulusArchitectureWrapper
 
 if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
