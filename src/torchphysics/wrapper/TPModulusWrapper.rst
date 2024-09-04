@@ -48,6 +48,7 @@ e.g. if you want to use the Modulus Fourier architecture as a TorchPhysics model
     
     model=torchphysics.wrapper.ModulusArchitectureWrapper(input_space=X*T, output_space=U,arch_name='fourier',frequencies = ['axis',[0,1,2]])
 
+
 Installation
 ============
 The wrapper module requires a working installation of TorchPhysics and Modulus Symbolic (Sym), which is a framework providing algorithms
@@ -78,7 +79,7 @@ To circumvent disabling of TorchScript you can edit the file /modulus/sym/consta
 .. _`NVIDIA Modulus Github Repository`: https://github.com/NVIDIA/modulus-sym/tree/main
 .. _PyTorch: https://pytorch.org/
 .. _TorchScript: https://pytorch.org/docs/stable/jit.html
-.. _'TorchPhysics documentation': https://github.com/boschresearch/torchphysics/blob/main/README.rst
+.. _`TorchPhysics documentation`: https://github.com/boschresearch/torchphysics/blob/main/README.rst
 
 
 
