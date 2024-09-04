@@ -61,13 +61,12 @@ Some built-in features are:
 .. _Shapely: https://github.com/shapely/shapely
 .. _`PyTorch Lightning`: https://www.pytorchlightning.ai/
 
-Additional module:
+Additional modules:
 
-- TorchPhysics comes with a wrapper module for `NVIDIA Modulus`_.
-This module serves as a bridge between the two frameworks and allows users to train TorchPhysics models with the Modulus training framework with minimal changes to their existing code. The additional installation of Modulus is required and documented in the `Wrapper Readme`_.
+- TorchPhysics comes with a wrapper module for `NVIDIA Modulus`_. This module serves as a bridge between the two frameworks and allows users to train TorchPhysics models with the Modulus training framework with minimal changes to their existing code. The additional installation of Modulus is required and documented in the `Wrapper Readme`_.
 
 .. _`NVIDIA Modulus`: https://developer.nvidia.com/modulus
-.. _`Wrapper Readme`: https://github.com/boschresearch/torchphysics/blob/main/src/wrapper/TPModulusWrapper.rst
+.. _`Wrapper Readme:` ./src/wrapper/TPModulusWrapper.rst
 
 
 Getting Started

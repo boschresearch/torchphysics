@@ -5,7 +5,7 @@ TorchPhysics to Modulus Wrapper
 This folder contains a wrapper module for TorchPhysics to `NVIDIA Modulus`_.
 This module serves as a bridge between the two frameworks and allows users to train TorchPhysics models with the Modulus training framework with minimal changes to their existing code. 
 
-Both libraries are based on Pytorch_, but instead of `PyTorch Lightning`_, Modulus uses its own *Distributedmanager*, `Pytorch JIT`_ or TorchScript_ backend and CUDA graphs as a further framework to optimize and accelerate the training process, especially on NVIDIA GPUs.
+Both libraries are based on Pytorch_, but instead of `PyTorch Lightning`_, Modulus uses its own *Distributedmanager*, `TorchScript`_ with Pytorch JIT backend and CUDA graphs as a further framework to optimize and accelerate the training process, especially on NVIDIA GPUs.
 
 Both libraries use ``torch.nn.Module`` as the base class for the model definition, so that any model architecture of Modulus can easily be used as a TorchPhysics model, which is one of the main purposes of this wrapper module.
 Modulus offers a wide range of model architectures, including various types of Fourier neural networks.
@@ -33,15 +33,15 @@ The wrapper module consists of two main classes:
 
 Usage
 =====
-To use the wrapper module to run a TorchPhysics model in Modulus, you can add the following lines to your existing TorchPhysics code after the definition
-of the ``trainer`` and the ``solver`` object and replace the ``trainer.fit(solver)`` call: 
+To use the wrapper module to run a TorchPhysics model in Modulus, you can add the following line to your existing TorchPhysics code after the definition
+of the ``trainer`` and the ``solver`` object, replacing the ``trainer.fit(solver)`` call: 
 
 .. code-block:: python
     
     torchphysics.wrapper.TPModulusWrapper(trainer,solver).train()
 
 
-To use one of the Modulus model architectures, you can add the following lines to your existing TorchPhysics code and replace the model definition,
+To use one of the Modulus model architectures, you can add the following line to your existing TorchPhysics code and replace the model definition,
 e.g. if you want to use the Modulus Fourier architecture as a TorchPhysics model:
 
 .. code-block:: python
@@ -50,12 +50,12 @@ e.g. if you want to use the Modulus Fourier architecture as a TorchPhysics model
 
 Installation
 ============
-The wrapper module requires a working installation of TorchPhysics and Modulus Symbolic (Sym), which is a framework providing pythonic APIs, algorithms
-and utilities to be used with Modulus core to physics inform model training as well as higher level abstraction for domain experts.
+The wrapper module requires a working installation of TorchPhysics and Modulus Symbolic (Sym), which is a framework providing algorithms
+and utilities to be used with Modulus core for physics informed model training.
 
 The installation of Modulus Sym is documented here: `NVIDIA Modulus Github Repository`_
 
-We recommend to create a new conda environment and to first install NVIDIA Modulus with the following commands:
+We recommend to create a new conda environment and to first install NVIDIA Modulus with the following command:
 
 .. code-block:: python
     
@@ -78,7 +78,7 @@ To circumvent disabling of TorchScript you can edit the file /modulus/sym/consta
 .. _`NVIDIA Modulus Github Repository`: https://github.com/NVIDIA/modulus-sym/tree/main
 .. _PyTorch: https://pytorch.org/
 .. _TorchScript: https://pytorch.org/docs/stable/jit.html
-.. _`Pytorch JIT`: https://pytorch.org/docs/stable/jit.html
+.. _'TorchPhysics documentation': https://github.com/boschresearch/torchphysics/blob/main/README.rst
 
 
 
@@ -97,7 +97,7 @@ Some notes
 * The loss definition in Modulus is based on Monte Carlo integration and therefore the loss is scaled proportional to the corresponding area, i.e. it is usually different from the loss in TorchPhysics, where the loss is the mean value.
 * Currently, ``stl``-file support in Modulus is only available for Docker installation, so ``shapely`` and ``Trimesh`` geometries in TorchPhysics can not be converted.
 * Cross product domains are generally not supported in Modulus, so must be automatically converted by the wrapper to existing primary geometries, so not all combinations of domain operations are allowed, e.g. product domains only from the union of 1D or 0D domains and no further rotation and translation is allowed (must be done with the entire product).
-* Physics-Informed Deep Operator Networks (PIDOns) are currently not supported in the wrapper. The current implementation and documentation is much better in TorchPhysics than in Modulus
+* Physics-Informed Deep Operator Networks (PIDOns) are currently not supported in the wrapper. 
 * Fourier Neural Operators (FNOs) are currently not supported in the wrapper, but an FNO framework is currently being developed in TorchPhysics.
 * Samplers other than random uniformn and Halton sequence are not supported in Modulus.
 * The imposition of exact boundary conditions using hard constraints with Approximate Distance Functions (ADFs) is not yet supported in TorchPhysics.
