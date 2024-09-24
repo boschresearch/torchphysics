@@ -38,6 +38,7 @@ jobs:
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:
+          name: artifact-wheel-${{ matrix.os }}
           path: ./dist/*.whl
 
 
@@ -63,6 +64,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: artifact-sdist
           path: dist/*.tar.gz
 
   upload_pypi:
