@@ -77,10 +77,10 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: artifact-wheel-windows-latest
-          path: dist
+      # - uses: actions/download-artifact@v4
+      #   with:
+      #     name: artifact-wheel-windows-latest
+      #     path: dist
 
       - uses: actions/download-artifact@v4
         with:
