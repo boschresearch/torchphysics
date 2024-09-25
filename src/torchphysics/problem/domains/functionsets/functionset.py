@@ -180,3 +180,46 @@ class CustomFunctionSet(FunctionSet):
 
     def _evaluate_function(self, param_point_meshgrid):
         return self.custom_fn(param_point_meshgrid)
+
+
+
+class TestFunctionHelper(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, x, expected_out, grad_out):
+        ctx.save_for_backward(grad_out)
+        x_ten = torch.sum(x, dim=-1, keepdim=True)
+        return expected_out + 0.0 * x_ten# <- hack to build graph to allow for precomputed gradient
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        grad_out, = ctx.saved_tensors
+        return grad_out * grad_output, None, None
+
+
+class TestFunctionSet(FunctionSet):
+
+    def __init__(self, function_space):
+        super().__init__(function_space=function_space, parameter_sampler=None)
+        self.eval_fn_helper = TestFunctionHelper()
+        self.quadrature_mode_on = True
+
+    @abc.abstractmethod
+    def switch_quadrature_mode_on(self, set_on : bool):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __call__(self, x):
+        raise NotImplementedError
+    
+    @abc.abstractmethod
+    def to(self, device):
+        raise NotImplementedError
+    
+    @abc.abstractmethod
+    def get_quad_weights(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_quadrature_points(self):
+        raise NotImplementedError
