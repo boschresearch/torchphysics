@@ -54,9 +54,7 @@ class WeightSaveCallback(Callback):
                 self.model.state_dict(), self.path + "/" + self.name + "_init.pt"
             )
 
-    def on_train_batch_start(
-        self, trainer, pl_module, batch, batch_idx, dataloader_idx
-    ):
+    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         if (self.check_interval > 0 and batch_idx > 0) and (
             (batch_idx - 1) % self.check_interval == 0
         ):
@@ -124,7 +122,7 @@ class PlotterCallback(Callback):
         self.point_sampler.sample_points(device=pl_module.device)
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx
     ):
         if batch_idx % self.check_interval == 0:
             fig = plot(
@@ -146,7 +144,7 @@ class PlotterCallback(Callback):
 
 class TrainerStateCheckpoint(Callback):
     """
-    A callback to saves the current state of the trainer (a PyTorch Lightning checkpoint),
+    A callback to save the current state of the trainer (a PyTorch Lightning checkpoint),
     if the training has to be resumed at a later point in time.
 
     Parameters
@@ -162,8 +160,9 @@ class TrainerStateCheckpoint(Callback):
 
     Note
     ----
-    To continue from the checkpoint, use `resume_from_checkpoint ="path_to_ckpt_file"` as an
-    argument in the initialization of the trainer.
+    To continue from the checkpoint, use ckpt_path="some/path/to/my_checkpoint.ckpt" as 
+    argument in the fit command of the trainer.
+   
 
     The PyTorch Lightning checkpoint would save the current epoch and restart from it.
     In TorchPhysics we dont use multiple epochs, instead we train with multiple iterations
@@ -180,7 +179,7 @@ class TrainerStateCheckpoint(Callback):
         self.weights_only = weights_only
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx
     ):
         if batch_idx % self.check_interval == 0:
             trainer.save_checkpoint(
