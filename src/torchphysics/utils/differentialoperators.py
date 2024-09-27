@@ -1,6 +1,6 @@
 """File contains differentialoperators
 
-NOTE: We aim to make the computation of differential operaotrs more efficient
+NOTE: We aim to make the computation of differential operators more efficient
       by building an intelligent framework that is able to keep already computed
       derivatives and therefore make the computations more efficient.
 """
