@@ -27,7 +27,7 @@ class PointsDataset(torch.utils.data.Dataset):
             assert isinstance(data_points, (tuple, list))
             self.data_points = list(data_points)
         if shuffle:
-            perm = torch.randperm(len(self.data_points[0]))
+            perm = torch.randperm(len(self.data_points[0].as_tensor))
             for i in range(len(self.data_points)):
                 self.data_points[i] = self.data_points[i][perm]
 
@@ -38,9 +38,9 @@ class PointsDataset(torch.utils.data.Dataset):
         """Returns the number of points of this dataset.
         """
         if self.drop_last:
-            return len(self.data_points[0]) // self.batch_size
+            return len(self.data_points[0].as_tensor) // self.batch_size
         else:
-            return math.ceil(len(self.data_points[0]) / self.batch_size)
+            return math.ceil(len(self.data_points[0].as_tensor) / self.batch_size)
 
     def __getitem__(self, idx):
         """Returns the item at the given index.
@@ -50,7 +50,7 @@ class PointsDataset(torch.utils.data.Dataset):
         idx : int
             The index of the desired point.
         """
-        l = len(self.data_points[0])
+        l = len(self.data_points[0].as_tensor)
         out = []
         for points in self.data_points:
             out.append(points[idx*self.batch_size:min((idx+1)*self.batch_size, l), :])

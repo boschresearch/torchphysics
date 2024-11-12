@@ -31,7 +31,7 @@ class VariationalPINNCondition(SingleModuleCondition):
 
         test_fn = self.test_fn_set(x_coordinates)
 
-        test_space_parameters = {"quad_weights": self.test_fn_set.get_quad_weights()}
+        test_space_parameters = {"quad_weights": self.test_fn_set.get_quad_weights(len(y.as_tensor))}
         
         unreduced_loss = self.error_fn(self.residual_fn({**y.coordinates,
                                                         **x_coordinates,

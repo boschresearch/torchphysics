@@ -194,7 +194,10 @@ class TestFunctionHelper(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         grad_out, = ctx.saved_tensors
-        return grad_out * grad_output, None, None
+        repeats = grad_output.shape[0] // grad_out.shape[0]
+        # Assumes the original data to be repeated along the first axis
+        # TODO: Can be done nicer???
+        return grad_out.repeat((repeats, 1, 1)) * grad_output, None, None
 
 
 class TestFunctionSet(FunctionSet):
@@ -217,7 +220,7 @@ class TestFunctionSet(FunctionSet):
         raise NotImplementedError
     
     @abc.abstractmethod
-    def get_quad_weights(self):
+    def get_quad_weights(self, n):
         raise NotImplementedError
 
     @abc.abstractmethod

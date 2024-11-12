@@ -72,8 +72,10 @@ class HarmonicFunctionSet1D(TestFunctionSet):
             return self.grad_at_quadrature
 
 
-    def get_quad_weights(self):
-        return self.quadrature_weights_per_dof
+    def get_quad_weights(self, n):
+        repeats = n // len(self.quadrature_weights_per_dof)
+        return self.quadrature_weights_per_dof.repeat((repeats, 1, 1))
+
 
     def get_quadrature_points(self):
         return Points(self.quadrature_points_per_dof, self.function_space.input_space)

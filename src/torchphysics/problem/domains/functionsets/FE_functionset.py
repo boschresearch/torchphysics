@@ -29,8 +29,9 @@ class FEFunctionSet(TestFunctionSet):
             Points(self.finite_elements(x), self.function_space.output_space)
 
 
-    def get_quad_weights(self):
-        return self.finite_elements.quadrature_weights_per_dof
+    def get_quad_weights(self, n):
+        repeats = n // len(self.finite_elements.quadrature_weights_per_dof)
+        return self.finite_elements.quadrature_weights_per_dof.repeat((repeats, 1, 1))
 
 
     def get_quadrature_points(self):

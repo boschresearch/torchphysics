@@ -23,3 +23,6 @@ from .deeponet.deeponet import DeepONet
 from .deeponet.branchnets import (BranchNet, FCBranchNet, ConvBranchNet1D)
 from .deeponet.trunknets import (TrunkNet, FCTrunkNet) 
 from .deeponet.layers import TrunkLinear
+
+# FNO:
+from .FNO import FNO, _FourierLayer
