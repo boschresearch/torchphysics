@@ -30,7 +30,7 @@ class DataSampler(PointSampler):
         n = len(self.points.as_tensor)
         super().__init__(n_points=n)
 
-    def sample_points(self, params=Points.empty(), device='cpu'):
+    def sample_points(self, params=Points.empty(), device="cpu"):
         self.points = self.points.to(device)
         
         # If sampler not coupled to other samplers or parameters

@@ -14,7 +14,7 @@ class _FourierLayer(nn.Module):
                  bias : bool = False, xavier_gain=5.0/3.0, space_res=None):
         # Transform mode_num to tuple:
         if isinstance(mode_num, int):
-            mode_num = (mode_num, )
+            mode_num = (mode_num,)
 
         super().__init__()
         

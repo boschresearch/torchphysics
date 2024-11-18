@@ -38,6 +38,16 @@ class WeightSaveCallback(Callback):
         save_initial_model=False,
         save_final_model=True,
     ):
+
+    def __init__(
+        self,
+        model,
+        path,
+        name,
+        check_interval,
+        save_initial_model=False,
+        save_final_model=True,
+    ):
         super().__init__()
         self.model = model
         self.path = path
@@ -47,6 +57,7 @@ class WeightSaveCallback(Callback):
         self.save_final_model = save_final_model
 
         self.current_loss = float("inf")
+        self.current_loss = float("inf")
 
     def on_train_start(self, trainer, pl_module):
         if self.save_initial_model:
@@ -54,7 +65,9 @@ class WeightSaveCallback(Callback):
                 self.model.state_dict(), self.path + "/" + self.name + "_init.pt"
             )
 
-    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx=0):
+    def on_train_batch_start(
+        self, trainer, pl_module, batch, batch_idx, dataloader_idx
+    ):
         if (self.check_interval > 0 and batch_idx > 0) and (
             (batch_idx - 1) % self.check_interval == 0
         ):
@@ -70,6 +83,9 @@ class WeightSaveCallback(Callback):
             torch.save(
                 self.model.state_dict(), self.path + "/" + self.name + "_final.pt"
             )
+            torch.save(
+                self.model.state_dict(), self.path + "/" + self.name + "_final.pt"
+            )
 
 
 class PlotterCallback(Callback):
@@ -79,6 +95,7 @@ class PlotterCallback(Callback):
     Parameters
     ----------
     plot_function : callable
+        A function that specfices the part of the model that should be plotted.
         A function that specfices the part of the model that should be plotted.
     point_sampler : torchphysics.samplers.PlotSampler
         A sampler that creates the points that should be used for the plot.
@@ -108,8 +125,22 @@ class PlotterCallback(Callback):
         plot_type="",
         **kwargs
     ):
+    """
+
+    def __init__(
+        self,
+        model,
+        plot_function,
+        point_sampler,
+        log_name="plot",
+        check_interval=200,
+        angle=[30, 30],
+        plot_type="",
+        **kwargs
+    ):
         super().__init__()
         self.model = model
+        self.check_interval = check_interval
         self.check_interval = check_interval
         self.plot_function = UserFunction(plot_function)
         self.log_name = log_name
@@ -121,7 +152,9 @@ class PlotterCallback(Callback):
     def on_train_start(self, trainer, pl_module):
         self.point_sampler.sample_points(device=pl_module.device)
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0):
+    def on_train_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
         if batch_idx % self.check_interval == 0:
             fig = plot(
                 model=self.model,
@@ -168,6 +201,7 @@ class TrainerStateCheckpoint(Callback):
     from iteration 0 (essentially the last completed epoch). But all other states
     (model, optimizer, ...) will be correctly restored.
     """
+
     def __init__(self, path, name, check_interval=200, weights_only=False):
         super().__init__()
         self.path = path
@@ -175,7 +209,9 @@ class TrainerStateCheckpoint(Callback):
         self.check_interval = check_interval
         self.weights_only = weights_only
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0):
+    def on_train_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
         if batch_idx % self.check_interval == 0:
             trainer.save_checkpoint(
                 self.path + "/" + self.name + ".ckpt", weights_only=self.weights_only

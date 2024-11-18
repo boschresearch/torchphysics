@@ -1,8 +1,9 @@
 name: Build and upload to PyPI
 
 on:
+  workflow_dispatch:
   release:
-    type: [published]
+    types: [published]
 
 env:
   CIBW_BUILD: cp37-* cp38-* cp39-* cp310-*
@@ -18,11 +19,11 @@ jobs:
       matrix:
         os: [ubuntu-latest] #, windows-latest]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         name: Install Python
         with:
           python-version: '3.10'
@@ -35,8 +36,9 @@ jobs:
         run: |
           # python -m cibuildwheel --output-dir wheelhouse
           python setup.py bdist_wheel
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
+          name: artifact-wheel-${{ matrix.os }}
           path: ./dist/*.whl
 
 
@@ -44,11 +46,11 @@ jobs:
     name: Build source distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         name: Install Python
         with:
           python-version: '3.10'
@@ -60,8 +62,9 @@ jobs:
       - name: Build sdist
         run: python setup.py sdist
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
+          name: artifact-sdist
           path: dist/*.tar.gz
 
   upload_pypi:
@@ -69,12 +72,22 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
-          name: artifact
+          name: artifact-sdist
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@master
+      # - uses: actions/download-artifact@v4
+      #   with:
+      #     name: artifact-wheel-windows-latest
+      #     path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: artifact-wheel-ubuntu-latest
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.10.2
         with:
           user: __token__
           password: ${{ secrets.upload_pypi }}

@@ -3,6 +3,7 @@ import torch.nn as nn
 from .model import Model
 from ..problem.spaces import Points
 
+
 class DeepRitzNet(Model):
     """
     Implementation of the architecture used in the Deep Ritz paper [1]_.
@@ -24,6 +25,7 @@ class DeepRitzNet(Model):
     ..  [#] Weinan E and Bing Yu, "The Deep Ritz method: A deep learning-based numerical
         algorithm for solving variational problems", 2017
     """
+
     def __init__(self, input_space, output_space, width, depth):
         super().__init__(input_space, output_space)
         self.width = width
@@ -39,10 +41,10 @@ class DeepRitzNet(Model):
 
     def forward(self, x):
         x = self._fix_points_order(x)
-        x = self.linearIn(x) # Match input dimension of network
-        for (layer1,layer2) in zip(self.linear1, self.linear2):
-            x_temp = torch.relu(layer1(x)**3)
-            x_temp = torch.relu(layer2(x_temp)**3)
+        x = self.linearIn(x)  # Match input dimension of network
+        for layer1, layer2 in zip(self.linear1, self.linear2):
+            x_temp = torch.relu(layer1(x) ** 3)
+            x_temp = torch.relu(layer2(x_temp) ** 3)
             x = x_temp + x
 
         return Points(self.linearOut(x), self.output_space)

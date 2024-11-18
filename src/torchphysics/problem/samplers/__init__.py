@@ -23,17 +23,21 @@ of the domain product.
 
 """
 
-from .sampler_base import (PointSampler,
-                           ProductSampler,
-                           ConcatSampler,
-                           AppendSampler,
-                           StaticSampler,
-                           EmptySampler)
-from .random_samplers import (RandomUniformSampler,
-                              GaussianSampler,
-                              LHSSampler,
-                              AdaptiveRandomRejectionSampler,
-                              AdaptiveThresholdRejectionSampler)
+from .sampler_base import (
+    PointSampler,
+    ProductSampler,
+    ConcatSampler,
+    AppendSampler,
+    StaticSampler,
+    EmptySampler,
+)
+from .random_samplers import (
+    RandomUniformSampler,
+    GaussianSampler,
+    LHSSampler,
+    AdaptiveRandomRejectionSampler,
+    AdaptiveThresholdRejectionSampler,
+)
 from .grid_samplers import GridSampler, ExponentialIntervalSampler
 from .plot_samplers import PlotSampler, AnimationSampler
 from .data_samplers import DataSampler

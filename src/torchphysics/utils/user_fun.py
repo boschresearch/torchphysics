@@ -2,8 +2,9 @@
 methode/function and wraps them for future usage. E.g correctly choosing 
 the needed arguments and passing them on to the original function.
 """
+
 import inspect
-import copy 
+import copy
 import torch
 
 from ..problem.spaces.points import Points
@@ -11,24 +12,25 @@ from ..problem.spaces.points import Points
 
 class UserFunction:
     """Wraps a function, so that it can be called with arbitrary input arguments.
-    
+
     Parameters
     ----------
     fun : callable
         The original function that should be wrapped.
     defaults : dict, optional
         Possible defaults arguments of the function. If none are specified will
-        check by itself if there are any. 
+        check by itself if there are any.
     args : dict, optional
         All arguments of the function. If none are specified will
-        check by itself if there are any. 
+        check by itself if there are any.
 
     Notes
     -----
     Uses inspect.getfullargspec(fun) to get the possible input arguments.
-    When called just extracts the needed arguments and passes them to the 
-    original function. 
+    When called just extracts the needed arguments and passes them to the
+    original function.
     """
+
     def __init__(self, fun, defaults={}, args={}):
         if isinstance(fun, (UserFunction, DomainUserFunction)):
             self.fun = fun.fun
@@ -48,16 +50,20 @@ class UserFunction:
         f_args = inspect.getfullargspec(self.fun).args
 
         # we check that the function defines all needed parameters
-        if inspect.getfullargspec(self.fun).varargs is not None or \
-            inspect.getfullargspec(self.fun).varkw is not None:
-            raise ValueError("""
+        if (
+            inspect.getfullargspec(self.fun).varargs is not None
+            or inspect.getfullargspec(self.fun).varkw is not None
+        ):
+            raise ValueError(
+                """
                              Variable arguments are not supported in
                              UserFunctions. Please use keyword arguments.
-                             """)
+                             """
+            )
 
         f_defaults = inspect.getfullargspec(self.fun).defaults
         f_kwonlyargs = inspect.getfullargspec(self.fun).kwonlyargs
-        #f_kwonlydefaults = inspect.getfullargspec(self.fun).kwonlydefaults
+        # f_kwonlydefaults = inspect.getfullargspec(self.fun).kwonlydefaults
         # NOTE: By above check, there should not be kwonlyargs. However, we still catch
         # this case here.
         self.args = f_args + f_kwonlyargs
@@ -65,13 +71,14 @@ class UserFunction:
         # defaults always align at the end of the args
         self.defaults = {}
         if not f_defaults is None:
-            self.defaults = {self.args[-i]: f_defaults[-i] 
-                             for i in range(len(f_defaults), 0, -1)}
-        #if not f_kwonlydefaults is None:
+            self.defaults = {
+                self.args[-i]: f_defaults[-i] for i in range(len(f_defaults), 0, -1)
+            }
+        # if not f_kwonlydefaults is None:
         #    self.defaults.update(f_kwonlydefaults)
 
     def __call__(self, args={}, vectorize=False):
-        """To evalute the function. Will automatically extract the needed arguments 
+        """To evalute the function. Will automatically extract the needed arguments
         from the input data and will set the possible default values.
 
         Parameters
@@ -93,8 +100,9 @@ class UserFunction:
             args = args.coordinates
         # check that every necessary arg is given
         for key in self.necessary_args:
-            assert key in args, \
-                f"The argument '{key}' is necessary in {self.__name__()} but not given."
+            assert (
+                key in args
+            ), f"The argument '{key}' is necessary in {self.__name__()} but not given."
         # if necessary, pass defaults
         inp = {key: args[key] for key in self.args if key in args}
         inp.update({key: self.defaults[key] for key in self.args if key not in args})
@@ -104,7 +112,7 @@ class UserFunction:
             return self.apply_to_batch(inp)
 
     def evaluate_function(self, **inp):
-        """Evaluates the original input function. Should not be used directly, 
+        """Evaluates the original input function. Should not be used directly,
         rather use the call-methode.
         """
         if callable(self.fun):
@@ -152,16 +160,18 @@ class UserFunction:
         Returns
         -------
         Out : value or UserFunction
-            If the input arguments are enough to evalate the whole function, the 
-            corresponding output is returned. 
-            If some needed arguments are missing, a copy of this UserFunction will 
-            be returned. Whereby the values of **args will be added to the 
+            If the input arguments are enough to evalate the whole function, the
+            corresponding output is returned.
+            If some needed arguments are missing, a copy of this UserFunction will
+            be returned. Whereby the values of **args will be added to the
             default values of the returned UserFunction.
         """
         if callable(self.fun):
             if all(arg in args for arg in self.necessary_args):
                 inp = {key: args[key] for key in self.args if key in args}
-                inp.update({key: self.defaults[key] for key in self.args if key not in args})
+                inp.update(
+                    {key: self.defaults[key] for key in self.args if key not in args}
+                )
                 return self.fun(**inp)
             else:
                 # to avoid manipulation of given param obj, we create a copy
@@ -204,8 +214,7 @@ class UserFunction:
             self.defaults.pop(key)
 
     def __deepcopy__(self, memo):
-        """Creates a copy of the function
-        """
+        """Creates a copy of the function"""
         cls = self.__class__
         copy_object = cls.__new__(cls, self.fun)
         memo[id(self)] = copy_object
@@ -238,28 +247,29 @@ class UserFunction:
 
 class DomainUserFunction(UserFunction):
     """Extension of the original UserFunctions, that are used in the Domain-Class.
-    
+
     Parameters
     ----------
     fun : callable
         The original function that should be wrapped.
     defaults : dict, optional
         Possible defaults arguments of the function. If none are specified will
-        check by itself if there are any. 
+        check by itself if there are any.
     args : dict, optional
         All arguments of the function. If none are specified will
-        check by itself if there are any. 
+        check by itself if there are any.
 
     Notes
     -----
-    The only difference to normal UserFunction is how the evaluation 
-    of the original function is handled. Since all Domains use Pytorch, 
+    The only difference to normal UserFunction is how the evaluation
+    of the original function is handled. Since all Domains use Pytorch,
     we check that the output always is a torch.tensor. In the case that the function
-    is not constant, we also append an extra dimension to the output, so that the 
-    domains can work with it correctly. 
+    is not constant, we also append an extra dimension to the output, so that the
+    domains can work with it correctly.
     """
-    def __call__(self, args={}, device='cpu'):
-        """To evalute the function. Will automatically extract the needed arguments 
+
+    def __call__(self, args={}, device="cpu"):
+        """To evalute the function. Will automatically extract the needed arguments
         from the input data and will set the possible default values.
 
         Parameters
@@ -277,19 +287,20 @@ class DomainUserFunction(UserFunction):
         """
         if isinstance(args, Points):
             args = args.coordinates
-        if len(args) != 0: # set the device correctly
+        if len(args) != 0:  # set the device correctly
             device = args[list(args.keys())[0]].device
         # check that every necessary arg is given
         for key in self.necessary_args:
-            assert key in args, \
-                f"The argument '{key}' is necessary in {self.__name__} but not given."
+            assert (
+                key in args
+            ), f"The argument '{key}' is necessary in {self.__name__} but not given."
         # if necessary, pass defaults
         inp = {key: args[key] for key in self.args if key in args}
         inp.update({key: self.defaults[key] for key in self.args if key not in args})
         return self.evaluate_function(device=device, **inp)
 
-    def evaluate_function(self, device='cpu', **inp):
-        """Evaluates the original input function. Should not be used directly, 
+    def evaluate_function(self, device="cpu", **inp):
+        """Evaluates the original input function. Should not be used directly,
         rather use the call-methode.
 
         Parameters
@@ -297,7 +308,7 @@ class DomainUserFunction(UserFunction):
         device : str, optional
             The device on which the output of th efunction values should lay.
             Default is 'cpu'.
-        inp 
+        inp
             The input values.
         """
         if callable(self.fun):
@@ -309,5 +320,5 @@ class DomainUserFunction(UserFunction):
             if isinstance(self.fun, torch.Tensor):
                 self.fun = self.fun.to(device)
                 return self.fun
-            else: 
+            else:
                 return torch.tensor(self.fun, device=device).float()

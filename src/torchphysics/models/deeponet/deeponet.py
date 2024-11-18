@@ -37,10 +37,10 @@ class DeepONet(Model):
         and George Em Karniadakis, "Learning nonlinear operators via DeepONet
         based on the universal approximation theorem of operators", 2021
     """
+
     def __init__(self, trunk_net, branch_net, output_space, output_neurons):
         self._check_trunk_and_branch_correct(trunk_net, branch_net)
-        super().__init__(input_space=trunk_net.input_space,
-                         output_space=output_space)
+        super().__init__(input_space=trunk_net.input_space, output_space=output_space)
         self.trunk = trunk_net
         self.branch = branch_net
         self._finalize_trunk_and_branch(output_space, output_neurons)
@@ -61,8 +61,7 @@ class DeepONet(Model):
             self.trunk.finalize(output_space, output_neurons)
         self.branch.finalize(output_space, output_neurons)
 
-
-    def forward(self, trunk_inputs, branch_inputs=None, device='cpu'):
+    def forward(self, trunk_inputs, branch_inputs=None, device="cpu"):
         """Apply the network to the given inputs.
 
         Parameters
@@ -85,20 +84,21 @@ class DeepONet(Model):
             self.fix_branch_input(branch_inputs, device=device)
         trunk_out = self.trunk(trunk_inputs)
         if len(trunk_out.shape) < 4:
-            trunk_out = trunk_out.unsqueeze(0) # shape = [1, trunk_n, dim, neurons]
+            trunk_out = trunk_out.unsqueeze(0)  # shape = [1, trunk_n, dim, neurons]
         out = torch.sum(trunk_out * self.branch.current_out.unsqueeze(1), dim=-1)
         return Points(out, self.output_space)
 
-    def _forward_branch(self, function_set, iteration_num=-1, device='cpu'):
-        """Branch evaluation for training.
-        """
+    def _forward_branch(self, function_set, iteration_num=-1, device="cpu"):
+        """Branch evaluation for training."""
         if iteration_num != function_set.current_iteration_num:
             function_set.current_iteration_num = iteration_num
             function_set.sample_params(device=device)
-            discrete_fn_batch = self.branch._discretize_function_set(function_set, device=device)
+            discrete_fn_batch = self.branch._discretize_function_set(
+                function_set, device=device
+            )
             self.branch(discrete_fn_batch)
 
-    def fix_branch_input(self, function, device='cpu'):
+    def fix_branch_input(self, function, device="cpu"):
         """Fixes the branch net for a given function. this function will then be used
         in every following forward call. To set a new function just call this method
         again.

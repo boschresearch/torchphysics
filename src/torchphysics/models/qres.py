@@ -21,18 +21,20 @@ class Quadratic(nn.Module):
         The gain can be specified over this value.
         Default is 5/3.
     """
+
     def __init__(self, in_features, out_features, xavier_gains):
         super().__init__()
-        bias = torch.nn.init.xavier_normal_(torch.zeros(1, out_features),
-                                            gain=xavier_gains)
+        bias = torch.nn.init.xavier_normal_(
+            torch.zeros(1, out_features), gain=xavier_gains
+        )
         self.bias = torch.nn.Parameter(bias)
-        self.linear_weights = torch.nn.Linear(in_features=in_features,
-                                              out_features=out_features,
-                                              bias=False)
+        self.linear_weights = torch.nn.Linear(
+            in_features=in_features, out_features=out_features, bias=False
+        )
         torch.nn.init.xavier_normal_(self.linear_weights.weight, gain=xavier_gains)
-        self.quadratic_weights = torch.nn.Linear(in_features=in_features,
-                                                 out_features=out_features,
-                                                 bias=False)
+        self.quadratic_weights = torch.nn.Linear(
+            in_features=in_features, out_features=out_features, bias=False
+        )
         torch.nn.init.xavier_normal_(self.quadratic_weights.weight, gain=xavier_gains)
 
     def forward(self, points):
@@ -83,12 +85,15 @@ class QRES(Model):
         A New Class of Neural Networks for Solving Forward and Inverse Problems
         in Physics Involving PDEs", 2021
     """
-    def __init__(self,
-                 input_space,
-                 output_space,
-                 hidden=(20,20,20),
-                 activations=nn.Tanh(),
-                 xavier_gains=5/3):
+
+    def __init__(
+        self,
+        input_space,
+        output_space,
+        hidden=(20, 20, 20),
+        activations=nn.Tanh(),
+        xavier_gains=5 / 3,
+    ):
         super().__init__(input_space, output_space)
 
         if not isinstance(activations, (list, tuple)):
@@ -99,9 +104,9 @@ class QRES(Model):
         layers = []
         layers.append(Quadratic(self.input_space.dim, hidden[0], xavier_gains[0]))
         layers.append(activations[0])
-        for i in range(len(hidden)-1):
-            layers.append(Quadratic(hidden[i], hidden[i+1], xavier_gains[i+1]))
-            layers.append(activations[i+1])
+        for i in range(len(hidden) - 1):
+            layers.append(Quadratic(hidden[i], hidden[i + 1], xavier_gains[i + 1]))
+            layers.append(activations[i + 1])
         layers.append(Quadratic(hidden[-1], self.output_space.dim, 1.0))
 
         self.sequential = nn.Sequential(*layers)

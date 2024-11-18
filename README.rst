@@ -83,7 +83,7 @@ TorchPhysics reqiueres the follwing dependencies to be installed:
 - Python >= 3.8
 - PyTorch_ >= 2.0.0
 - `PyTorch Lightning`_ >= 2.0.0
-- Numpy_ >= 1.20.2
+- Numpy_ >= 1.20.2, < 2.0
 - Matplotlib_ >= 3.0.0
 - Scipy_ >= 1.6.3
 
