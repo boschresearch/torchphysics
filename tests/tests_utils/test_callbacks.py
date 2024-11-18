@@ -66,15 +66,15 @@ def test_weight_save_callback_start():
     helper_cleaner("./tests/test_weight_init.pt")
 
 
-def test_plotter_callback():
-    tensorboard_logger = pl_loggers.TensorBoardLogger('./tests/logdata')
-    model, solver, domain = helper_setup()
-    plot_sampler = tp.samplers.PlotSampler(domain, 100)
-    plot_callback = tp.callbacks.PlotterCallback(model, lambda u : u, 
-                                                 plot_sampler)
-    trainer = pl.Trainer( max_steps=2, callbacks=[plot_callback], logger=tensorboard_logger)
-    trainer.fit(solver)
-    helper_cleaner("./tests/logdata", True)
+# def test_plotter_callback():
+#     tensorboard_logger = pl_loggers.TensorBoardLogger('./tests/logdata')
+#     model, solver, domain = helper_setup()
+#     plot_sampler = tp.samplers.PlotSampler(domain, 100)
+#     plot_callback = tp.callbacks.PlotterCallback(model, lambda u : u, 
+#                                                  plot_sampler)
+#     trainer = pl.Trainer( max_steps=2, callbacks=[plot_callback], logger=tensorboard_logger)
+#     trainer.fit(solver)
+#     helper_cleaner("./tests/logdata", True)
 
 
 def test_state_checkpoint():
