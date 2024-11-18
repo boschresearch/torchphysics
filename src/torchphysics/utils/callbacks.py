@@ -55,7 +55,7 @@ class WeightSaveCallback(Callback):
             )
 
     def on_train_batch_start(
-        self, trainer, pl_module, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, batch, batch_idx, dataloader_idx=0
     ):
         if (self.check_interval > 0 and batch_idx > 0) and (
             (batch_idx - 1) % self.check_interval == 0
@@ -128,7 +128,7 @@ class PlotterCallback(Callback):
         self.point_sampler.sample_points(device=pl_module.device)
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
         if batch_idx % self.check_interval == 0:
             fig = plot(
@@ -185,7 +185,7 @@ class TrainerStateCheckpoint(Callback):
         self.weights_only = weights_only
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
         if batch_idx % self.check_interval == 0:
             trainer.save_checkpoint(
