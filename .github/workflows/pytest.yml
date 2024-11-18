@@ -29,7 +29,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -U setuptools setuptools_scm wheel
         python -m pip install flake8 pytest pytest-cov
-        python -m pip install -e .
+        python -m pip install -e .[all]
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
