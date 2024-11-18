@@ -28,17 +28,6 @@ class WeightSaveCallback(Callback):
     save_final_model: True
         Whether the model should always be saved after the last iteration.
     """
-
-    def __init__(
-        self,
-        model,
-        path,
-        name,
-        check_interval,
-        save_initial_model=False,
-        save_final_model=True,
-    ):
-
     def __init__(
         self,
         model,
@@ -113,20 +102,6 @@ class PlotterCallback(Callback):
         the plot. See https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.html
         for possible arguments of each underlying object.
     """
-
-    def __init__(
-        self,
-        model,
-        plot_function,
-        point_sampler,
-        log_name="plot",
-        check_interval=200,
-        angle=[30, 30],
-        plot_type="",
-        **kwargs
-    ):
-    """
-
     def __init__(
         self,
         model,
