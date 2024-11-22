@@ -154,3 +154,60 @@ class Harmonic_FCN(Model):
             points_list.append(torch.sin((i + 1) * math.pi * points))
         points = torch.cat(points_list, dim=-1)
         return Points(self.sequential(points), self.output_space)
+
+
+
+class Polynomial_FCN(Model):
+    """
+
+    """
+    def __init__(self, input_space, output_space, polynomial_degree=1,
+                 hidden=(20,20,20), activation=nn.Tanh(), xavier_gains=5/3,
+                 res_connection=False):
+        super().__init__(input_space, output_space)
+        self._construct_polynom_layers(hidden, polynomial_degree, xavier_gains)
+        self.activation_fn = activation
+        self.polynomial_degree = polynomial_degree
+        self.res_con = res_connection
+
+
+    def forward(self, points):
+        points = self._fix_points_order(points).as_tensor
+        batch_dim = len(points)
+        for i in range(len(self.layers)):
+            points = points.unsqueeze(-1)
+            out = self.layers[i][:, :, self.polynomial_degree-1] / self.polynomial_degree
+            out = out.unsqueeze(0).expand((batch_dim, self.layers[i].shape[0], self.layers[i].shape[1]))
+            
+            for j in range(self.polynomial_degree, 0, -1):
+                reshaped_layer = self.layers[i][:, :, j-1].unsqueeze(0).expand(
+                                    (batch_dim, self.layers[i].shape[0], self.layers[i].shape[1]))
+                out = (points * out + reshaped_layer / (max(1, j-1)))
+            
+
+            out = torch.sum(out, dim=1)
+            if self.res_con and i < len(self.layers) - 1 and i > 0:
+                points = self.activation_fn(out) + points.squeeze(-1)
+            else:
+                points = self.activation_fn(out)
+
+        return Points(out, self.output_space)
+
+    def _construct_polynom_layers(self, hidden, polynomial_degree, xavier_gains):
+        if not isinstance(xavier_gains, (list, tuple)):
+            xavier_gains = len(hidden) * [xavier_gains]
+
+        self.layers = torch.nn.ParameterList()
+        self._build_one_layer(self.input_space.dim, hidden[0], 
+                              polynomial_degree, xavier_gains[0])
+        for i in range(len(hidden)-1):
+            self._build_one_layer(hidden[i], hidden[i+1], 
+                                  polynomial_degree, xavier_gains[0])
+        self._build_one_layer(hidden[-1], self.output_space.dim, 
+                              polynomial_degree, xavier_gains[0])
+
+
+    def _build_one_layer(self, input_dim, output_dim, polynomial_degree, xavier_gain):
+        in_layer = torch.empty((input_dim, output_dim, polynomial_degree))
+        self.layers.append(nn.Parameter(in_layer))
+        torch.nn.init.xavier_normal_(self.layers[-1], gain=xavier_gain)

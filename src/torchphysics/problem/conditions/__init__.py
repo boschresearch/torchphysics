@@ -28,3 +28,6 @@ from .deeponet_condition import (
     PIDeepONetCondition,
     DeepONetDataCondition,
 )
+
+
+from .variational_condition import VariationalPINNCondition

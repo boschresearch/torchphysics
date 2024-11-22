@@ -28,7 +28,6 @@ class WeightSaveCallback(Callback):
     save_final_model: True
         Whether the model should always be saved after the last iteration.
     """
-
     def __init__(
         self,
         model,
@@ -47,6 +46,7 @@ class WeightSaveCallback(Callback):
         self.save_final_model = save_final_model
 
         self.current_loss = float("inf")
+        self.current_loss = float("inf")
 
     def on_train_start(self, trainer, pl_module):
         if self.save_initial_model:
@@ -55,7 +55,7 @@ class WeightSaveCallback(Callback):
             )
 
     def on_train_batch_start(
-        self, trainer, pl_module, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, batch, batch_idx, dataloader_idx=0
     ):
         if (self.check_interval > 0 and batch_idx > 0) and (
             (batch_idx - 1) % self.check_interval == 0
@@ -72,6 +72,9 @@ class WeightSaveCallback(Callback):
             torch.save(
                 self.model.state_dict(), self.path + "/" + self.name + "_final.pt"
             )
+            torch.save(
+                self.model.state_dict(), self.path + "/" + self.name + "_final.pt"
+            )
 
 
 class PlotterCallback(Callback):
@@ -81,6 +84,7 @@ class PlotterCallback(Callback):
     Parameters
     ----------
     plot_function : callable
+        A function that specfices the part of the model that should be plotted.
         A function that specfices the part of the model that should be plotted.
     point_sampler : torchphysics.samplers.PlotSampler
         A sampler that creates the points that should be used for the plot.
@@ -98,7 +102,6 @@ class PlotterCallback(Callback):
         the plot. See https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.html
         for possible arguments of each underlying object.
     """
-
     def __init__(
         self,
         model,
@@ -113,6 +116,7 @@ class PlotterCallback(Callback):
         super().__init__()
         self.model = model
         self.check_interval = check_interval
+        self.check_interval = check_interval
         self.plot_function = UserFunction(plot_function)
         self.log_name = log_name
         self.point_sampler = point_sampler
@@ -124,7 +128,7 @@ class PlotterCallback(Callback):
         self.point_sampler.sample_points(device=pl_module.device)
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
         if batch_idx % self.check_interval == 0:
             fig = plot(
@@ -146,7 +150,7 @@ class PlotterCallback(Callback):
 
 class TrainerStateCheckpoint(Callback):
     """
-    A callback to saves the current state of the trainer (a PyTorch Lightning checkpoint),
+    A callback to save the current state of the trainer (a PyTorch Lightning checkpoint),
     if the training has to be resumed at a later point in time.
 
     Parameters
@@ -162,8 +166,9 @@ class TrainerStateCheckpoint(Callback):
 
     Note
     ----
-    To continue from the checkpoint, use `resume_from_checkpoint ="path_to_ckpt_file"` as an
-    argument in the initialization of the trainer.
+    To continue from the checkpoint, use ckpt_path="some/path/to/my_checkpoint.ckpt" as 
+    argument in the fit command of the trainer.
+   
 
     The PyTorch Lightning checkpoint would save the current epoch and restart from it.
     In TorchPhysics we dont use multiple epochs, instead we train with multiple iterations
@@ -180,7 +185,7 @@ class TrainerStateCheckpoint(Callback):
         self.weights_only = weights_only
 
     def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
         if batch_idx % self.check_interval == 0:
             trainer.save_checkpoint(

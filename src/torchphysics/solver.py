@@ -104,7 +104,7 @@ class Solver(pl.LightningModule):
             self.log(f"train/{condition.name}", cond_loss)
             loss = loss + condition.weight * cond_loss
 
-        self.log("train/loss", loss)
+        self.log('train/loss', loss, prog_bar=True)
         self.n_training_step += 1
         return loss
 
