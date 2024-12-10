@@ -722,3 +722,193 @@ class AdaptiveWeightsCondition(SingleModuleCondition):
                          data_functions=data_functions, parameter=parameter, weight=weight)
 
         self.adaptive_layer = adaptive_layer
+
+
+class HPM_EquationLoss_at_DataPoints(Condition):
+    """    
+    A condition that minimizes the mean squared error of the given residual with the help of data (handed through a PyTorch
+    dataloader), as required in the framework of HPM [1].
+
+    Parameters
+    -------
+    module : torchphysics.Model
+        The torch module which should be optimized.
+    dataloader : torch.utils.DataLoader
+        A PyTorch dataloader which supplies the iterator to load data-target pairs
+        from some given dataset. Data and target should be handed as points in input
+        or output spaces, i.e. with the correct point object.
+    norm : int or 'inf'
+        The 'norm' which should be computed for evaluation. If 'inf', maximum norm will
+        be used. Else, the result will be taken to the n-th potency (without computing the
+        root!)
+    residual_fn : callable
+        A user-defined function that computes the residual (unreduced loss) from
+        inputs and outputs of the model, e.g. by using utils.differentialoperators
+        and/or domain.normal
+    data_functions : dict
+        A dictionary of user-defined functions and their names (as keys). Can be
+        used e.g. for right sides in PDEs or functions in boundary conditions.
+    track_gradients : bool
+        Whether gradients w.r.t. the inputs should be tracked during training or
+        not. Defaults to true, since this is needed to compute differential operators
+        in PINNs.
+    parameter : Parameter
+        A Parameter that can be used in the residual_fn and should be learned in
+        parallel, e.g. based on data (in an additional DataCondition).
+    name : str
+        The name of this condition which will be monitored in logging.
+    weight : float
+        The weight multiplied with the loss of this condition during
+        training.
+
+    Notes
+    -----
+    . . [1] Raissi, M. (2018). Deep hidden physics models: Deep learning of nonlinear partial differential equations. 
+        The Journal of Machine Learning Research, 19(1), 932-955.
+    """
+
+
+    def __init__(self, module, dataloader, norm, residual_fn , error_fn=SquaredError(), root=1., use_full_dataset=False,
+                 name='HPMcondition' ,reduce_fn=torch.mean, parameter=Parameter.empty(),
+                 weight=1.0):
+        super().__init__(name=name, weight=weight, track_gradients=True)
+        self.module = module
+        self.dataloader = dataloader
+        self.norm = norm
+        self.root = root
+        self.use_full_dataset = use_full_dataset
+        self.parameter = parameter
+        self.register_parameter(name + '_params', self.parameter.as_tensor)
+        self.residual_fn = UserFunction(residual_fn)
+        self.error_fn = error_fn
+        self.reduce_fn = reduce_fn
+        
+
+    def _compute_dist(self, batch, device):
+        x, y_reference = batch
+        x, y_reference = x.to(device), y_reference.to(device)
+
+        x_coordinates, x = x.track_coord_gradients()
+        unreduced_loss = self.error_fn(self.residual_fn({
+                                                         **x_coordinates,
+                                                         **self.parameter.coordinates}))
+
+        return self.reduce_fn(unreduced_loss)
+
+
+    def forward(self, device='cpu', iteration=None):
+        if self.use_full_dataset:
+            loss = torch.zeros(1, requires_grad=True, device=device)
+            for batch in iter(self.dataloader):
+                a = self._compute_dist(batch, device)
+                if self.norm == 'inf':
+                    loss = torch.maximum(loss, torch.max(a))
+                else:
+                    loss = loss + torch.mean(a**self.norm)/len(self.dataloader)
+        else:
+            try:
+                batch = next(self.iterator)
+            except (StopIteration, AttributeError):
+                self.iterator = iter(self.dataloader)
+                batch = next(self.iterator)
+            a = self._compute_dist(batch, device)
+            if self.norm == 'inf':
+                loss = torch.max(a)
+            else:
+                loss = torch.mean(a**self.norm)
+        if self.root != 1.0:
+            loss = loss**(1/self.root)
+        return loss
+    
+    
+    def _move_static_data(self, device):
+        pass
+
+class HPM_EquationLoss_at_Sampler(Condition):
+    """
+       
+    A condition that minimizes the mean squared error of the given residual on sampled collocation points, instead of using the collocation points of the data set 
+    as the original proposal HPM [1].
+
+    Parameters
+    -------
+    module : torchphysics.Model
+        The torch module which should be optimized.
+    sampler : torchphysics.samplers.PointSampler
+        A sampler that creates the points in the domain of the residual function,
+        could be an inner or a boundary domain.
+    residual_fn : callable
+        A user-defined function that computes the residual (unreduced loss) from
+        inputs and outputs of the model, e.g. by using utils.differentialoperators
+        and/or domain.normal
+    data_functions : dict
+        A dictionary of user-defined functions and their names (as keys). Can be
+        used e.g. for right sides in PDEs or functions in boundary conditions.
+    track_gradients : bool
+        Whether gradients w.r.t. the inputs should be tracked during training or
+        not. Defaults to true, since this is needed to compute differential operators
+        in PINNs.
+    parameter : Parameter
+        A Parameter that can be used in the residual_fn and should be learned in
+        parallel, e.g. based on data (in an additional DataCondition).
+    name : str
+        The name of this condition which will be monitored in logging.
+    weight : float
+        The weight multiplied with the loss of this condition during
+        training.
+
+    Notes
+    -----
+    . . [1] Raissi, M. (2018). Deep hidden physics models: Deep learning of nonlinear partial differential equations. 
+        The Journal of Machine Learning Research, 19(1), 932-955.
+    """
+
+   
+    def __init__(self, module, sampler, residual_fn, error_fn=SquaredError(), reduce_fn=torch.mean,
+                 name='SampleHPMCondition', track_gradients=True, data_functions={},
+                 parameter=Parameter.empty(), weight=1.0):
+        super().__init__(name=name, weight=weight, track_gradients=track_gradients)
+        
+        
+        
+        
+        self.module = module
+        self.parameter = parameter
+        self.register_parameter(name + '_params', self.parameter.as_tensor)
+        self.sampler = sampler
+        self.residual_fn = UserFunction(residual_fn)
+        self.error_fn = error_fn
+        self.reduce_fn = reduce_fn
+        self.data_functions = self._setup_data_functions(data_functions, sampler)
+
+        if self.sampler.is_adaptive:
+            self.last_unreduced_loss = None
+
+    def forward(self, device='cpu', iteration=None):
+        if self.sampler.is_adaptive:
+            x = self.sampler.sample_points(unreduced_loss=self.last_unreduced_loss,
+                                           device=device)
+            self.last_unreduced_loss = None
+        else:
+            x = self.sampler.sample_points(device=device)
+
+        x_coordinates, x = x.track_coord_gradients()
+        
+        data = {}
+        for fun in self.data_functions:
+            data[fun] = self.data_functions[fun](x_coordinates)
+
+        unreduced_loss = self.error_fn(self.residual_fn({**x_coordinates,
+                                                         **self.parameter.coordinates,
+                                                         **data}))
+
+        if self.sampler.is_adaptive:
+            self.last_unreduced_loss = unreduced_loss
+
+        return self.reduce_fn(unreduced_loss)
+
+    def _move_static_data(self, device):
+        if self.sampler.is_static:
+            for fn in self.data_functions:
+                self.data_functions[fn].fun = self.data_functions[fn].fun.to(device)
+

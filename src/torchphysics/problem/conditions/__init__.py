@@ -16,7 +16,9 @@ from .condition import (Condition,
                         AdaptiveWeightsCondition,
                         SingleModuleCondition,
                         PeriodicCondition,
-                        IntegroPINNCondition)
+                        IntegroPINNCondition,
+                        HPM_EquationLoss_at_DataPoints,
+                        HPM_EquationLoss_at_Sampler)
 
 from .deeponet_condition import (DeepONetSingleModuleCondition, 
                                  PIDeepONetCondition, 
