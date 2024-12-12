@@ -1,13 +1,15 @@
-#%%
 import torch
 import pytest
+
+
 from torchphysics.problem.conditions import *
 from torchphysics.problem.spaces import Points, R1, R2
 from torchphysics.problem.domains import Interval
 from torchphysics.problem.samplers import GridSampler, DataSampler
 from torchphysics.utils import UserFunction, laplacian, PointsDataLoader
 from torchphysics.models import Parameter
-#%%
+
+
 def helper_fn(x, D=0.0):
     return Points(x**2 + D, R1('u'))
 
@@ -240,7 +242,7 @@ def test_parameter_condition_forward():
     assert isinstance(out, torch.Tensor)
     assert out.requires_grad
     assert out == -1.0
-
+    
 def test_HPM_EquationLoss_at_DataPoints():
     module = UserFunction(helper_fn)
        
@@ -254,6 +256,8 @@ def test_HPM_EquationLoss_at_DataPoints():
     assert cond.module == module
     assert cond.dataloader == loader
     assert isinstance(cond.residual_fn, UserFunction)
+    
+    
     
 def test_HPM_EquationLoss_at_Sampler():
     module = UserFunction(helper_fn)
