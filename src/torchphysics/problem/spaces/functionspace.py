@@ -5,13 +5,12 @@ class FunctionSpace:
 
     Parameters
     ----------
-    input_domain : torchphysics.Domain
-        The input domain of the functions in this function space.
+    input_space : torchphysics.Space
+        The space of the input domain of the functions in this function space.
     output_space : torchphysics.Space
         The space of the image of the functions in this function space.
     """
 
-    def __init__(self, input_domain, output_space):
-        self.input_domain = input_domain
+    def __init__(self, input_space, output_space):
+        self.input_space = input_space
         self.output_space = output_space
-        self.input_space = self.input_domain.space
