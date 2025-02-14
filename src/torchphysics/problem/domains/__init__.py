@@ -37,9 +37,11 @@ from .domain3D.sphere import Sphere
 
 # from .domain3D.trimesh_polyhedron import TrimeshPolyhedron
 # Function domains:
-from .functionsets.functionset import FunctionSet, CustomFunctionSet, TestFunctionSet
-from .functionsets.FE_functionset import FEFunctionSet
-from .functionsets.harmonic_functionset import HarmonicFunctionSet1D
+from .functionsets.functionset import FunctionSet
+from .functionsets.custom_functionset import CustomFunctionSet
+from .functionsets.harmoinc_functionset import HarmonicFunctionSet1D
+from .functionsets.data_functionset import DataFunctionSetDeepONet
+from .functionsets.grf_functionset import GRFFunctionSet
 # Domain transforms:
 from .domainoperations.translate import Translate
 from .domainoperations.rotate import Rotate

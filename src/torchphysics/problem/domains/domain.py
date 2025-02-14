@@ -121,6 +121,17 @@ class Domain:
 
         return UnionDomain(self, other)
 
+    def __or__(self, other):
+        """Creates the union of the two input domains.
+
+        Parameters
+        ----------
+        other : Domain
+            The other domain that should be united with the domain.
+            Has to be of the same dimension.
+        """
+        return self.__add__(other)
+
     def __sub__(self, other):
         """Creates the cut of domain other from self.
 
@@ -133,7 +144,7 @@ class Domain:
         if self.space != other.space:
             raise ValueError("""complemented domains should lie in the same space.""")
         from .domainoperations.cut import CutDomain
-
+        
         return CutDomain(self, other)
 
     def __and__(self, other):

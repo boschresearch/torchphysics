@@ -26,7 +26,7 @@ from .condition import (
 from .deeponet_condition import (
     DeepONetSingleModuleCondition,
     PIDeepONetCondition,
-    DeepONetDataCondition,
+#    DeepONetDataCondition,
 )
 
 

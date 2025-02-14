@@ -218,6 +218,11 @@ class Points:
         Supports usual slice operations like points[1:3,('x','t')]. Returns a new,
         sliced, points object.
         """
+        if isinstance(val, Space):
+            if val.variables == self.space.variables:
+                return self
+            else:
+                return self[:, self.space.variables]
         val, space = self._compute_slice(val)
         out = self._t[val]
         if len(out.shape) == 1:
