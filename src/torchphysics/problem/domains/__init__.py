@@ -34,13 +34,19 @@ from .domain2D.triangle import Triangle
 # from .domain2D.shapely_polygon import ShapelyPolygon
 # 3D-domains:
 from .domain3D.sphere import Sphere
+from .domain3D.box import Box
+
+# ND-domains:
+from .domainND.hypercube import HyperCube
 
 # from .domain3D.trimesh_polyhedron import TrimeshPolyhedron
 # Function domains:
-from .functionsets.functionset import FunctionSet
+from .functionsets.functionset import FunctionSet, DiscretizedFunctionSet
 from .functionsets.custom_functionset import CustomFunctionSet
-from .functionsets.harmoinc_functionset import HarmonicFunctionSet1D
-from .functionsets.data_functionset import DataFunctionSetDeepONet
+from .functionsets.harmonic_functionset import (HarmonicFunctionSet1D, 
+                                                HarmonicFunctionSet2D,
+                                                HarmonicFunctionSet3D)
+from .functionsets.data_functionset import DataFunctionSet
 from .functionsets.grf_functionset import GRFFunctionSet
 # Domain transforms:
 from .domainoperations.translate import Translate
