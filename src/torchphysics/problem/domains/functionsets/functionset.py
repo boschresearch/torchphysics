@@ -4,155 +4,229 @@ import torch
 from ...spaces.points import Points
 from ...spaces.functionspace import FunctionSpace
 
-
-class FunctionSet:
-    """A set of functions that can supply samples from a function space.
-    
-    Parameters
-    ----------
-    function_space : torchphysics.spaces.FunctionSpace
-        The space of which this set of functions belongs to. The inputs and outputs
-        of this FunctionSet are defined by the corresponding values inside the function
-        space.
-    """
-    def __init__(self, function_space):
-        assert isinstance(
-            function_space, FunctionSpace
-        ), """A FunctionSet needs a torchphysics.spaces.FunctionSpace!"""
+class FunctionSet():
+    def __init__(self, function_space, function_set_size):
         self.function_space = function_space
-
-    @abc.abstractmethod
-    def sample_functions(self, n_samples, locations, device="cpu"):
-        """Samples functions from the function space.
-
-        Parameters
-        ----------
-        n_samples : int
-            The amount of functions to sample.
-        locations : torchphysics.spaces.Points, list, tuple
-            The locations where the functions should be evaluated. Each function from
-            the batch will be evaluated at these locations.
-            If it is a list/tuple of Points, the functions will be evaluated at each
-            element of the list/tuple.
-            The points should contain data of either 
-            [1, number_of_locations, input_dim] or [n_samples, number_of_locations, input_dim].
-        device : str, optional
-            The device, where the functions should be created. Default is 'cpu'.
-
-        Returns
-        -------
-        torchphysics.spaces.Points
-            ....
-        """
+        self.function_set_size = function_set_size
+    
+    @property
+    def is_discretized(self):
+        return False
+    
+    def is_discretization_of(self, function_set):
+        return False
+    
+    def create_functions(self, device="cpu"):
+        # creates a new set of functions of the size "function_set_size"
+        # -> we can create more functions at once in the case this is computationally more efficient
+        # (for example also usefull when loading functions from disk)
+        # The functions are then saved and can be retrieved by the get_function method
         pass
 
-    def __mul__(self, other):
-        """Creates the union of two function sets, by concatenating the output of
-        both FunctionSets. Therefore, we will sample functions in the product space.
+    def get_function(self, idx):
+        # returns a lambda function if the function set is continuous
+        # returns a tensor if the function set is discrete
+        pass
+    
+    def discretize(self, locations):
+        # locations is a tensor of Points or indices
+        return DiscretizedFunctionSet(self, locations)
 
+    def __mul__(self, other):
+        """Creates the union of two function sets
         """
-        assert self.function_space.output_space != other.function_space.outer_space, \
+        assert self.function_space.output_space != other.function_space.output_space, \
                 """Both FunctionSets have the same output space, maybe you want to use 'append' instead?"""
         
-        if isinstance(other, FunctionSetUnion):
+        if isinstance(other, FunctionSetProduct):
+            return other * self
+        if other.is_discretized:
             return other * self
         else:
-            return FunctionSetUnion(self.function_space*other.function_space, [self, other])
+            assert self.function_set_size == other.function_set_size, \
+                """Both FunctionSets need the same size!"""
+            return FunctionSetProduct(self.function_space*other.function_space, [self, other])
 
 
-    def append(self, other):
-        """Appends the output of two function sets, to one larger batch of functions.
-        """
-        assert self.function_space.output_space == other.function_space.outer_space, \
-                """Both FunctionSets need the same output space!"""
-        
-        if isinstance(other, FunctionSetCollection):
-            return other.append(self)
+class DiscretizedFunctionSet(FunctionSet):
+    def __init__(self, function_set : FunctionSet, locations):
+        super().__init__(function_set.function_space, function_set.function_set_size)
+        self.function_set = function_set
+        self.locations = locations
+
+    @property
+    def is_discretized(self):
+        return True
+    
+    def is_discretization_of(self, function_set):
+        return (self.function_set is function_set) or (self.function_set.is_discretization_of(function_set))
+    
+    def create_functions(self, device="cpu"):
+        self.function_set.create_functions(device)
+
+    def get_function(self, idx):
+        samples = self.function_set.get_function(idx)
+        if callable(samples):
+            return samples(self.locations)
         else:
-            return FunctionSetCollection(self.function_space*other.function_space, [self, other])
-        
+            return samples[..., self.locations] # TODO: which dimensions are correct here?
+    
+    def discretize(self, locations):
+        assert torch.is_tensor(locations)
+        assert locations.dtype in [torch.int64, torch.long], \
+            """A discrtized FunctionSet can only be further discretized by passing in indices to 
+                to subsample the current discretization."""
+        # We need to now check how the functions should be subsampled, e.g.
+        # what kind of indices the used handed in and if the are comptabile with 
+        # the kind of functions we are creating/using.
+        if self.function_space.input_space.dimension == 1:
+            assert len(locations.shape) == 1, \
+                """Only needs a 1D tensor of indices for a 1D input space."""
+            return DiscretizedFunctionSet(self, locations)
+        else:
+            # In higher dimension the input space could also not only be flattened 
+            # into one tensor dimension but instead be distributed over multiple dimensions
+            # (e.g., for 2D a we save the functions as an "image").
+            # Therefore, load one example of the data a check the shape.
+            self.create_functions()
+            test_fn = self.get_function(0) # <- is already a discete tensor
+            if len(locations.shape) == 1:
+                if len(test_fn.shape) - 2 == 1: # <- remove batch and output space dim.
+                    return DiscretizedFunctionSet(self, locations)
+                else:
+                    Warning("""The shape of the discretized functions is not 1D, but the used indices are.
+                            We assume that the indices are meant for discretaizing all dimensions the
+                            same way and will build a meshgrid of the indices.
+                            """)
+                    
+                # TODO: Add code here that does this...
+            elif len(locations) == len(test_fn.shape) - 2:
+                return DiscretizedFunctionSet(self, locations)
+            else:
+                raise ValueError("""The indices provided do not match the shape of the functions""")
 
-class FunctionSetUnion(FunctionSet):
+
+    def __mul__(self, other):
+        assert self.function_space.output_space != other.function_space.output_space, \
+                """Both FunctionSets have the same output space, maybe you want to use 'append' instead?"""
+        
+        if isinstance(other, FunctionSetProduct):
+            return other * self
+        if other.is_discretized:
+            assert torch.equal(self.locations, other.locations), \
+                """Both DiscretizedFunctionSets need the same locations for creating the product!"""
+            return FunctionSetProduct(self.function_space*other.function_space, [self, other])
+        else:
+            Warning(f"""DiscretizedFunctionSet is multiplied with a continuous FunctionSet.
+                    The continuous FunctionSet will be discrtized to create the product.""")
+            other_discrete = other.discretize(self.locations)
+            return FunctionSetProduct(self.function_space*other.function_space, [self, other_discrete])
+
+
+
+class FunctionSetProduct(FunctionSet):
     """Collection of multiple FunctionSets. Used for creating functions in the product 
     space.
     """
     def __init__(self, function_space, function_sets):
-        super().__init__(function_space)
+        super().__init__(function_space, function_sets[0].function_set_size)
         self.function_sets = function_sets
 
+    @property
+    def is_discretized(self):
+        return self.function_sets[0].is_discretized
 
     def __mul__(self, other):
-        assert self.function_space.output_space != other.function_space.outer_space, \
+        assert self.function_space.output_space != other.function_space.output_space, \
                 """Both FunctionSets have the same output space, maybe you want to use 'append' instead?"""
-        if isinstance(other, FunctionSetUnion):
-            return FunctionSetUnion(self.function_space*other.function_space, 
+        # TODO: Check if other space is discrete.....
+        if isinstance(other, FunctionSetProduct):
+            return FunctionSetProduct(self.function_space*other.function_space, 
                                     self.function_sets + other.function_sets)
         else:
-            return FunctionSetUnion(self.function_space*other.function_space, 
+            return FunctionSetProduct(self.function_space*other.function_space, 
                                     self.function_sets + [other])
 
-    def sample_functions(self, n_samples, locations, device="cpu"):
-        outputs = []
-        for function_set in self.function_sets:
-            outputs.append(function_set.sample_functions(n_samples, locations, device))
-        # For one batch of inputs we return just a single output
-        if isinstance(locations, Points):
-            return Points.joined(*outputs)
-        # If we have multiple batches of inputs we return the functions evaluated at each input.
-        # In this case "outputs" is a list of tuples, where each tuple contains the outputs of each
-        # function set.
-        output_per_locations = list(zip(*outputs))
-        final_output = []
-        for i in output_per_locations:
-            final_output.append(Points.joined(*i))
-        return final_output
+    def is_discretization_of(self, function_set):
+        if isinstance(function_set, FunctionSetProduct):
+            for self_set in self.function_sets:
+                for other_set in function_set.function_sets:
+                    if self_set.is_discretization_of(other_set):
+                        break
+                else:
+                    return False
+            return True
+        # Can not be a discretization of a non-product function set
+        return False
+    
+    def create_functions(self, device="cpu"):
+        for fn_set in self.function_sets:
+            fn_set.create_functions(device)
 
-
-class FunctionSetCollection(FunctionSet):
-    """Collection of multiple FunctionSets. Used for creating a batch of functions.
-    """
-    def __init__(self, function_space, function_sets):
-        super().__init__(function_space)
-        self.function_sets = function_sets
-
-    def append(self, other):
-        assert self.function_space.output_space == other.function_space.outer_space, \
-                """Both FunctionSets need the same output space!"""
-        
-        if isinstance(other, FunctionSetCollection):
-            return FunctionSetCollection(self.function_space*other.function_space,
-                                         self.function_sets + other.function_sets)
+    def get_function(self, idx):
+        if self.is_discretized:
+            point_list = [fn_set.get_function(idx) for fn_set in self.function_sets]
+            return Points.joined(*point_list)
         else:
-            return FunctionSetCollection(self.function_space*other.function_space, 
-                                         self.function_sets + [other])
+            self.fn_list = [fn_set.get_function(idx) for fn_set in self.function_sets]
+            return self._evaluate_product
+    
+    def discretize(self, locations):
+        assert not self.is_discretized, """FunctionSetProduct is already discretized!"""
+        return FunctionSetProduct(self.function_space, 
+                                  [f.discretize(locations) for f in self.function_sets])
+
+
+    def _evaluate_product(self, locations):
+        point_list = [fn(locations) for fn in self.fn_list]
+        return Points.joined(*point_list)
+
+
+# class FunctionSetCollection(FunctionSet):
+#     """Collection of multiple FunctionSets. Used for creating a batch of functions.
+#     """
+#     def __init__(self, function_space, function_sets):
+#         super().__init__(function_space)
+#         self.function_sets = function_sets
+
+#     def append(self, other):
+#         assert self.function_space.output_space == other.function_space.output_space, \
+#                 """Both FunctionSets need the same output space!"""
         
-    def sample_functions(self, n_samples, locations, device="cpu"):
-        n_samples_per_set = n_samples // len(self.function_sets)
-        outputs = []
-        # Splitting as in the case of FunctionSetUnion:
-        for idx, function_set in enumerate(self.function_sets):
-            # Last set might have less samples so we have n_samples in total
-            if idx == len(self.function_sets) - 1:
-                outputs.append(
-                    function_set.sample_functions(n_samples - idx*n_samples_per_set, 
-                                                locations, device))
-            else:
-                outputs.append(
-                    function_set.sample_functions(n_samples_per_set, 
-                                                locations, device))
-        # Different cases as for the FunctionSetUnion:
-        if isinstance(locations, Points):
-            return Points(torch.cat([out.as_tensor for out in outputs], dim=0), 
-                          self.function_space.output_space)
-        else:
-            output_per_locations = list(zip(*outputs))
-            final_output = []
-            for i in output_per_locations:
-                final_output.append(
-                    Points(torch.cat([out.as_tensor for out in outputs], dim=0), 
-                           self.function_space.output_space)
-                )
-            return final_output
+#         if isinstance(other, FunctionSetCollection):
+#             return FunctionSetCollection(self.function_space*other.function_space,
+#                                          self.function_sets + other.function_sets)
+#         else:
+#             return FunctionSetCollection(self.function_space*other.function_space, 
+#                                          self.function_sets + [other])
+        
+#     def sample_functions(self, n_samples, locations, device="cpu"):
+#         n_samples_per_set = n_samples // len(self.function_sets)
+#         outputs = []
+#         # Splitting as in the case of FunctionSetProduct:
+#         for idx, function_set in enumerate(self.function_sets):
+#             # Last set might have less samples so we have n_samples in total
+#             if idx == len(self.function_sets) - 1:
+#                 outputs.append(
+#                     function_set.sample_functions(n_samples - idx*n_samples_per_set, 
+#                                                 locations, device))
+#             else:
+#                 outputs.append(
+#                     function_set.sample_functions(n_samples_per_set, 
+#                                                 locations, device))
+#         # Different cases as for the FunctionSetProduct:
+#         if isinstance(locations, Points):
+#             return Points(torch.cat([out.as_tensor for out in outputs], dim=0), 
+#                           self.function_space.output_space)
+#         else:
+#             output_per_locations = list(zip(*outputs))
+#             final_output = []
+#             for i in output_per_locations:
+#                 final_output.append(
+#                     Points(torch.cat([out.as_tensor for out in outputs], dim=0), 
+#                            self.function_space.output_space)
+#                 )
+#             return final_output
 
 # class FunctionSetOld:
 #     """A set of functions that can supply samples from a function space.
@@ -299,50 +373,3 @@ class FunctionSetCollection(FunctionSet):
 #         for function_set in self.collection:
 #             output = output | function_set.create_function_batch(points)
 #         return output
-
-
-
-
-# class TestFunctionHelper(torch.autograd.Function):
-
-#     @staticmethod
-#     def forward(ctx, x, expected_out, grad_out):
-#         ctx.save_for_backward(grad_out)
-#         x_ten = torch.sum(x, dim=-1, keepdim=True)
-#         return expected_out + 0.0 * x_ten# <- hack to build graph to allow for precomputed gradient
-
-#     @staticmethod
-#     def backward(ctx, grad_output):
-#         grad_out, = ctx.saved_tensors
-#         repeats = grad_output.shape[0] // grad_out.shape[0]
-#         # Assumes the original data to be repeated along the first axis
-#         # TODO: Can be done nicer???
-#         return grad_out.repeat((repeats, 1, 1)) * grad_output, None, None
-
-
-# class TestFunctionSet(FunctionSet):
-
-#     def __init__(self, function_space):
-#         super().__init__(function_space=function_space, parameter_sampler=None)
-#         self.eval_fn_helper = TestFunctionHelper()
-#         self.quadrature_mode_on = True
-
-#     @abc.abstractmethod
-#     def switch_quadrature_mode_on(self, set_on : bool):
-#         raise NotImplementedError
-
-#     @abc.abstractmethod
-#     def __call__(self, x):
-#         raise NotImplementedError
-    
-#     @abc.abstractmethod
-#     def to(self, device):
-#         raise NotImplementedError
-    
-#     @abc.abstractmethod
-#     def get_quad_weights(self, n):
-#         raise NotImplementedError
-
-#     @abc.abstractmethod
-#     def get_quadrature_points(self):
-#         raise NotImplementedError

@@ -16,22 +16,38 @@ class BranchNet(Model):
     ----------
     function_space : Space
         The space of functions that can be put in this network.
-    discretization_sampler : torchphysics.sampler
-        A sampler that will create the points at which the input functions should
+    grid : torchphysics.spaces.Points
+        The points at which the input functions should
         evaluated, to create a discrete input for the network.
-        The number of input neurons will be equal to the number of sampled points.
-        Therefore, the sampler should always return the same number of points!
+        The number of input neurons will be equal to the number of grid points.
 
     """
 
-    def __init__(self, function_space, discretization_sampler):
+    def __init__(self, function_space, grid):
         super().__init__(function_space, output_space=None)
+        # Transform to points to have unified checks
+        if torch.is_tensor(grid):
+            grid = Points(grid, function_space.input_space)
+            
+        if len(grid.as_tensor.shape) == 2:
+            grid = grid.unsqueeze(0)
+
         self.output_neurons = 0
-        self.discretization_sampler = discretization_sampler
+        self.register_buffer("grid_buffer", grid.as_tensor)
         self.input_dim = (
-            len(self.discretization_sampler) * function_space.output_space.dim
+            grid.as_tensor.shape[1] * function_space.output_space.dim
         )
         self.current_out = torch.empty(0)
+
+    def __getattr__(self, name):
+        if name == "grid":
+            return object.__getattribute__(self, "grid")
+        # Call parent __getattr__ for other cases
+        return super().__getattr__(name)
+
+    @property
+    def grid(self):
+        return Points(self.grid_buffer, self.input_space.input_space)
 
     def finalize(self, output_space, output_neurons):
         """Method to set the output space and output neurons of the network.
@@ -74,7 +90,7 @@ class BranchNet(Model):
 
     def _discretize_function_set(self, function_set, device="cpu"):
         """Internal discretization of the training set."""
-        input_points = self.discretization_sampler.sample_points(device=device)
+        input_points = self.grid.to(device)
         # self.input_points = input_points
         fn_out = function_set.create_function_batch(input_points)
         return fn_out
@@ -101,7 +117,7 @@ class BranchNet(Model):
             discrete_fn = self._discretize_function_set(function, device=device)
         elif callable(function):
             function = UserFunction(function)
-            discrete_points = self.discretization_sampler.sample_points(device=device)
+            discrete_points = self.grid.to(device)
             discrete_fn = function(discrete_points)
             discrete_fn = discrete_fn.unsqueeze(0)  # add batch dimension
             discrete_fn = Points(discrete_fn, self.input_space.output_space)
@@ -134,11 +150,10 @@ class FCBranchNet(BranchNet):
     ----------
     function_space : Space
         The space of functions that can be put in this network.
-    discretization_sampler : torchphysics.sampler
-        A sampler that will create the points at which the input functions should
+    grid : torchphysics.spaces.Points
+        The points at which the input functions should
         evaluated, to create a discrete input for the network.
-        The number of input neurons will be equal to the number of sampled points.
-        Therefore, the sampler should always return the same number of points!
+        The number of input neurons will be equal to the number of grid points.
     hidden : list or tuple
         The number and size of the hidden layers of the neural network.
         The lenght of the list/tuple will be equal to the number
@@ -155,12 +170,12 @@ class FCBranchNet(BranchNet):
     def __init__(
         self,
         function_space,
-        discretization_sampler,
+        grid,
         hidden=(20, 20, 20),
         activations=nn.Tanh(),
         xavier_gains=5 / 3,
     ):
-        super().__init__(function_space, discretization_sampler)
+        super().__init__(function_space, grid)
         self.hidden = hidden
         self.activations = activations
         self.xavier_gains = xavier_gains
@@ -194,11 +209,10 @@ class ConvBranchNet1D(BranchNet):
     ----------
     function_space : Space
         The space of functions that can be put in this network.
-    discretization_sampler : torchphysics.sampler
-        A sampler that will create the points at which the input functions should
+    grid : torchphysics.spaces.Points
+        The points at which the input functions should
         evaluated, to create a discrete input for the network.
-        The number of input neurons will be equal to the number of sampled points.
-        Therefore, the sampler should always return the same number of points!
+        The number of input neurons will be equal to the number of grid points.
     convolutional_network : torch.nn.module
         The user defined convolutional network, that should be applied to the
         branch input. Inside this network, the input can be transformed arbitrary,
@@ -206,7 +220,7 @@ class ConvBranchNet1D(BranchNet):
         We only expect that the network gets the input in the shape:
 
         [batch_dim, function_space.output_space.dim (channels_in),
-         len(discretization_sampler)]
+         len(grid)]
 
         You have to make sure, that the number of output dimension is
         compatible with the following linear layers.
@@ -226,13 +240,13 @@ class ConvBranchNet1D(BranchNet):
     def __init__(
         self,
         function_space,
-        discretization_sampler,
+        grid,
         convolutional_network,
         hidden=(20, 20, 20),
         activations=nn.Tanh(),
         xavier_gains=5 / 3,
     ):
-        super().__init__(function_space, discretization_sampler)
+        super().__init__(function_space, grid)
         self.conv_net = convolutional_network
         self.hidden = hidden
         self.activations = activations
@@ -253,7 +267,7 @@ class ConvBranchNet1D(BranchNet):
     def _discretize_fn(self, function, device):
         # where is this function used?
         function = UserFunction(function)
-        discrete_points = self.discretization_sampler.sample_points(device=device)
+        discrete_points = self.grid.to(device)
         discrete_fn = function(discrete_points)
         if discrete_fn.shape[0] == self.input_dim:
             discrete_fn = discrete_fn.T

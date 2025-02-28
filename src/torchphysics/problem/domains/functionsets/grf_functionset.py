@@ -26,7 +26,7 @@ class GRFFunctionSet(FunctionSet):
         A function that creates the underlying random variables. 
         As an input obtains a tuple of the shape 
             (number of functions, resolution_1, …, resolution_n)
-        and needs the keyword argument device. 
+        and also the keyword argument device. 
         Should output random values in the corresponding shape on the given 
         device (cpu, gpu, etc.) as a PyTorch tensor.
         Default is torch.randn, a normal distribution with variance 1.
@@ -34,23 +34,23 @@ class GRFFunctionSet(FunctionSet):
         Normalizes the GRF such that it has mean zero and standard deviation 1.0.
         Default is True.
     sample_noise_in_fourier_space : bool, optional
-        If we can sample the noise directly in the fourier space, e.g. the 
-        random_generator_fn is called two times and the noise will is constructed
+        If we can sample the noise directly in the fourier space, so the 
+        random_generator_fn is called two times and the noise is constructed
         as the sum of both function calls, where one output is multiplied by the
         imaginary unit. Else we will sample the noise and then transfer the data
         to the fourier space with a fft.
         Default is True.
-            
-    TODO: Add different return options for the shape of the GRF (e.g. FNO wants an image, 
-    DeepOnet rather wants the image reduce into one dimension)
-    TODO: Add sampler that samples on the grid which this GRF creates functions on?
+    flatten : bool, optional
+        If the output should be flattened to a 1D tensor.
+        Default is False.
     """
-    def __init__(self, function_space, resolution, 
+    def __init__(self, function_space, function_set_size, resolution, 
                  auto_cov_fn : callable = lambda x : 1/(1 + sum([i**2 for i in x]))**2, 
                  random_generator_fn : callable = torch.randn,
                  normalize : bool = True, 
-                 sample_noise_in_fourier_space : bool = True):
-        super().__init__(function_space)
+                 sample_noise_in_fourier_space : bool = True, 
+                 flatten : bool = False):
+        super().__init__(function_space, function_set_size)
 
         if isinstance(resolution, int): resolution = [resolution]
         assert self.function_space.input_space.dim == len(resolution), \
@@ -65,13 +65,15 @@ class GRFFunctionSet(FunctionSet):
         self.shift_idx = [i+1 for i in range(len(resolution))]
         self.random_gen_fn = random_generator_fn
         self.sample_in_fourier_space = sample_noise_in_fourier_space
+        self.flatten = flatten
 
+    @property
+    def is_discretized(self):
+        return True
 
-    def sample_functions(self, n_samples, locations, device="cpu"):
-        # since the GRF is defined on a fixed grid the locations inputed
-        # are not taken into account...
+    def create_functions(self, device="cpu"):
         self.cov_matrix = self.cov_matrix.to(device)
-        sample_shape = (n_samples, ) + self.cov_matrix.shape
+        sample_shape = (self.function_set_size, ) + self.cov_matrix.shape
         # 1) sample the underlying noise
         if self.sample_in_fourier_space:
             noise = self.random_gen_fn(sample_shape, device=device)
@@ -92,15 +94,12 @@ class GRFFunctionSet(FunctionSet):
             std_values = torch.std(field, dim=self.shift_idx, keepdim=True)
             field /= std_values
         
-        field = field.unsqueeze(-1)
+        if self.flatten:
+            field = field.view(self.function_set_size, -1)
 
-        # 3) return depending on inputs (copy if multiple locations are provided)
-        output_data = Points(field, self.function_space.output_space)
-        if isinstance(locations, Points):
-            return output_data
-        else:
-            output_data = Points(field, self.function_space.output_space)
-            output = []
-            for _ in range(len(locations)):
-                output.append(output_data)
-            return output
+        self.grf = field.unsqueeze(-1)
+
+    def get_function(self, idx):
+        if isinstance(idx, int): idx = [idx]
+        self.current_idx = idx
+        return Points(self.grf[self.current_idx], self.function_space.output_space)

@@ -11,10 +11,11 @@ class DeepONetSingleModuleCondition(Condition):
     def __init__(
         self,
         deeponet_model : DeepONet,
-        function_sampler,
-        input_sampler,
+        branch_function_sampler,
+        trunk_points_sampler,
         residual_fn,
         error_fn,
+        data_sampler=None,
         reduce_fn=torch.mean,
         name="singlemodulecondition",
         track_gradients=True,
@@ -24,78 +25,90 @@ class DeepONetSingleModuleCondition(Condition):
     ):
         super().__init__(name=name, weight=weight, track_gradients=track_gradients)
         self.net = deeponet_model
-        self.function_sampler = function_sampler
+        self.branch_function_sampler = branch_function_sampler
+        self.data_sampler = data_sampler
 
         self.parameter = parameter
         self.register_parameter(name + "_params", self.parameter.as_tensor)
-        self.input_sampler = input_sampler
+        self.trunk_points_sampler = trunk_points_sampler
 
         self.residual_fn = UserFunction(residual_fn)
         self.error_fn = error_fn
         self.reduce_fn = reduce_fn
         self.data_functions = self._setup_data_functions(
-            data_functions, self.input_sampler
+            data_functions, self.trunk_points_sampler
         )
 
-        self.eval_function_set = (
+        self.eval_function_set_for_residual = (
             len(
-                self.function_sampler.function_set.function_space.output_space.variables
+                self.branch_function_sampler.function_set.function_space.output_space.variables
                 & set(self.residual_fn.args)
             )
             > 0
+            or 
+            self.data_sampler is not None
         )
 
     def forward(self, device="cpu", iteration=None):
-        # 1) sample branch input points
-        branch_grid = self.net.branch.discretization_sampler.sample_points(device=device)
-        if len(branch_grid.as_tensor.shape) == 2:
-            branch_grid = branch_grid.unsqueeze(0)
-    
-        # 2) sample trunk input points
-        if self.input_sampler.is_adaptive:
-            x = self.input_sampler.sample_points(
+        # 1) sample trunk input points
+        if self.trunk_points_sampler.is_adaptive:
+            trunk_points = self.trunk_points_sampler.sample_points(
                 unreduced_loss=self.last_unreduced_loss, device=device
             )
             self.last_unreduced_loss = None
         else:
-            x = self.input_sampler.sample_points(device=device)
-        
+            trunk_points = self.trunk_points_sampler.sample_points(device=device)
+
         # TODO: make this more memory efficient (e.g. in DeepONet we know when data is just copied???)
-        if len(x.as_tensor.shape) == 2:
-            x = x.unsqueeze(0)
-        if x.as_tensor.shape[0] == 1:
-            x = x.repeat(self.function_sampler.n_functions, 1, 1)
+        if len(trunk_points.as_tensor.shape) == 2:
+            trunk_points = trunk_points.unsqueeze(0)
+        if trunk_points.as_tensor.shape[0] == 1:
+            trunk_points = trunk_points.repeat(
+                    self.branch_function_sampler.n_functions, 1, 1
+                )
         
-        x_coordinates, x = x.track_coord_gradients()
-        
-        # 3) build and evaluate functions at the above created points
-        if self.eval_function_set:
-            branch_in, residual_in = self.function_sampler.sample_functions((branch_grid, x), 
-                                                                            device=device)
+        trunk_coordinates, trunk_points = trunk_points.track_coord_gradients()
+
+        # 2) sample branch inputs
+        branch_functions = self.branch_function_sampler.sample_functions(device)
+        if callable(branch_functions):
+            branch_function_input = branch_functions(self.net.branch.grid)
         else:
-            branch_in = self.function_sampler.sample_functions(branch_grid, device=device)
+            branch_function_input = branch_functions
+
+        # 3) create additional data for residual evaluation (only if necessary)
+        if self.eval_function_set_for_residual:
+            if self.data_sampler is not None:
+                data = self.data_sampler.sample_functions(device)
+                if callable(data):
+                    data = data(trunk_points)
+            elif callable(branch_functions):
+                data = branch_functions(trunk_points)
+            else:
+                data = branch_functions
 
         # 4) evaluate model
-        y = self.net(x, branch_in, device=device)
+        model_out = self.net(trunk_points, branch_function_input, device=device)
 
         # 5) evaluate other needed functions
-        data = {}
+        data_fn = {}
         for fun in self.data_functions:
-            data[fun] = self.data_functions[fun](x_coordinates)
+            data_fn[fun] = self.data_functions[fun](trunk_coordinates)
 
         # 6) evaluate the residual
         input_dict =  {
-            **y.coordinates,
-            **x_coordinates,
+            **model_out.coordinates,
+            **trunk_coordinates,
             **self.parameter.coordinates,
-            **data,
+            **data_fn,
         }
 
-        if self.eval_function_set:
-            input_dict = {**input_dict, **residual_in.coordinates}
+        if self.eval_function_set_for_residual:
+            input_dict = {**input_dict, **data.coordinates}
+
         unreduced_loss = self.error_fn(self.residual_fn(input_dict))
         
-        if self.input_sampler.is_adaptive:
+        if self.trunk_points_sampler.is_adaptive:
             self.last_unreduced_loss = unreduced_loss
 
         return self.reduce_fn(unreduced_loss)
@@ -118,9 +131,10 @@ class PIDeepONetCondition(DeepONetSingleModuleCondition):
     def __init__(
         self,
         deeponet_model,
-        function_sampler,
-        input_sampler,
+        branch_function_sampler,
+        trunk_points_sampler,
         residual_fn,
+        data_sampler=None,
         name="pi_deeponet_condition",
         track_gradients=True,
         data_functions={},
@@ -129,9 +143,10 @@ class PIDeepONetCondition(DeepONetSingleModuleCondition):
     ):
         super().__init__(
             deeponet_model,
-            function_sampler,
-            input_sampler,
+            branch_function_sampler,
+            trunk_points_sampler,
             residual_fn=residual_fn,
+            data_sampler=data_sampler,
             error_fn=SquaredError(),
             reduce_fn=torch.mean,
             name=name,

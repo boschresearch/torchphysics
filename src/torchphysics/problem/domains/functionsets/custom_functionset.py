@@ -29,7 +29,7 @@ class CustomFunctionSet(FunctionSet):
     """
 
     def __init__(self, function_space, parameter_sampler : PointSampler, custom_fn):
-        super().__init__(function_space=function_space)
+        super().__init__(function_space=function_space, function_set_size=parameter_sampler.n_points)
         
         if not isinstance(custom_fn, UserFunction):
             custom_fn = UserFunction(custom_fn)
@@ -37,35 +37,31 @@ class CustomFunctionSet(FunctionSet):
         self.custom_fn = custom_fn
         self.parameter_sampler = parameter_sampler
 
-
-    def sample_functions(self, n_samples, locations, device="cpu"):
-        self.parameter_sampler.n_points = n_samples
-        param_samples = self.parameter_sampler.sample_points(device=device)
-        if isinstance(locations, Points):
-            return self._sample_custom_fn_at_location(locations, param_samples)
-        
-        output = []
-        for loc in locations:  
-            output.append(self._sample_custom_fn_at_location(loc, param_samples))
-        return output
+    def create_functions(self, device="cpu"):
+        self.param_samples = self.parameter_sampler.sample_points(device=device)
     
+    def get_function(self, idx):
+        if isinstance(idx, int): idx = [idx]
+        self.current_idx = idx
+        return self._evaluate_fn_at_locations
 
-    def _sample_custom_fn_at_location(self, location : Points, param_samples : Points):
-        # If locations are the same over the whole batch, we copy it to match the number 
-        # of param_samples.
+    def _evaluate_fn_at_locations(self, locations : Points):
         # TODO: Not so nice for memory usage, can this be improved???
-        if location.as_tensor.shape[0] == 1:
+        if locations.as_tensor.shape[0] == 1:
             location_copy = torch.repeat_interleave(
-                location[self.function_space.input_space].as_tensor, 
-                len(param_samples), dim=0
+                locations[self.function_space.input_space].as_tensor, 
+                len(self.current_idx), dim=0
                 )
         else:
-            location_copy = location[self.function_space.input_space].as_tensor
-        params_copy = torch.repeat_interleave(param_samples.as_tensor.unsqueeze(1), 
-                                              location.as_tensor.shape[1], dim=1)
+            location_copy = locations[self.function_space.input_space].as_tensor
+
+        params_copy = torch.repeat_interleave(
+                self.param_samples[self.current_idx].as_tensor.unsqueeze(1), 
+                locations.as_tensor.shape[1], dim=1
+            )
 
         fn_input = torch.cat([location_copy, params_copy], dim=-1)
         fn_output = self.custom_fn(
-            Points(fn_input, self.function_space.input_space*param_samples.space)
+            Points(fn_input, self.function_space.input_space*self.param_samples.space)
             )
         return Points(fn_output, self.function_space.output_space)
