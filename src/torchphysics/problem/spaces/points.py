@@ -29,8 +29,8 @@ class Points:
     """
 
     def __init__(self, data, space, **kwargs):
-        self._t = torch.as_tensor(data, **kwargs)
         self.space = space
+        self._t = space.cast_tensor_into_space(torch.as_tensor(data, **kwargs))
         assert len(self._t.shape) >= 2
         assert (
             self._t.shape[-1] == self.space.dim

@@ -41,7 +41,7 @@ class GRFFunctionSet(FunctionSet):
         to the fourier space with a fft.
         Default is True.
     flatten : bool, optional
-        If the output should be flattened to a 1D tensor.
+        If the output should be flattened to a 1D tensor along all intermediate dimensions.
         Default is False.
     """
     def __init__(self, function_space, function_set_size, resolution, 

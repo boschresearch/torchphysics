@@ -11,6 +11,6 @@ Points
   The second axis collects the space dimensionalities.
 """
 
-from .space import Space, R1, R2, R3, Rn
+from .space import Space, R1, R2, R3, Rn, Z1, Z2, Z3, Zn, N1, N2, N3, Nn
 from .points import Points
 from .functionspace import FunctionSpace

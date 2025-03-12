@@ -30,7 +30,7 @@ class FunctionSampler:
         pass
 
 
-class RandomUniformFunctionSampler(FunctionSampler):
+class FunctionSamplerRandomUniform(FunctionSampler):
     # Randomly picks functions from the set
     def sample_functions(self, device="cpu"):
         self._check_recreate_functions(device=device)
@@ -38,7 +38,7 @@ class RandomUniformFunctionSampler(FunctionSampler):
         return self.function_set.get_function(self.current_indices)
 
 
-class OrderedFunctionSampler(FunctionSampler):
+class FunctionSamplerOrdered(FunctionSampler):
     # Picks function in order 1, 2, 3, ....
     def __init__(self, n_functions, function_set : FunctionSet, function_creation_interval : int):
         super().__init__(n_functions, function_set, function_creation_interval)
@@ -51,7 +51,7 @@ class OrderedFunctionSampler(FunctionSampler):
         return current_out
 
 
-class CoupledFunctionSampler(FunctionSampler):
+class FunctionSamplerCoupled(FunctionSampler):
     # Is coupled to another sampler and takes the same indices
     def __init__(self, function_set : FunctionSet, coupled_sampler : FunctionSampler):
         super().__init__(coupled_sampler.n_functions, function_set, 

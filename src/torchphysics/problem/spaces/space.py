@@ -1,3 +1,4 @@
+import torch
 from collections import Counter, OrderedDict
 
 
@@ -16,6 +17,18 @@ class Space(Counter, OrderedDict):
     def __init__(self, variables_dims):
         # set counter of variable names and their dimensionalities
         super().__init__(variables_dims)
+
+    def cast_tensor_into_space(self, data_tensor):
+        """Applies transformations to the tensor such that the constrains 
+        of the space are fulfilled. E.g. rounds the input to integer values.
+
+        Parameters
+        ----------
+        data_tensor : torch.tensor
+            The tensor which data should be casted, such that it fulfills the
+            constrains of this space.
+        """
+        return data_tensor
 
     def __mul__(self, other):
         """Creates the product space of the two input spaces. Allows the
@@ -173,33 +186,67 @@ class Rn(Space):
         super().__init__({variable_name: n})
 
 
-# class M(Space):
-#     """The space for n x m matricies. (currently only real numbers)
+class IntegerSpace(Space):
 
-#     Parameters
-#     ----------
-#     variable_name: str
-#         The name of the variable that belongs to this space.
-#     n : int
-#         The number of rows of the matricies.
-#     m : int
-#         The number of columns.
-#     """
-#     def __init__(self, variable_name, n : int, m : int):
-#         self.rows = n
-#         self.columns = m
-#         super().__init__({variable_name: n*m})
+    def __init__(self, variable_name, dim):
+        super().__init__({variable_name: dim})
 
-#     def __mul__(self, other):
-#         raise NotImplementedError("Matrix-spaces can not be multiplied!")
+    def cast_tensor_into_space(self, data_tensor):
+        return torch.round(data_tensor) # to keep same type
 
-#     def check_values_in_space(self, values):
-#         v_shape = values.shape
-#         if len(v_shape) >= 3 and v_shape[-2] == self.rows and v_shape[-1] == self.columns:
-#             # values aready in correct shape
-#             return values
-#         if values.shape[-1] == self.dim:
-#             # maybe values are given as a vector with correct dimension
-#             # -> reshape to matrix
-#             return values.reshape(-1, self.rows, self.columns)
-#         raise AssertionError("Values do not belong to a matrix-space")
+
+class Z1(IntegerSpace):
+    """The space for one dimensional integer numbers.
+    """
+    def __init__(self, variable_name):
+        super().__init__(variable_name, 1)
+
+class Z2(IntegerSpace):
+    """The space for two dimensional integer numbers.
+    """
+    def __init__(self, variable_name):
+        super().__init__(variable_name, 2)
+
+class Z3(IntegerSpace):
+    """The space for three dimensional integer numbers.
+    """
+    def __init__(self, variable_name):
+        super().__init__(variable_name, 3)
+
+class Zn(IntegerSpace):
+    """The space for n dimensional integer numbers.
+    """
+    def __init__(self, variable_name, n):
+        super().__init__(variable_name, n)
+
+
+class NaturalNumberSpace(Space):
+    def __init__(self, variable_name, dim):
+        super().__init__({variable_name: dim})
+
+    def cast_tensor_into_space(self, data_tensor):
+        return torch.round(data_tensor).abs() # to keep same type
+
+class N1(NaturalNumberSpace):
+    """The space for one dimensional natural numbers including 0.
+    """
+    def __init__(self, variable_name):
+        super().__init__(variable_name, 1)
+
+class N2(NaturalNumberSpace):
+    """The space for two dimensional natural numbers including 0.
+    """
+    def __init__(self, variable_name):
+        super().__init__(variable_name, 2)
+
+class N3(NaturalNumberSpace):
+    """The space for three dimensional natural numbers including 0.
+    """
+    def __init__(self, variable_name):
+        super().__init__(variable_name, 3)
+
+class Nn(NaturalNumberSpace):
+    """The space for n dimensional natural numbers including 0.
+    """
+    def __init__(self, variable_name, n):
+        super().__init__(variable_name, n)
