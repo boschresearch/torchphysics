@@ -64,19 +64,22 @@ class RandomUniformSampler(PointSampler):
         for i in range(num_of_params):
             new_sample_points = None
             num_of_new_points = 0
+            total_sampled_points = 0
             iterations = 0
+            n_sample_points = self.n_points
             # we have to make sure to sample for each param exactly n points
             while num_of_new_points < self.n_points:
                 # sample points
-                new_points = self._sample_for_ith_param(
-                    sample_function, params, i, device
-                )
+                new_points = self._sample_for_ith_param(sample_function, params,
+                                                        i, device, n_points=n_sample_points)
+                total_sampled_points += n_sample_points
                 # apply filter and save valid points
                 new_points = self._apply_filter(new_points)
                 num_of_new_points += len(new_points)
-                new_sample_points = self._set_sampled_points(
-                    new_sample_points, new_points
-                )
+                n_sample_points = int(1.1*(self.n_points - num_of_new_points)\
+                    *total_sampled_points/num_of_new_points)+10
+                new_sample_points = self._set_sampled_points(new_sample_points,
+                                                             new_points)
                 iterations += 1
                 self._check_iteration_number(iterations, num_of_new_points)
             # if to many points were sampled, delete them.
