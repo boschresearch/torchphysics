@@ -238,7 +238,7 @@ class PointSampler:
                               {num_of_new_points} from {self.n_points} points.
                               This may take some time."""
             )
-        elif iterations >= 20 and num_of_new_points == 0:
+        elif iterations >= 20 and num_of_new_points <= 1:
             raise RuntimeError(
                 """Run 20 iterations and could not find a single 
                                   valid point for the filter condition."""

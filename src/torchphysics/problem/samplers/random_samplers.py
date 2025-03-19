@@ -75,9 +75,11 @@ class RandomUniformSampler(PointSampler):
                 total_sampled_points += n_sample_points
                 # apply filter and save valid points
                 new_points = self._apply_filter(new_points)
-                num_of_new_points += len(new_points)
+                num_of_new_points = max(1 , num_of_new_points + len(new_points))
                 n_sample_points = int(1.1*(self.n_points - num_of_new_points)\
                     *total_sampled_points/num_of_new_points)+10
+                if n_sample_points > 1.e9:
+                    raise RuntimeError("To many points need to be sampled to fulfill filter condition!")
                 new_sample_points = self._set_sampled_points(new_sample_points,
                                                              new_points)
                 iterations += 1
