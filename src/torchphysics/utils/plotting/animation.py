@@ -384,8 +384,11 @@ def animation_contour_2D(
         current_ani = animation_points[frame_number,]
         # remove old contour
         if isinstance(con[0], plt_tri.TriContourSet):
-            for tp in con[0].collections:
-                tp.remove()
+            if hasattr(con[0], "collections"):
+                for tp in con[0].collections:
+                    tp.remove()
+            else:
+                con[0].remove()
         # have to create a new triangulation, if the domain changes
         if not ani_sampler.plot_domain_constant:
             triangulation = _triangulate_for_animation(
