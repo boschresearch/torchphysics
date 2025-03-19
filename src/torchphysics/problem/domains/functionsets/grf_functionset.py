@@ -6,7 +6,7 @@ from ...spaces import Points
 
 
 class GRFFunctionSet(FunctionSet):
-    """A functionset that can create gaussian random fields.
+    """A functionset that creates Gaussian Random Fields (GRF).
 
     Parameters
     ----------

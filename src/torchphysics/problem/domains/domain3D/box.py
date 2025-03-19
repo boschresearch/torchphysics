@@ -90,9 +90,9 @@ class Box(Domain):
         
         num_of_params = self.len_of_params(params)
         points = torch.rand((num_of_params, n, 3), device=device)
-        points[..., 0:1] *= eval_width
-        points[..., 1:2] *= eval_height
-        points[..., 2:3] *= eval_depth
+        points[..., 0:1] *= eval_width.unsqueeze(1)
+        points[..., 1:2] *= eval_height.unsqueeze(1)
+        points[..., 2:3] *= eval_depth.unsqueeze(1)
         points += eval_origin[:, None, :]
         return Points(points.reshape(-1, self.space.dim), self.space)
     
@@ -209,7 +209,7 @@ class BoxBoundary(BoundaryDomain):
         # We iterate over each direction and sample on each side seperately.
         for i in range(self.space.dim):
             if i < self.space.dim - 1:
-                n_scale = int(n * area_list[i] / total_area)
+                n_scale =(n * area_list[i] / total_area).int()
             else: # last dimension gets all remaining points
                 n_scale = n - old_n_scale
 
@@ -222,15 +222,18 @@ class BoxBoundary(BoundaryDomain):
             current_points = torch.rand((num_of_params, n, 3), device=device) 
             current_shift  = torch.randint(0, 2, (num_of_params, n, 1), device=device) 
             
-            current_points[:, :, i:i+1] = current_shift * scale_list[i]
+            current_points[:, :, i:i+1] = current_shift * scale_list[i].unsqueeze(1)
             i_mod_1 = (i+1)%3
             i_mod_2 = (i+2)%3
-            current_points[:, :, i_mod_1:i_mod_1+1] *= scale_list[i_mod_1]
-            current_points[:, :, i_mod_2:i_mod_2+1] *= scale_list[i_mod_2]
+            current_points[:, :, i_mod_1:i_mod_1+1] *= scale_list[i_mod_1].unsqueeze(1)
+            current_points[:, :, i_mod_2:i_mod_2+1] *= scale_list[i_mod_2].unsqueeze(1)
 
             mask = torch.logical_or(indices >= n_scale+old_n_scale, indices < old_n_scale)
+            mask = mask.unsqueeze(-1).repeat(
+                    (1 if mask.shape[0] > 1 else num_of_params, 1, 3)
+                )
             # set not needed values to 0
-            current_points[mask.unsqueeze(-1).repeat((1, 1, 3))] = 0.0
+            current_points[mask] = 0.0
             
             old_n_scale += n_scale
             points += current_points

@@ -26,6 +26,10 @@ class FunctionSpace:
         assert not (self.output_space == other.output_space), "Output spaces must be different"
         if self.input_space == other.input_space:
             return FunctionSpace(self.input_space, self.output_space * other.output_space)
+        elif self.input_space in other.input_space:
+            return FunctionSpace(other.input_space, self.output_space * other.output_space)
+        elif other.input_space in self.input_space:
+            return FunctionSpace(self.input_space, self.output_space * other.output_space)
         else:
-            return FunctionSpace(self.input_space * other.input_space, 
+            return FunctionSpace(self.input_space*other.input_space, 
                                  self.output_space * other.output_space)

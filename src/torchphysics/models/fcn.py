@@ -50,6 +50,9 @@ class FCN(Model):
         For the weight initialization a Xavier/Glorot algorithm will be used.
         The gain can be specified over this value.
         Default is 5/3.
+    activation_fn_output : torch.nn or None
+        An additional activation that is applied to the output of the network.
+        Default is None.
     """
 
     def __init__(
@@ -58,7 +61,8 @@ class FCN(Model):
         output_space,
         hidden=(20, 20, 20),
         activations=nn.Tanh(),
-        xavier_gains=5 / 3,
+        xavier_gains=5/3,
+        activation_fn_output=None,
     ):
         super().__init__(input_space, output_space)
 
@@ -69,6 +73,9 @@ class FCN(Model):
             activations=activations,
             xavier_gains=xavier_gains,
         )
+
+        if activation_fn_output:
+            layers.append(activation_fn_output)
 
         self.sequential = nn.Sequential(*layers)
 

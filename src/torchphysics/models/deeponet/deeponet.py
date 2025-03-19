@@ -61,13 +61,14 @@ class DeepONet(Model):
             self.trunk.finalize(output_space, output_neurons)
         self.branch.finalize(output_space, output_neurons)
 
-    def forward(self, trunk_inputs, branch_inputs=None, device="cpu"):
+    def forward(self, trunk_inputs=None, branch_inputs=None, device="cpu"):
         """Apply the network to the given inputs.
 
         Parameters
         ----------
-        trunk_inputs : torchphysics.spaces.Points
+        trunk_inputs : torchphysics.spaces.Points, optional
             The inputs for the trunk net.
+            If no input is passed in, the default values from the trunk net are used.
         branch_inputs : callable, torchphysics.domains.FunctionSet, optional
             The function(s) for which the branch should be evaluaded. If no
             input is given, the branch net has to be fixed before hand!
@@ -90,13 +91,7 @@ class DeepONet(Model):
 
     def _forward_branch(self, function_set, iteration_num=-1, device="cpu"):
         """Branch evaluation for training."""
-        if iteration_num != function_set.current_iteration_num:
-            function_set.current_iteration_num = iteration_num
-            function_set.sample_params(device=device)
-            discrete_fn_batch = self.branch._discretize_function_set(
-                function_set, device=device
-            )
-            self.branch(discrete_fn_batch)
+        self.branch.fix_input(function_set, device)
 
     def fix_branch_input(self, function, device="cpu"):
         """Fixes the branch net for a given function. this function will then be used

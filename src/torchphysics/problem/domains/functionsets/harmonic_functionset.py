@@ -6,7 +6,27 @@ from .functionset import FunctionSet
 from ...spaces import Points
 
 class HarmonicFunctionSet1D(FunctionSet):
+    """ A function set that creates harmonic functions in 1D.
+    The functions are of the form
+        .. math:: \sum_{i=0}^{N} a_i \sin(\frac{2\pi i x}{L}) + b_i \cos(\frac{2\pi i x}{L})
+    where N is the maximum frequence, L is the period length and 
+    a_i, b_i are the fourier coefficients, which are created randomly.
 
+    Parameters
+    ----------
+    function_space : tp.spaces.FunctionSpace
+        The function space of the functions in the set.
+    function_set_size : int
+        The number of functions in the set. This sets how many a_i, b_i are created 
+        at once.
+    period : float  
+        The length of the underyling interval.
+    max_frequence : int
+        The maximum frequence of the functions that are created.
+    random_sample_fn : callable, optional
+        A function that creates random samples to initialize the fourier coefficients.
+        Default is torch.randn.
+    """
     def __init__(self, function_space, function_set_size, 
                  period, max_frequence, 
                  random_sample_fn = torch.randn):
@@ -47,7 +67,26 @@ class HarmonicFunctionSet1D(FunctionSet):
     
 
 class HarmonicFunctionSet2D(HarmonicFunctionSet1D):
+    """ A function set that creates harmonic functions in the given dimension.
+    The functions are build from a fourier basis in the given space, 
+    see also https://en.wikipedia.org/wiki/Multidimensional_transform for the
+    mathematical background.
 
+    Parameters
+    ----------
+    function_space : tp.spaces.FunctionSpace
+        The function space of the functions in the set.
+    function_set_size : int
+        The number of functions in the set. This sets how many a_i, b_i are created 
+        at once.
+    period : list or tuple
+        The length of the underyling domain in each space direction.
+    max_frequence : list or tuple
+        The maximum frequence of the functions in each space direction.
+    random_sample_fn : callable, optional
+        A function that creates random samples to initialize the fourier coefficients.
+        Default is torch.randn.
+    """
     def __init__(self, function_space, function_set_size, 
                  period, max_frequence, 
                  random_sample_fn = torch.randn):
@@ -140,13 +179,13 @@ class HarmonicFunctionSet3D(HarmonicFunctionSet2D):
 
 
                     output[..., 0] += \
-                        self.fourier_coefficients[self.current_idx, i, j, 0:1] * sin_x * sin_y * sin_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, 1:2] * sin_x * sin_y * cos_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, 2:3] * sin_x * cos_y * cos_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, 3:4] * sin_x * cos_y * sin_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, 4:5] * cos_x * sin_y * sin_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, 5:6] * cos_x * sin_y * cos_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, 6:7] * cos_x * cos_y * cos_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, 7:8] * cos_x * cos_y * sin_z
+                        self.fourier_coefficients[self.current_idx, i, j, k, 0:1] * sin_x * sin_y * sin_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 1:2] * sin_x * sin_y * cos_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 2:3] * sin_x * cos_y * cos_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 3:4] * sin_x * cos_y * sin_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 4:5] * cos_x * sin_y * sin_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 5:6] * cos_x * sin_y * cos_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 6:7] * cos_x * cos_y * cos_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 7:8] * cos_x * cos_y * sin_z
                 
         return Points(output, self.function_space.output_space)

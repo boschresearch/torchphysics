@@ -4,7 +4,7 @@ import torch
 from ..model import Model
 from .layers import TrunkLinear
 from ..fcn import _construct_FC_layers
-
+from ...problem.spaces.points import Points
 
 class TrunkNet(Model):
     """A neural network that can be used inside a DeepONet-model.
@@ -13,6 +13,12 @@ class TrunkNet(Model):
     ----------
     input_space : Space
         The space of the points that can be put into this model.
+    default_trunk_input : tp.spaces.Points, torch.tensor
+        The default input for the trunk net if no other values are specified.
+        This default is used when the DeepONet only should be evaluated for new
+        branch inputs, but the trunk input stays fixed. Shape should be of the form
+        (N_batch, ..., dimension of input space), here ... can be abritrary many dimensions.
+        If trunk_input_copied=True, N_batch needs to be equal to 1.
     trunk_input_copied : bool, optional
         If every sample function of the branch input gets evaluated at the same trunk input,
         the evaluation process can be speed up, since the trunk only has to evaluated once
@@ -21,13 +27,19 @@ class TrunkNet(Model):
         If for example a dataset with different trunk inputs for each branch function
         is used, set trunk_input_copied = False. Else this may lead to unexpected
         behavior.
-
     """
 
-    def __init__(self, input_space, trunk_input_copied=True):
+    def __init__(self, input_space, default_trunk_input, trunk_input_copied=True):
         super().__init__(input_space, output_space=None)
         self.output_neurons = 0
         self.trunk_input_copied = trunk_input_copied
+        if torch.is_tensor(default_trunk_input):
+            self.default_trunk_input = Points(default_trunk_input, input_space)
+        elif isinstance(default_trunk_input, Points):
+            self.default_trunk_input = default_trunk_input
+        else:
+            raise ValueError("Provided default input is not supported!")
+        self.default_trunk_input = self._fix_points_order(self.default_trunk_input)
 
     def finalize(self, output_space, output_neurons):
         """Method to set the output space and output neurons of the network.
@@ -102,12 +114,13 @@ class FCTrunkNet(TrunkNet):
     def __init__(
         self,
         input_space,
+        default_trunk_input,
         hidden=(20, 20, 20),
         activations=nn.Tanh(),
         xavier_gains=5 / 3,
         trunk_input_copied=True,
     ):
-        super().__init__(input_space, trunk_input_copied=trunk_input_copied)
+        super().__init__(input_space, default_trunk_input,trunk_input_copied=trunk_input_copied)
         self.hidden = hidden
         self.activations = activations
         self.xavier_gains = xavier_gains
@@ -135,5 +148,12 @@ class FCTrunkNet(TrunkNet):
         self.sequential = nn.Sequential(*layers)
 
     def forward(self, points):
-        points = self._fix_points_order(points)
-        return self._reshape_multidimensional_output(self.sequential(points.as_tensor))
+        if points:
+            points = self._fix_points_order(points)
+            return self._reshape_multidimensional_output(self.sequential(points.as_tensor))
+        else:
+            current_device = next(self.sequential[0].parameters()).device
+            self.default_trunk_input = self.default_trunk_input.to(current_device)
+            return self._reshape_multidimensional_output(
+                    self.sequential(self.default_trunk_input.as_tensor)
+                )

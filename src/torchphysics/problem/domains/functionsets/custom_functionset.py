@@ -53,10 +53,10 @@ class CustomFunctionSet(FunctionSet):
                 len(self.current_idx), dim=0
                 )
         else:
-            location_copy = locations[self.function_space.input_space].as_tensor
+            location_copy = locations[self.function_space.input_space].as_tensor[:len(self.current_idx)]
 
         params_copy = torch.repeat_interleave(
-                self.param_samples[self.current_idx].as_tensor.unsqueeze(1), 
+                self.param_samples.as_tensor[self.current_idx].unsqueeze(1), 
                 locations.as_tensor.shape[1], dim=1
             )
 

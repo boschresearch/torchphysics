@@ -345,6 +345,7 @@ class StaticSampler(PointSampler):
     """
 
     def __init__(self, sampler, resample_interval=math.inf):
+        super().__init__(sampler.n_points, sampler.density, sampler.filter_fn)
         self.length = None
         self.sampler = sampler
         self.created_points = None

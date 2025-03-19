@@ -203,7 +203,8 @@ class FNO(Model):
 
 
     def forward(self, points):
-        points = self._fix_points_order(points)
+        if not torch.is_tensor(points):
+            points = self._fix_points_order(points)
         points_up_sampled = self.channel_up_sampling(points)
         fourier_points = self.fourier_sequential(points_up_sampled)
         output = self.channel_down_sampling(fourier_points)

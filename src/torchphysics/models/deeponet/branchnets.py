@@ -88,13 +88,6 @@ class BranchNet(Model):
         """
         raise NotImplementedError
 
-    def _discretize_function_set(self, function_set, device="cpu"):
-        """Internal discretization of the training set."""
-        input_points = self.grid.to(device)
-        # self.input_points = input_points
-        fn_out = function_set.create_function_batch(input_points)
-        return fn_out
-
     def fix_input(self, function, device="cpu"):
         """Fixes the branch net for a given function. The branch net will
         be evaluated for the given function and the output saved in ``current_out``.
@@ -113,8 +106,11 @@ class BranchNet(Model):
         ``.fix_input`` again with a new function.
         """
         if isinstance(function, FunctionSet):
-            function.sample_params(device=device)
-            discrete_fn = self._discretize_function_set(function, device=device)
+            function.create_functions(device=device)
+            index = torch.arange(function.function_set_size)
+            fns = function.get_function(index)
+            input_points = self.grid.to(device)
+            discrete_fn = fns(input_points)
         elif callable(function):
             function = UserFunction(function)
             discrete_points = self.grid.to(device)
