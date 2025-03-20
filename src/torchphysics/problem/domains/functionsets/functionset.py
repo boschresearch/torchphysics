@@ -3,6 +3,8 @@ import torch
 
 from ...spaces.points import Points
 
+integer_dtypes = [torch.uint8, torch.int8, torch.int16, torch.int32, torch.int, torch.int64, torch.long]
+
 class FunctionSet():
     """ A function set describes a specfic type of functions that can be used 
     for creating data for training different operator approaches.
@@ -165,6 +167,8 @@ class DiscretizedFunctionSet(FunctionSet):
         super().__init__(function_set.function_space, function_set.function_set_size)
         self.function_set = function_set
         self.locations = locations
+        if self.function_set.is_discretized:
+            assert self.locations.dtype in integer_dtypes
 
     @property
     def is_discretized(self):
@@ -181,41 +185,22 @@ class DiscretizedFunctionSet(FunctionSet):
         if callable(samples):
             return samples(self.locations)
         else:
-            return samples[..., self.locations] # TODO: which dimensions are correct here?
+            # we assume that self.locations is a grid, and its last dimension corresponds
+            # to the amount of grid axis. i.e.
+            assert (len(samples.shape) - 2) == self.locations.shape[-1]
+            out_shape = (samples.shape[0], *locations_slice.shape[0:-1], samples.shape[-1])
+            locations_slice = torch.unbind(torch.reshape(self.locations,
+                                                         (-1, self.locations.shape[-1])),
+                                           dim=-1)
+            locations_slice = (slice(None), *locations_slice, slice(None))
+            return samples[locations_slice].reshape(*out_shape)
     
     def discretize(self, locations):
         assert torch.is_tensor(locations)
-        assert locations.dtype in [torch.int64, torch.long], \
-            """A discrtized FunctionSet can only be further discretized by passing in indices to 
+        assert locations.dtype in integer_dtypes, \
+            """A discretized FunctionSet can only be further discretized by passing in indices 
                 to subsample the current discretization."""
-        # We need to now check how the functions should be subsampled, e.g.
-        # what kind of indices the used handed in and if the are comptabile with 
-        # the kind of functions we are creating/using.
-        if self.function_space.input_space.dimension == 1:
-            assert len(locations.shape) == 1, \
-                """Only needs a 1D tensor of indices for a 1D input space."""
-            return DiscretizedFunctionSet(self, locations)
-        else:
-            # In higher dimension the input space could also not only be flattened 
-            # into one tensor dimension but instead be distributed over multiple dimensions
-            # (e.g., for 2D a we save the functions as an "image").
-            # Therefore, load one example of the data a check the shape.
-            self.create_functions()
-            test_fn = self.get_function(0) # <- is already a discete tensor
-            if len(locations.shape) == 1:
-                if len(test_fn.shape) - 2 == 1: # <- remove batch and output space dim.
-                    return DiscretizedFunctionSet(self, locations)
-                else:
-                    Warning("""The shape of the discretized functions is not 1D, but the used indices are.
-                            We assume that the indices are meant for discretaizing all dimensions the
-                            same way and will build a meshgrid of the indices.
-                            """)
-                    raise NotImplementedError
-                    # TODO: Add code here that does this...
-            elif len(locations) == len(test_fn.shape) - 2:
-                return DiscretizedFunctionSet(self, locations)
-            else:
-                raise ValueError("""The indices provided do not match the shape of the functions""")
+        return DiscretizedFunctionSet(self, locations)
 
 
     def __mul__(self, other):
