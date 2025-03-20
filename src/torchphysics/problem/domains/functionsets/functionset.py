@@ -188,7 +188,7 @@ class DiscretizedFunctionSet(FunctionSet):
             # we assume that self.locations is a grid, and its last dimension corresponds
             # to the amount of grid axis. i.e.
             assert (len(samples.shape) - 2) == self.locations.shape[-1]
-            out_shape = (samples.shape[0], *locations_slice.shape[0:-1], samples.shape[-1])
+            out_shape = (samples.shape[0], *self.locations.shape[0:-1], samples.shape[-1])
             locations_slice = torch.unbind(torch.reshape(self.locations,
                                                          (-1, self.locations.shape[-1])),
                                            dim=-1)
