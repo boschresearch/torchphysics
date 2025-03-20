@@ -13,7 +13,7 @@ class FunctionSampler:
         The number of functions that should be sampled when calling sample_functions.
     function_set : tp.domains.FunctionSet
         The function set from which functions should be sampled. Note that the size of the
-        functions set needs to be larger or eqaul to n_functions.
+        functions set needs to be larger or equal to n_functions.
     function_creation_interval : int
         The interval at which new functions should be created. If set to 0, new functions are
         created every time sample_functions is called.
