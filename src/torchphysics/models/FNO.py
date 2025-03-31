@@ -4,6 +4,14 @@ from .model import Model
 
 from ..problem.spaces import Points
 
+class _Permute(nn.Module):
+    def __init__(self, permute_dims):
+        super().__init__()
+        self.permute_dims = permute_dims
+        
+    def forward(self, x):
+        return x.permute(self.permute_dims)
+
 
 class _FourierLayer(nn.Module):
     """Implements a single Fourier layer of the FNO. For the parameter description see
@@ -26,9 +34,9 @@ class _FourierLayer(nn.Module):
         self.fourier_dims = list(range(1, self.data_dim+1))
         
         # Learnable parameters
-        self.fourier_kernel = torch.nn.Parameter(
+        self.fourier_kernel = nn.Parameter(
            torch.empty((*self.mode_num, self.channels), dtype=torch.cfloat))
-        torch.nn.init.xavier_normal_(self.fourier_kernel, gain=xavier_gain)
+        nn.init.xavier_normal_(self.fourier_kernel, gain=xavier_gain)
 
         self.linear_connection : bool = linear_connection
         if self.linear_connection:
@@ -38,10 +46,15 @@ class _FourierLayer(nn.Module):
         if space_res:
             self.use_bn = True
             if self.data_dim == 1:
-                self.bn = torch.nn.BatchNorm1d(space_res)
+                self.bn = nn.BatchNorm1d(space_res)
             else:
-                raise NotImplementedError(f"Dimension {self.data_dim} currently not \
-                                          supported for batch normalization")
+                # for higher dimensions we need to permute the dimensions, since
+                # the layer norm only operates on the last dimensions.
+                self.bn = nn.Sequential(
+                    _Permute([0, self.data_dim+1, *range(1, self.data_dim+1)]), 
+                    nn.LayerNorm(space_res),
+                    _Permute([0, *range(2, self.data_dim+2), 1])
+                )
         
 
     def forward(self, points):
@@ -55,7 +68,7 @@ class _FourierLayer(nn.Module):
         padding = torch.zeros(2*self.data_dim + 2, device=points.device, dtype=torch.int32)
         padding[3::2] = torch.flip((self.mode_num - original_fft_shape), dims=(0,))
 
-        fft = torch.nn.functional.pad(fft, padding.tolist())
+        fft = nn.functional.pad(fft, padding.tolist())
     
         fft *= self.fourier_kernel
 
@@ -121,12 +134,12 @@ class FNO(Model):
         For the weight initialization a Xavier/Glorot algorithm will be used.
         The gain can be specified over this value.
         Default is 5/3.
-    space_resolution : int or None
+    space_resolution : int, list, tuple or None
         The resolution of the space grid used for training. This value is optional.
         If specified, a batch normalization over the space dimension will be applied
         in each Fourier layer. This leads to smoother solutions and better local
         approximations. But (currently) removes the super resolution property of the 
-        FNO. This is currently only possible for 1D space dimensions.
+        FNO.
 
     Notes
     -----
