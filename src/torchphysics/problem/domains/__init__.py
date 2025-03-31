@@ -48,6 +48,7 @@ from .functionsets.harmonic_functionset import (HarmonicFunctionSet1D,
                                                 HarmonicFunctionSet3D)
 from .functionsets.data_functionset import DataFunctionSet
 from .functionsets.grf_functionset import GRFFunctionSet
+from .functionsets.functionset_operations import FunctionSetTransform
 # Domain transforms:
 from .domainoperations.translate import Translate
 from .domainoperations.rotate import Rotate

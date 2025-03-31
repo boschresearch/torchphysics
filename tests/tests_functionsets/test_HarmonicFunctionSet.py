@@ -89,6 +89,13 @@ def test_harmonic_fn_set_2D_get_functions():
     assert fn_out.shape[1] == 100
     assert fn_out.shape[2] == 1
 
+    fn_out = fn(Points(torch.rand((5, 16, 16, 2)), T)).as_tensor
+    assert torch.is_tensor(fn_out)
+    assert fn_out.shape[0] == 5
+    assert fn_out.shape[1] == 16
+    assert fn_out.shape[2] == 16
+    assert fn_out.shape[3] == 1
+
 
 
 def test_create_harmonic_fn_set_3D():
@@ -133,3 +140,4 @@ def test_harmonic_fn_set_3D_get_functions():
     assert fn_out.shape[0] == 5
     assert fn_out.shape[1] == 100
     assert fn_out.shape[2] == 1
+    

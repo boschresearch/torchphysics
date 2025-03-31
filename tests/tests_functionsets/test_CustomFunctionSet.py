@@ -3,7 +3,7 @@ import pytest
 
 from torchphysics.problem.spaces import R1, FunctionSpace
 from torchphysics.problem.domains.functionsets import CustomFunctionSet
-from torchphysics.problem.domains.functionsets.functionset import FunctionSetProduct, FunctionSetCollection
+from torchphysics.problem.domains.functionsets.functionset_operations import FunctionSetProduct, FunctionSetCollection
 from torchphysics.problem.samplers import GridSampler
 from torchphysics.problem.domains.domain1D import Interval
 from torchphysics.problem.spaces.points import Points
