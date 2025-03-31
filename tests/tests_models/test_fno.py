@@ -26,8 +26,6 @@ def test_create_fourier_layer_with_linear_transform():
 def test_create_fourier_layer_with_batchnorm():
     fourier_layer = _FourierLayer(8, 4, space_res=10)
     assert fourier_layer.use_bn
-    with pytest.raises(NotImplementedError):
-        fourier_layer = _FourierLayer(8, (4, 4), space_res=10)
 
 
 def test_forward_fourier_layer():

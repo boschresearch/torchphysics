@@ -14,12 +14,13 @@ class FunctionSampler:
     function_set : tp.domains.FunctionSet
         The function set from which functions should be sampled. Note that the size of the
         functions set needs to be larger or eqaul to n_functions.
-    function_creation_interval : int
+    function_creation_interval : int, optional
         The interval at which new functions should be created. If set to 0, new functions are
         created every time sample_functions is called.
-        The creation of new functions is handled by the function set.
+        The creation of new functions is handled by the function set. 
+        The default value is 0.
     """
-    def __init__(self, n_functions, function_set : FunctionSet, function_creation_interval : int):
+    def __init__(self, n_functions, function_set : FunctionSet, function_creation_interval : int = 0):
         self.n_functions = n_functions
         self.function_set = function_set
         self.function_creation_interval = function_creation_interval
@@ -70,7 +71,7 @@ class FunctionSamplerOrdered(FunctionSampler):
     the indices by n_functions. If the end of the function set is reached, the indices
     are reset to the beginning.
     """
-    def __init__(self, n_functions, function_set : FunctionSet, function_creation_interval : int):
+    def __init__(self, n_functions, function_set : FunctionSet, function_creation_interval : int = 0):
         super().__init__(n_functions, function_set, function_creation_interval)
         self.current_indices = torch.arange(self.n_functions, dtype=torch.int64)
 

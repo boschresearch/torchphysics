@@ -8,7 +8,7 @@ They can give you a rough overview of the determined solution. These lay under
 torchphysics.utils.plotting
 """
 
-from .differentialoperators import (
+from .differentialoperators.differentialoperators import (
     laplacian,
     grad,
     div,
@@ -19,6 +19,11 @@ from .differentialoperators import (
     normal_derivative,
     sym_grad,
     matrix_div,
+)
+
+from .differentialoperators.differenceoperators import (
+    discrete_grad_on_grid, 
+    discrete_laplacian_on_grid
 )
 
 from .data import PointsDataset, PointsDataLoader, DeepONetDataLoader
