@@ -14,8 +14,11 @@ def _construct_FC_layers(hidden, input_dim, output_dim, activations, xavier_gain
         xavier_gains = len(hidden) * [xavier_gains]
 
     layers = []
-    layers.append(nn.Linear(input_dim, hidden[0]))
-    torch.nn.init.xavier_normal_(layers[-1].weight, gain=xavier_gains[0])
+    if input_dim is None:
+        layers.append(nn.LazyLinear(hidden[0]))
+    else:
+        layers.append(nn.Linear(input_dim, hidden[0]))
+        torch.nn.init.xavier_normal_(layers[-1].weight, gain=xavier_gains[0])
     layers.append(activations[0])
     for i in range(len(hidden) - 1):
         layers.append(nn.Linear(hidden[i], hidden[i + 1]))
