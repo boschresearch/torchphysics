@@ -171,7 +171,7 @@ class FCBranchNet(BranchNet):
         self.activations = activations
         self.xavier_gains = xavier_gains
         
-        self.input_neurons = len(self.grid) * self.input_space.dim
+        self.input_neurons = len(self.grid) * self.input_space.output_space.dim
 
     def finalize(self, output_space, output_neurons):
         super().finalize(output_space, output_neurons)
@@ -187,7 +187,7 @@ class FCBranchNet(BranchNet):
 
     def forward(self, discrete_function_batch):
         discrete_function_batch = discrete_function_batch.as_tensor.reshape(
-            -1, self.input_dim
+            -1, self.input_neurons
         )
         self.current_out = self._reshape_multidimensional_output(
             self.sequential(discrete_function_batch)
