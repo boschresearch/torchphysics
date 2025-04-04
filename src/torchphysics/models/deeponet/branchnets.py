@@ -171,7 +171,7 @@ class FCBranchNet(BranchNet):
         self.activations = activations
         self.xavier_gains = xavier_gains
         
-        self.input_neurons = len(self.grid) * self.input_space.dim
+        self.input_neurons = len(self.grid) * self.input_space.output_space.dim
 
     def finalize(self, output_space, output_neurons):
         super().finalize(output_space, output_neurons)

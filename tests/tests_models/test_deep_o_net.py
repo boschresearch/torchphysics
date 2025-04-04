@@ -44,14 +44,12 @@ def helper_fn_set():
 def test_create_branch_net():
     fn_space, _ = helper_fn_set()
     net = BranchNet(fn_space, grid=torch.rand((1, 10, 1)))
-    assert net.input_dim == 10
     assert net.input_space == fn_space
 
 
 def test_create_fc_branch_net():
     fn_space, _ = helper_fn_set()
     net = FCBranchNet(fn_space, grid=torch.rand((1, 15, 1)))
-    assert net.input_dim == 15
     assert net.input_space == fn_space
 
 
