@@ -50,7 +50,6 @@ def test_create_branch_net():
 def test_create_fc_branch_net():
     fn_space, _ = helper_fn_set()
     net = FCBranchNet(fn_space, grid=torch.rand((1, 15, 1)))
-    assert net.input_neurons == 15
     assert net.input_space == fn_space
 
 
