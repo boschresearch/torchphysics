@@ -1,11 +1,11 @@
 import torch
 from itertools import product
 
-from .functionset import FunctionSet
+from .functionset import DiscreteFunctionSet
 from ...spaces import Points
 
 
-class GRFFunctionSet(FunctionSet):
+class GRFFunctionSet(DiscreteFunctionSet):
     """A functionset that creates Gaussian Random Fields (GRF).
 
     Parameters
@@ -50,12 +50,12 @@ class GRFFunctionSet(FunctionSet):
                  normalize : bool = True, 
                  sample_noise_in_fourier_space : bool = True, 
                  flatten : bool = False):
-        super().__init__(function_space, function_set_size)
-
         if isinstance(resolution, int): resolution = [resolution]
-        assert self.function_space.input_space.dim == len(resolution), \
+        assert function_space.input_space.dim == len(resolution), \
             "Resolution shape does not match input space dimension."
-            
+        
+        super().__init__(function_space, function_set_size, resolution)
+
         self.cov_matrix = torch.zeros(resolution)
         for x in product(*(range(-r//2, r//2) for r in resolution)):
             y = [x[i] + resolution[i]//2 for i in range(len(x))]
@@ -66,10 +66,7 @@ class GRFFunctionSet(FunctionSet):
         self.random_gen_fn = random_generator_fn
         self.sample_in_fourier_space = sample_noise_in_fourier_space
         self.flatten = flatten
-
-    @property
-    def is_discretized(self):
-        return True
+        self.grf = None
 
     def create_functions(self, device="cpu"):
         self.cov_matrix = self.cov_matrix.to(device)

@@ -187,30 +187,127 @@ class FunctionSet():
         return FunctionSetSubstract(self.function_space, [self, other])
 
 
-class DiscretizedFunctionSet(FunctionSet):
+class DiscreteFunctionSet(FunctionSet):
+    """ A function set that only returns already discretized functions, which
+    can not be evaluated at arbitrary locations.
+    """
+    def __init__(self, function_space, function_set_size, data_shape):
+        super().__init__(function_space, function_set_size)
+        self.data_shape = data_shape
+        self.pca = None
+        self.mean_tensor = None
+        self.std_tensor = None
+
+    @property
+    def is_discretized(self):
+        return True
+
+    def discretize(self, locations):
+        assert torch.is_tensor(locations)
+        assert locations.dtype in integer_dtypes, \
+            """A discrete FunctionSet can only be further discretized by passing in indices 
+                to subsample the current discretization."""
+        return DiscretizedFunctionSet(self, locations)
+
+    def compute_pca(self, 
+                    components : int, 
+                    normalize_data : bool = True, 
+                    ):
+        """ Carries out the principal component analysis for this function set.
+
+        Parameters
+        ----------
+        components : int
+            The number of components that should be keeped in the PCA.
+        normalize_data : bool, optional
+            If the data of the function set should be normalized before the
+            PCA is computed (recommented). Default is true.
+            Note, the normalization is only applied during this method and 
+            not saved afterwards, therefore the underlying data in this function
+            set is **not** modified!
+            
+        Notes
+        -----
+        The PCA is not returned but instead saved internally for later
+        usage. Use '.principal_components' to obtain the PCA.
+
+        Also the data of the function set is flattened over all dimensions expect 
+        of the batch dimension. For higher dimensional data (e.g. images) other
+        approaches (like localized PCAs on small patches) may be better suited. 
+        """
+        pass
+
+    @property
+    def principal_components(self):
+        """ Returns the principal components of this function set.
+        It is requiered to first call 'compute_pca' to compute them and set
+        a number n of the used components.
+
+        Returns
+        -------
+        list : 
+            A list of the principal components in the shape of (U, S, V).
+            - U is the matrix of the left singular vectors of shape 
+              (function_set_size, n)
+            - S is a vector containing the first n eigen values of the 
+              covariance matrix.
+            - V is the matrix of the principal directions of shape
+              (function_set_dimension, n)
+            See also: https://pytorch.org/docs/stable/generated/torch.pca_lowrank.html  
+        """
+        if self.pca is None:
+            raise AssertionError("PCA needs to be computed! Use the method 'compute_pca'.")
+        return self.pca
+
+    @property
+    def mean(self):
+        if self.mean_tensor is None: self.compute_normalization()
+        return self.mean_tensor
+
+    @property
+    def std(self):
+        if self.std_tensor is None: self.compute_normalization()
+        tol = 0.0001 # (add small value to std in case it is zero,
+        # can happen if we have some constant data (Dirichlet condition on boundary))
+        return self.std_tensor + tol
+
+    def compute_normalization(self):
+        """ Computes the mean and standard deviation over the data contained in this
+        function set.
+        
+        Notes
+        -----
+        The values are not returned but stored internally.
+        Use '.mean' and '.std' to obtain them.
+        """
+        pass
+
+
+
+class DiscretizedFunctionSet(DiscreteFunctionSet):
     """ A discretized function set that is always evaluated at the provided locations.
 
     Parameters
     ----------
     function_set : tp.domains.FunctionSet
         The function set that should be discretized.
-    locations : tp.spaces.Points
+    locations : tp.spaces.Points or torch.tensor
         The points at which the functions should be evaluated.
-
-    Note
-    ----
-    This class is not fully functional yet!
     """
     def __init__(self, function_set : FunctionSet, locations):
-        super().__init__(function_set.function_space, function_set.function_set_size)
+        if torch.is_tensor(locations):
+            data_shape = locations.shape[:-1] # dimension of input points not needed
+        else:
+            data_shape = locations.shape
+
+        super().__init__(function_set.function_space, 
+                         function_set.function_set_size, 
+                         data_shape)
+        
         self.function_set = function_set
         self.locations = locations
         if self.function_set.is_discretized:
             assert self.locations.dtype in integer_dtypes
-
-    @property
-    def is_discretized(self):
-        return True
     
     def is_discretization_of(self, function_set):
         return (self.function_set is function_set) or (self.function_set.is_discretization_of(function_set))
@@ -233,14 +330,6 @@ class DiscretizedFunctionSet(FunctionSet):
                                            dim=-1)
             locations_slice = (slice(None), *locations_slice, slice(None))
             return samples[locations_slice].reshape(*out_shape)
-    
-    def discretize(self, locations):
-        assert torch.is_tensor(locations)
-        assert locations.dtype in integer_dtypes, \
-            """A discretized FunctionSet can only be further discretized by passing in indices 
-                to subsample the current discretization."""
-        return DiscretizedFunctionSet(self, locations)
-
 
     def __mul__(self, other):
         from .functionset_operations import FunctionSetProduct

@@ -77,7 +77,7 @@ class FCN(Model):
             xavier_gains=xavier_gains,
         )
 
-        if activation_fn_output:
+        if not activation_fn_output is None:
             layers.append(activation_fn_output)
 
         self.sequential = nn.Sequential(*layers)
