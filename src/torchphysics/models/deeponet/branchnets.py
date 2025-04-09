@@ -263,6 +263,6 @@ class ConvBranchNet(BranchNet):
         # corresponds to the output dimension of our functions and length to the
         # number of discretization points. -> move dim. -1 to 1
         discrete_function_batch = discrete_function_batch.as_tensor
-        x = self.conv_net(discrete_function_batch.moveaxis(0, -1, 1))
+        x = self.conv_net(torch.moveaxis(discrete_function_batch, -1, 1))
         out = self.sequential(x.flatten(start_dim=1))
         self.current_out = self._reshape_multidimensional_output(out)

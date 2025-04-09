@@ -26,3 +26,6 @@ from .deeponet.layers import TrunkLinear
 
 # FNO:
 from .FNO import FNO, _FourierLayer
+
+# PCA:
+from .PCANN import PCANN, PCANN_FC
