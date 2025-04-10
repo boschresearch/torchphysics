@@ -307,3 +307,50 @@ def test_custom_fn_set_discretize_check_discretization_of():
     assert discrete_fn.is_discretization_of(fn_set)
     assert not discrete_fn.is_discretization_of(fn_set2)
     assert not discrete_fn.is_discretization_of(fn_set2.append(fn_set2))
+
+
+def test_discrete_fn_set_mean_and_std():
+    sampler = GridSampler(Interval(R1("k"), 0, 1), 100)
+    custom_fn = lambda k : k+2
+    space = FunctionSpace(R1("x"), R1("u"))
+    fn_set = CustomFunctionSet(space, sampler, custom_fn)
+    fn_set.create_functions()
+    input_points = Points(torch.rand((1, 10, 1)), R1("x"))
+    discrete_fn = fn_set.discretize(input_points)
+    discrete_fn.compute_normalization()
+    assert torch.is_tensor(discrete_fn.mean)
+    assert torch.is_tensor(discrete_fn.std)
+
+
+def test_discrete_fn_set_pca():
+    sampler = GridSampler(Interval(R1("k"), 0, 1), 100)
+    custom_fn = lambda k : k+2
+    space = FunctionSpace(R1("x"), R1("u"))
+    fn_set = CustomFunctionSet(space, sampler, custom_fn)
+    fn_set.create_functions()
+    input_points = Points(torch.rand((1, 100, 1)), R1("x"))
+    discrete_fn = fn_set.discretize(input_points)
+    discrete_fn.compute_pca(10)
+    U, S, V = discrete_fn.pca
+    assert torch.is_tensor(U)
+    assert torch.is_tensor(S)
+    assert torch.is_tensor(V)
+    assert V.shape[0] == 100 and V.shape[1] == 10
+    assert len(S) == 10
+
+
+def test_discrete_fn_set_pca_no_norm():
+    sampler = GridSampler(Interval(R1("k"), 0, 1), 100)
+    custom_fn = lambda k : k+2
+    space = FunctionSpace(R1("x"), R1("u"))
+    fn_set = CustomFunctionSet(space, sampler, custom_fn)
+    fn_set.create_functions()
+    input_points = Points(torch.rand((1, 100, 1)), R1("x"))
+    discrete_fn = fn_set.discretize(input_points)
+    discrete_fn.compute_pca(10, normalize_data=False)
+    U, S, V = discrete_fn.pca
+    assert torch.is_tensor(U)
+    assert torch.is_tensor(S)
+    assert torch.is_tensor(V)
+    assert V.shape[0] == 100 and V.shape[1] == 10
+    assert len(S) == 10

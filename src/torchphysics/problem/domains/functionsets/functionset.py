@@ -345,6 +345,24 @@ class DiscretizedFunctionSet(DiscreteFunctionSet):
             locations_slice = (slice(None), *locations_slice, slice(None))
             return samples[locations_slice].reshape(*out_shape)
 
+    def compute_normalization(self):
+        all_fns = self.get_function(
+            torch.arange(0, self.function_set_size, device=self.locations.device)).as_tensor
+        self.mean_tensor = torch.mean(all_fns, dim=0, keepdim=True)
+        self.std_tensor = torch.std(all_fns, dim=0, keepdim=True)
+
+
+    def compute_pca(self, components, normalize_data = True):
+        data_copy = self.get_function(
+            torch.arange(0, self.function_set_size, device=self.locations.device)).as_tensor
+        
+        if normalize_data:
+            data_copy = (data_copy- self.mean) / self.std
+
+        self.pca = torch.pca_lowrank(torch.flatten(data_copy, 1), 
+                                     q=components)
+
+
     def __mul__(self, other):
         from .functionset_operations import FunctionSetProduct
         

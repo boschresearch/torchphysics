@@ -15,7 +15,7 @@ class PCANN(Model):
     ----------
     input_space, output_space : Space
         The input and output space of the model.
-    svd_in, svd_out : tuple
+    pca_in, pca_out : tuple
         The principal component decomposition of the input and output data. 
         Should be of the form (U, S, V) where U contains the left eigen vectors,
         S the eigen values of the covariance matrix and V the right eigen 
@@ -42,18 +42,18 @@ class PCANN(Model):
             Parametric PDEs", 2021
     """
 
-    def __init__(self, input_space, output_space, svd_in, svd_out, output_shape,
+    def __init__(self, input_space, output_space, pca_in, pca_out, output_shape,
                  mean_in=torch.tensor(0), mean_out=torch.tensor(0), 
                  std_in=torch.tensor(1), std_out=torch.tensor(1)):
         super().__init__(input_space, output_space)
         
-        self.register_buffer("eigen_vectors_in", svd_in[2])
-        self.register_buffer("eigen_vectors_out", svd_out[2])
+        self.register_buffer("eigenvectors_in", pca_in[2])
+        self.register_buffer("eigenvectors_out", pca_out[2])
 
-        ev_values_in = torch.sqrt(svd_in[1]**2 / (len(svd_in[0]) - 1))
-        self.register_buffer("eigen_values_in", ev_values_in)
-        ev_values_out = torch.sqrt(svd_out[1]**2 / (len(svd_out[0]) - 1))
-        self.register_buffer("eigen_values_out", ev_values_out)
+        ev_values_in = torch.sqrt(pca_in[1]**2 / (len(pca_in[0]) - 1))
+        self.register_buffer("eigenvalues_in", ev_values_in)
+        ev_values_out = torch.sqrt(pca_out[1]**2 / (len(pca_out[0]) - 1))
+        self.register_buffer("eigenvalues_out", ev_values_out)
 
         self.register_buffer("mean_in", mean_in)
         self.register_buffer("mean_out", mean_out)
@@ -78,8 +78,8 @@ class PCANN(Model):
         return cls(input_fn_set.function_space.output_space, 
                    output_fn_set.function_space.output_space, 
                    output_shape = output_fn_set.data_shape,
-                   svd_in = input_fn_set.principal_components, 
-                   svd_out = output_fn_set.principal_components, 
+                   pca_in = input_fn_set.principal_components, 
+                   pca_out = output_fn_set.principal_components, 
                    mean_in = input_fn_set.mean, 
                    mean_out = output_fn_set.mean, 
                    std_in = input_fn_set.std,
@@ -113,13 +113,13 @@ class PCANN(Model):
         points = (points - self.mean_in) / self.std_in
         # apply pca
         points = torch.flatten(points, start_dim=1)
-        pc_in = points @ self.eigen_vectors_in
-        pc_in /= self.eigen_values_in
+        pc_in = points @ self.eigenvectors_in
+        pc_in /= self.eigenvalues_in
         # Then evaluate neural network
         pc_out = self.apply_network(pc_input=pc_in)
         # "inverse" pca
-        pc_out *= self.eigen_values_out
-        points_out = pc_out @ self.eigen_vectors_out.T
+        pc_out *= self.eigenvalues_out
+        points_out = pc_out @ self.eigenvectors_out.T
         points_out = points_out.reshape(self.output_shape)
         # "inverse" normalization
         points_out = points_out * self.std_out + self.mean_out
@@ -137,7 +137,7 @@ class PCANN_FC(PCANN):
     ----------
     input_space, output_space : Space
         The input and output space of the model.
-    svd_in, svd_out : tuple
+    pca_in, pca_out : tuple
         The principal component decomposition of the input and output data. 
         Should be of the form (U, S, V) where U contains the left eigen vectors,
         S the eigen values of the covariance matrix and V the right eigen 
@@ -170,17 +170,17 @@ class PCANN_FC(PCANN):
         The standard deviation of the input and output data. 
         This is used to normalize the data before applying the PCA.
     """
-    def __init__(self, input_space, output_space, svd_in, svd_out, output_shape,
+    def __init__(self, input_space, output_space, pca_in, pca_out, output_shape,
                  hidden=(20, 20, 20), activations=torch.nn.Tanh(),xavier_gains=5/3,
                  mean_in=torch.tensor(0), mean_out=torch.tensor(0), 
                  std_in=torch.tensor(1), std_out=torch.tensor(1)):
-        super().__init__(input_space, output_space, svd_in, svd_out, output_shape,
+        super().__init__(input_space, output_space, pca_in, pca_out, output_shape,
                          mean_in, mean_out, std_in, std_out)
         
         layers = _construct_FC_layers(
             hidden=hidden,
-            input_dim=len(self.eigen_values_in),
-            output_dim=len(self.eigen_values_out),
+            input_dim=len(self.eigenvalues_in),
+            output_dim=len(self.eigenvalues_out),
             activations=activations,
             xavier_gains=xavier_gains,
         )
@@ -206,7 +206,7 @@ class PCANN_FC(PCANN):
             The lenght of the list/tuple will be equal to the number
             of hidden layers, while the i-th entry will determine the number
             of neurons of each layer.
-            E.g hidden = (10, 5) -> 2 layers, with 10 and 5 neurons.
+            E.g. hidden = (10, 5) -> 2 layers, with 10 and 5 neurons.
         activations : torch.nn or list, optional
             The activation functions of this network. If a single function is passed
             as an input, will use this function for each layer.
@@ -220,8 +220,8 @@ class PCANN_FC(PCANN):
         return cls(input_fn_set.function_space.output_space, 
                    output_fn_set.function_space.output_space, 
                    output_shape = output_fn_set.data_shape,
-                   svd_in = input_fn_set.principal_components, 
-                   svd_out = output_fn_set.principal_components, 
+                   pca_in = input_fn_set.principal_components, 
+                   pca_out = output_fn_set.principal_components, 
                    hidden=hidden, activations=activations, 
                    xavier_gains=xavier_gains,
                    mean_in = input_fn_set.mean, 

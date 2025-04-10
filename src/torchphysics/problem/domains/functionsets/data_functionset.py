@@ -33,6 +33,7 @@ class DataFunctionSet(DiscreteFunctionSet):
         self.std_tensor = torch.std(self.data, dim=0, keepdim=True)
 
     def compute_pca(self, components, normalize_data = True):
+        data_copy = self.data
         if normalize_data:
             data_copy = (self.data - self.mean) / self.std
 

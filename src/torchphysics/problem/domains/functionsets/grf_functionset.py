@@ -100,3 +100,19 @@ class GRFFunctionSet(DiscreteFunctionSet):
         if isinstance(idx, int): idx = [idx]
         self.current_idx = idx
         return Points(self.grf[self.current_idx], self.function_space.output_space)
+    
+    def compute_normalization(self):
+        if self.grf is None:
+            self.create_functions()
+        self.mean_tensor = torch.mean(self.grf, dim=0, keepdim=True)
+        self.std_tensor = torch.std(self.grf, dim=0, keepdim=True)
+
+    def compute_pca(self, components, normalize_data = True):
+        if self.grf is None:
+            self.create_functions()
+        
+        data_copy = self.grf
+        if normalize_data:
+            data_copy = (self.grf - self.mean) / self.std
+
+        self.pca = torch.pca_lowrank(torch.flatten(data_copy, 1), q=components)
