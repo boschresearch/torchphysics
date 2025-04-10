@@ -84,9 +84,14 @@ class DeepONet(Model):
         if not branch_inputs is None:
             self.fix_branch_input(branch_inputs, device=device)
         trunk_out = self.trunk(trunk_inputs)
-        if len(trunk_out.shape) < 4:
-            trunk_out = trunk_out.unsqueeze(0)  # shape = [1, trunk_n, dim, neurons]
-        out = torch.sum(trunk_out * self.branch.current_out.unsqueeze(1), dim=-1)
+
+        view_shape = [1] * (len(trunk_out.shape[:-2]) - 1) # last two axis for output
+        branch_out = self.branch.current_out.view(
+            self.branch.current_out.shape[0], *view_shape, 
+            self.branch.output_space.dim, self.branch.output_neurons
+        )
+
+        out = torch.sum(trunk_out * branch_out, dim=-1)
         return Points(out, self.output_space)
 
     def _forward_branch(self, function_set, iteration_num=-1, device="cpu"):

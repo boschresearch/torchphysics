@@ -60,13 +60,9 @@ class DeepONetSingleModuleCondition(Condition):
             trunk_points = self.trunk_points_sampler.sample_points(device=device)
 
         # TODO: make this more memory efficient (e.g. in DeepONet we know when data is just copied???)
-        if len(trunk_points.as_tensor.shape) == 2:
-            trunk_points = trunk_points.unsqueeze(0)
-        if trunk_points.as_tensor.shape[0] == 1:
-            trunk_points = trunk_points.repeat(
-                    self.branch_function_sampler.n_functions, 1, 1
-                )
-        
+        trunk_points = trunk_points.unsqueeze(0).repeat(
+                self.branch_function_sampler.n_functions, 1, 1
+            )
         trunk_coordinates, trunk_points = trunk_points.track_coord_gradients()
 
         # 2) sample branch inputs

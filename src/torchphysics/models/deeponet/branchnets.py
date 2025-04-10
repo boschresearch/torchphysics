@@ -60,7 +60,7 @@ class BranchNet(Model):
 
     def _reshape_multidimensional_output(self, output):
         return output.reshape(
-            -1, self.output_space.dim, int(self.output_neurons / self.output_space.dim)
+            *output.shape[:-1], self.output_space.dim, self.output_neurons
         )
 
     @abc.abstractmethod
@@ -178,7 +178,7 @@ class FCBranchNet(BranchNet):
         layers = _construct_FC_layers(
             hidden=self.hidden,
             input_dim=self.input_neurons,
-            output_dim=self.output_neurons,
+            output_dim=self.output_neurons*self.output_space.dim,
             activations=self.activations,
             xavier_gains=self.xavier_gains,
         )
@@ -248,7 +248,7 @@ class ConvBranchNet(BranchNet):
         layers = _construct_FC_layers(
             hidden=self.hidden,
             input_dim=None,
-            output_dim=self.output_neurons,
+            output_dim=self.output_neurons*self.output_space.dim,
             activations=self.activations,
             xavier_gains=self.xavier_gains,
         )

@@ -47,13 +47,7 @@ class HarmonicFunctionSet1D(FunctionSet):
     
     
     def _eval_basis_at_locaction(self, location : Points):
-        if location.as_tensor.shape[0] == 1:
-            location_copy = torch.repeat_interleave(
-                    location[self.function_space.input_space].as_tensor, 
-                    len(self.current_idx), dim=0
-            )
-        else:
-            location_copy = location[self.function_space.input_space].as_tensor
+        location_copy = self._transform_locations(location)
 
         output = torch.zeros((len(self.current_idx), location_copy.shape[1], 1), 
                             device=location.as_tensor.device)
@@ -103,13 +97,7 @@ class HarmonicFunctionSet2D(HarmonicFunctionSet1D):
     
     
     def _eval_basis_at_locaction(self, location : Points):
-        if location.as_tensor.shape[0] != len(self.current_idx):
-            location_copy = torch.repeat_interleave(
-                    location[self.function_space.input_space].as_tensor, 
-                    len(self.current_idx), dim=0
-            )
-        else:
-            location_copy = location[self.function_space.input_space].as_tensor
+        location_copy = self._transform_locations(location)
 
         shape = [len(self.current_idx)]
         shape.extend(location_copy.shape[1:-1])
@@ -152,13 +140,7 @@ class HarmonicFunctionSet3D(HarmonicFunctionSet2D):
             )
     
     def _eval_basis_at_locaction(self, location : Points):
-        if location.as_tensor.shape[0] != len(self.current_idx):
-            location_copy = torch.repeat_interleave(
-                    location[self.function_space.input_space].as_tensor, 
-                    len(self.current_idx), dim=0
-            )
-        else:
-            location_copy = location[self.function_space.input_space].as_tensor
+        location_copy = self._transform_locations(location)
 
         shape = [len(self.current_idx)]
         shape.extend(location_copy.shape[1:-1])

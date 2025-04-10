@@ -186,6 +186,20 @@ class FunctionSet():
         from .functionset_operations import FunctionSetSubstract
         return FunctionSetSubstract(self.function_space, [self, other])
 
+    def _transform_locations(self, locations):
+        # TODO: Improve this for general location shapes
+        if len(locations.shape) == 1:
+            locations = locations.unsqueeze(0)
+            
+        if locations.as_tensor.shape[0] == 1:
+            location_copy = torch.repeat_interleave(
+                locations[self.function_space.input_space].as_tensor, 
+                len(self.current_idx), dim=0
+                )
+        else:
+            location_copy = locations[self.function_space.input_space].as_tensor[:len(self.current_idx)]
+        return location_copy
+
 
 class DiscreteFunctionSet(FunctionSet):
     """ A function set that only returns already discretized functions, which
