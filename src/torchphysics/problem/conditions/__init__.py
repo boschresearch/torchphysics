@@ -29,4 +29,4 @@ from .deeponet_condition import (
 #    DeepONetDataCondition,
 )
 
-from .operator_condition import OperatorCondition
+from .operator_condition import OperatorCondition, PIOperatorCondition

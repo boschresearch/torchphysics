@@ -33,12 +33,14 @@ class TrunkNet(Model):
         super().__init__(input_space, output_space=None)
         self.output_neurons = 0
         self.trunk_input_copied = trunk_input_copied
+
         if torch.is_tensor(default_trunk_input):
             self.default_trunk_input = Points(default_trunk_input, input_space)
         elif isinstance(default_trunk_input, Points):
             self.default_trunk_input = default_trunk_input
         else:
             raise ValueError("Provided default input is not supported!")
+        
         self.default_trunk_input = self._fix_points_order(self.default_trunk_input)
 
     def finalize(self, output_space, output_neurons):
@@ -60,15 +62,8 @@ class TrunkNet(Model):
         self.output_space = output_space
 
     def _reshape_multidimensional_output(self, output):
-        if len(output.shape) == 3:
-            return output.reshape(
-                output.shape[0],
-                output.shape[1],
-                self.output_space.dim,
-                int(self.output_neurons / self.output_space.dim),
-            )
         return output.reshape(
-            -1, self.output_space.dim, int(self.output_neurons / self.output_space.dim)
+            *output.shape[:-1], self.output_space.dim, self.output_neurons
         )
 
 
@@ -132,7 +127,7 @@ class FCTrunkNet(TrunkNet):
             layers = construct_FC_trunk_layers(
                 hidden=self.hidden,
                 input_dim=self.input_space.dim,
-                output_dim=self.output_neurons,
+                output_dim=self.output_neurons*self.output_space.dim,
                 activations=self.activations,
                 xavier_gains=self.xavier_gains,
             )
@@ -140,7 +135,7 @@ class FCTrunkNet(TrunkNet):
             layers = _construct_FC_layers(
                 hidden=self.hidden,
                 input_dim=self.input_space.dim,
-                output_dim=self.output_neurons,
+                output_dim=self.output_neurons*self.output_space.dim,
                 activations=self.activations,
                 xavier_gains=self.xavier_gains,
             )

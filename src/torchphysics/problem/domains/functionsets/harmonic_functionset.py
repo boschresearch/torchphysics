@@ -47,15 +47,10 @@ class HarmonicFunctionSet1D(FunctionSet):
     
     
     def _eval_basis_at_locaction(self, location : Points):
-        if location.as_tensor.shape[0] == 1:
-            location_copy = torch.repeat_interleave(
-                    location[self.function_space.input_space].as_tensor, 
-                    len(self.current_idx), dim=0
-            )
-        else:
-            location_copy = location[self.function_space.input_space].as_tensor
+        location_copy = self._transform_locations(location)
 
-        output = torch.zeros((len(self.current_idx), location_copy.shape[1], 1))
+        output = torch.zeros((len(self.current_idx), location_copy.shape[1], 1), 
+                            device=location.as_tensor.device)
 
         pi_scale = 2 * math.pi / self.period_len
         for i in range(self.max_frequence+1):
@@ -102,35 +97,32 @@ class HarmonicFunctionSet2D(HarmonicFunctionSet1D):
     
     
     def _eval_basis_at_locaction(self, location : Points):
-        if location.as_tensor.shape[0] == 1:
-            location_copy = torch.repeat_interleave(
-                    location[self.function_space.input_space].as_tensor, 
-                    len(self.current_idx), dim=0
-            )
-        else:
-            location_copy = location[self.function_space.input_space].as_tensor
+        location_copy = self._transform_locations(location)
 
         shape = [len(self.current_idx)]
         shape.extend(location_copy.shape[1:-1])
         shape.append(1)
-        output = torch.zeros(shape)
+        output = torch.zeros(shape, device=location.as_tensor.device)
 
         pi_scale_x = 2 * math.pi / self.period_len[0]
         pi_scale_y = 2 * math.pi / self.period_len[1]
 
+        cast_tensor = [1] * len(location_copy.shape)
+        cast_tensor[0] = -1
+
         for i in range(self.max_frequence[0]+1):
-            sin_x = torch.sin(pi_scale_x * i * location_copy[..., 0])
-            cos_x = torch.cos(pi_scale_x * i * location_copy[..., 0])
+            sin_x = torch.sin(pi_scale_x * i * location_copy[..., 0:1])
+            cos_x = torch.cos(pi_scale_x * i * location_copy[..., 0:1])
 
             for j in range(self.max_frequence[1]+1):
-                sin_y = torch.sin(pi_scale_y * j * location_copy[..., 1])
-                cos_y = torch.cos(pi_scale_y * j * location_copy[..., 1])
+                sin_y = torch.sin(pi_scale_y * j * location_copy[..., 1:2])
+                cos_y = torch.cos(pi_scale_y * j * location_copy[..., 1:2])
 
-                output[..., 0] += \
-                    self.fourier_coefficients[self.current_idx, i, j, 0:1] * sin_x * sin_y + \
-                    self.fourier_coefficients[self.current_idx, i, j, 1:2] * cos_x * sin_y + \
-                    self.fourier_coefficients[self.current_idx, i, j, 2:3] * sin_x * cos_y + \
-                    self.fourier_coefficients[self.current_idx, i, j, 3:4] * cos_x * cos_y
+                output[..., 0:1] += \
+                    self.fourier_coefficients[self.current_idx, i, j, 0].view(cast_tensor) * sin_x * sin_y + \
+                    self.fourier_coefficients[self.current_idx, i, j, 1].view(cast_tensor) * cos_x * sin_y + \
+                    self.fourier_coefficients[self.current_idx, i, j, 2].view(cast_tensor) * sin_x * cos_y + \
+                    self.fourier_coefficients[self.current_idx, i, j, 3].view(cast_tensor) * cos_x * cos_y
                 
         return Points(output, self.function_space.output_space)
     
@@ -148,44 +140,41 @@ class HarmonicFunctionSet3D(HarmonicFunctionSet2D):
             )
     
     def _eval_basis_at_locaction(self, location : Points):
-        if location.as_tensor.shape[0] == 1:
-            location_copy = torch.repeat_interleave(
-                    location[self.function_space.input_space].as_tensor, 
-                    len(self.current_idx), dim=0
-            )
-        else:
-            location_copy = location[self.function_space.input_space].as_tensor
+        location_copy = self._transform_locations(location)
 
         shape = [len(self.current_idx)]
         shape.extend(location_copy.shape[1:-1])
         shape.append(1)
-        output = torch.zeros(shape)
+        output = torch.zeros(shape, device=location.as_tensor.device)
 
         pi_scale_x = 2 * math.pi / self.period_len[0]
         pi_scale_y = 2 * math.pi / self.period_len[1]
         pi_scale_z = 2 * math.pi / self.period_len[1]
 
+        cast_tensor = [1] * len(location_copy.shape)
+        cast_tensor[0] = -1
+
         for i in range(self.max_frequence[0]+1):
-            sin_x = torch.sin(pi_scale_x * i * location_copy[..., 0])
-            cos_x = torch.cos(pi_scale_x * i * location_copy[..., 0])
+            sin_x = torch.sin(pi_scale_x * i * location_copy[..., 0:1])
+            cos_x = torch.cos(pi_scale_x * i * location_copy[..., 0:1])
 
             for j in range(self.max_frequence[1]+1):
-                sin_y = torch.sin(pi_scale_y * j * location_copy[..., 1])
-                cos_y = torch.cos(pi_scale_y * j * location_copy[..., 1])
+                sin_y = torch.sin(pi_scale_y * j * location_copy[..., 1:2])
+                cos_y = torch.cos(pi_scale_y * j * location_copy[..., 1:2])
 
                 for k in range(self.max_frequence[2]+1):
-                    sin_z = torch.sin(pi_scale_z * k * location_copy[..., 2])
-                    cos_z = torch.cos(pi_scale_z * k * location_copy[..., 2])
+                    sin_z = torch.sin(pi_scale_z * k * location_copy[..., 2:3])
+                    cos_z = torch.cos(pi_scale_z * k * location_copy[..., 2:3])
 
 
-                    output[..., 0] += \
-                        self.fourier_coefficients[self.current_idx, i, j, k, 0:1] * sin_x * sin_y * sin_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, k, 1:2] * sin_x * sin_y * cos_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, k, 2:3] * sin_x * cos_y * cos_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, k, 3:4] * sin_x * cos_y * sin_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, k, 4:5] * cos_x * sin_y * sin_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, k, 5:6] * cos_x * sin_y * cos_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, k, 6:7] * cos_x * cos_y * cos_z + \
-                        self.fourier_coefficients[self.current_idx, i, j, k, 7:8] * cos_x * cos_y * sin_z
+                    output[..., 0:1] += \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 0].view(cast_tensor) * sin_x * sin_y * sin_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 1].view(cast_tensor) * sin_x * sin_y * cos_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 2].view(cast_tensor) * sin_x * cos_y * cos_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 3].view(cast_tensor) * sin_x * cos_y * sin_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 4].view(cast_tensor) * cos_x * sin_y * sin_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 5].view(cast_tensor) * cos_x * sin_y * cos_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 6].view(cast_tensor) * cos_x * cos_y * cos_z + \
+                        self.fourier_coefficients[self.current_idx, i, j, k, 7].view(cast_tensor) * cos_x * cos_y * sin_z
                 
         return Points(output, self.function_space.output_space)

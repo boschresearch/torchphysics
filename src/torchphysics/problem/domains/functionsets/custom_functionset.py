@@ -47,17 +47,11 @@ class CustomFunctionSet(FunctionSet):
 
     def _evaluate_fn_at_locations(self, locations : Points):
         # TODO: Not so nice for memory usage, can this be improved???
-        if locations.as_tensor.shape[0] == 1:
-            location_copy = torch.repeat_interleave(
-                locations[self.function_space.input_space].as_tensor, 
-                len(self.current_idx), dim=0
-                )
-        else:
-            location_copy = locations[self.function_space.input_space].as_tensor[:len(self.current_idx)]
+        location_copy = self._transform_locations(locations)
 
         params_copy = torch.repeat_interleave(
                 self.param_samples.as_tensor[self.current_idx].unsqueeze(1), 
-                locations.as_tensor.shape[1], dim=1
+                location_copy.shape[1], dim=1
             )
 
         fn_input = torch.cat([location_copy, params_copy], dim=-1)

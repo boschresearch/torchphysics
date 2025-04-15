@@ -1,7 +1,7 @@
 import pytest
 import torch
 import numpy as np
-from torchphysics.utils.differentialoperators import (laplacian, 
+from torchphysics.utils.differentialoperators.differentialoperators import (laplacian, 
                                                       grad, 
                                                       normal_derivative, 
                                                       div, 

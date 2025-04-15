@@ -41,13 +41,14 @@ from .domainND.hypercube import HyperCube
 
 # from .domain3D.trimesh_polyhedron import TrimeshPolyhedron
 # Function domains:
-from .functionsets.functionset import FunctionSet, DiscretizedFunctionSet
+from .functionsets.functionset import FunctionSet, DiscreteFunctionSet, DiscretizedFunctionSet
 from .functionsets.custom_functionset import CustomFunctionSet
 from .functionsets.harmonic_functionset import (HarmonicFunctionSet1D, 
                                                 HarmonicFunctionSet2D,
                                                 HarmonicFunctionSet3D)
 from .functionsets.data_functionset import DataFunctionSet
 from .functionsets.grf_functionset import GRFFunctionSet
+from .functionsets.functionset_operations import FunctionSetTransform
 # Domain transforms:
 from .domainoperations.translate import Translate
 from .domainoperations.rotate import Rotate

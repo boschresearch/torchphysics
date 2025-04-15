@@ -58,3 +58,26 @@ def test_data_fn_set_product():
     output_fn = data_fn_set.get_function(0)
     assert output_fn.space == R2("u")*R2("w")
     assert output_fn.as_tensor.shape[-1] == 4
+
+
+def test_data_fn_set_normalize():
+    data = torch.rand((500, 100, 2))
+    space = FunctionSpace(R1("x"), R2("u"))
+    data_fn_set = DataFunctionSet(space, data)
+    data_fn_set.compute_normalization()
+    assert torch.is_tensor(data_fn_set.mean)
+    assert torch.is_tensor(data_fn_set.std)
+
+
+def test_data_fn_set_pca():
+    data = torch.rand((500, 100, 2))
+    space = FunctionSpace(R1("x"), R2("u"))
+    data_fn_set = DataFunctionSet(space, data)
+    data_fn_set.compute_pca(4)
+    U, S, V = data_fn_set.pca
+    assert torch.is_tensor(U)
+    assert torch.is_tensor(S)
+    assert torch.is_tensor(V)
+    assert V.shape[0] == 200 and V.shape[1] == 4
+    assert len(S) == 4
+    data_fn_set.compute_pca(4, normalize_data=False)

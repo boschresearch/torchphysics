@@ -108,3 +108,28 @@ def test_get_grf():
     assert random_field.shape[0] == 2
     assert random_field.shape[1] == 512
     assert random_field.shape[2] == 1
+
+
+def test_grf_normalized():
+    X = R2("x")
+    U = R1("u")
+    fn_space = FunctionSpace(X, U)
+    grf_fn_set = GRFFunctionSet(fn_space, 100, (64, 64), flatten=False)
+    grf_fn_set.compute_normalization()
+    assert torch.is_tensor(grf_fn_set.mean)
+    assert torch.is_tensor(grf_fn_set.std)
+
+
+def test_grf_pca():
+    X = R2("x")
+    U = R1("u")
+    fn_space = FunctionSpace(X, U)
+    grf_fn_set = GRFFunctionSet(fn_space, 100, (64, 64), flatten=False)
+    grf_fn_set.compute_pca(3)
+    U, S, V = grf_fn_set.pca
+    assert torch.is_tensor(U)
+    assert torch.is_tensor(S)
+    assert torch.is_tensor(V)
+    assert V.shape[0] == 64*64 and V.shape[1] == 3
+    assert len(S) == 3
+    grf_fn_set.compute_pca(4, normalize_data=False)

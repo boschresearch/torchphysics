@@ -28,15 +28,9 @@ class BranchNet(Model):
         # Transform to points to have unified checks
         if torch.is_tensor(grid):
             grid = Points(grid, function_space.input_space)
-            
-        if len(grid.as_tensor.shape) == 2:
-            grid = grid.unsqueeze(0)
 
         self.output_neurons = 0
         self.register_buffer("grid_buffer", grid.as_tensor)
-        self.input_dim = (
-            grid.as_tensor.shape[1] * function_space.output_space.dim
-        )
         self.current_out = torch.empty(0)
 
     def __getattr__(self, name):
@@ -55,10 +49,10 @@ class BranchNet(Model):
         that both will have a fitting output shape.
 
         output_space : Space
-            The space in which the final output of the DeepONet will belong to.
+            The space to which the final output of the DeepONet will belong to.
         output_neurons : int
             The number of output neurons. Will be multiplied my the dimension of the
-            output space, so each dimension will have the same number of
+            output space, so each dimension will have the same amount of
             intermediate neurons.
         """
         self.output_neurons = output_neurons
@@ -66,7 +60,7 @@ class BranchNet(Model):
 
     def _reshape_multidimensional_output(self, output):
         return output.reshape(
-            -1, self.output_space.dim, int(self.output_neurons / self.output_space.dim)
+            *output.shape[:-1], self.output_space.dim, self.output_neurons
         )
 
     @abc.abstractmethod
@@ -140,7 +134,7 @@ class BranchNet(Model):
 
 
 class FCBranchNet(BranchNet):
-    """A neural network that can be used inside a DeepONet-model.
+    """A fully connected neural network as a branch net inside a DeepONet-model.
 
     Parameters
     ----------
@@ -149,7 +143,8 @@ class FCBranchNet(BranchNet):
     grid : torchphysics.spaces.Points
         The points at which the input functions should
         evaluated, to create a discrete input for the network.
-        The number of input neurons will be equal to the number of grid points.
+        The number of input neurons will be equal to the number of grid points
+        times the function space dimension.
     hidden : list or tuple
         The number and size of the hidden layers of the neural network.
         The lenght of the list/tuple will be equal to the number
@@ -175,13 +170,15 @@ class FCBranchNet(BranchNet):
         self.hidden = hidden
         self.activations = activations
         self.xavier_gains = xavier_gains
+        
+        self.input_neurons = len(self.grid) * self.input_space.output_space.dim
 
     def finalize(self, output_space, output_neurons):
         super().finalize(output_space, output_neurons)
         layers = _construct_FC_layers(
             hidden=self.hidden,
-            input_dim=self.input_dim,
-            output_dim=self.output_neurons,
+            input_dim=self.input_neurons,
+            output_dim=self.output_neurons*self.output_space.dim,
             activations=self.activations,
             xavier_gains=self.xavier_gains,
         )
@@ -190,14 +187,14 @@ class FCBranchNet(BranchNet):
 
     def forward(self, discrete_function_batch):
         discrete_function_batch = discrete_function_batch.as_tensor.reshape(
-            -1, self.input_dim
+            -1, self.input_neurons
         )
         self.current_out = self._reshape_multidimensional_output(
             self.sequential(discrete_function_batch)
         )
 
 
-class ConvBranchNet1D(BranchNet):
+class ConvBranchNet(BranchNet):
     """A branch network that first applies a convolution to the input functions
     and afterwards linear FC-layers.
 
@@ -206,7 +203,7 @@ class ConvBranchNet1D(BranchNet):
     function_space : Space
         The space of functions that can be put in this network.
     grid : torchphysics.spaces.Points
-        The points at which the input functions should
+        The points at which the input functions should be
         evaluated, to create a discrete input for the network.
         The number of input neurons will be equal to the number of grid points.
     convolutional_network : torch.nn.module
@@ -218,8 +215,6 @@ class ConvBranchNet1D(BranchNet):
         [batch_dim, function_space.output_space.dim (channels_in),
          len(grid)]
 
-        You have to make sure, that the number of output dimension is
-        compatible with the following linear layers.
     hidden : list or tuple
         The number and size of the hidden layers of the neural network.
         The lenght of the list/tuple will be equal to the number
@@ -252,32 +247,22 @@ class ConvBranchNet1D(BranchNet):
         super().finalize(output_space, output_neurons)
         layers = _construct_FC_layers(
             hidden=self.hidden,
-            input_dim=self.input_dim,
-            output_dim=self.output_neurons,
+            input_dim=None,
+            output_dim=self.output_neurons*self.output_space.dim,
             activations=self.activations,
             xavier_gains=self.xavier_gains,
         )
 
         self.sequential = nn.Sequential(*layers)
 
-    def _discretize_fn(self, function, device):
-        # where is this function used?
-        function = UserFunction(function)
-        discrete_points = self.grid.to(device)
-        discrete_fn = function(discrete_points)
-        if discrete_fn.shape[0] == self.input_dim:
-            discrete_fn = discrete_fn.T
-        return discrete_fn.unsqueeze(-1)
-
     def forward(self, discrete_function_batch):
         # for convolution we have to change the dimension order of
         # the input.
-        # Pytorch conv1D needs: (batch, channels_in, length)
-        # Generally we have : (batch, length, channels_in), where channels_in
+        # Pytorch conv need: (batch, channels_in, length_1, length_2, ...)
+        # Generally we have : (batch, length_1, ..., channels_in), where channels_in
         # corresponds to the output dimension of our functions and length to the
-        # number of discretization points. -> switch dim. 1 and 2
+        # number of discretization points. -> move dim. -1 to 1
         discrete_function_batch = discrete_function_batch.as_tensor
-        x = self.conv_net(discrete_function_batch.permute(0, 2, 1))
-        # for the linear layer transform again and remove the last dimension:
-        out = self.sequential(x.permute(0, 2, 1).reshape(-1, self.input_dim))
+        x = self.conv_net(torch.moveaxis(discrete_function_batch, -1, 1))
+        out = self.sequential(x.flatten(start_dim=1))
         self.current_out = self._reshape_multidimensional_output(out)

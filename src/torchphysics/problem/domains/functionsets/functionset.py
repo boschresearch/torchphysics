@@ -1,7 +1,8 @@
 import abc
 import torch
 
-from ...spaces.points import Points
+
+integer_dtypes = [torch.uint8, torch.int8, torch.int16, torch.int32, torch.int, torch.int64, torch.long]
 
 class FunctionSet():
     """ A function set describes a specfic type of functions that can be used 
@@ -115,6 +116,8 @@ class FunctionSet():
         tp.domains.FunctionSetProduct
             The product of the two function sets.
         """
+        from .functionset_operations import FunctionSetProduct
+
         assert self.function_space.output_space != other.function_space.output_space, \
                 """Both FunctionSets have the same output space, maybe you want to use 'append' instead?"""
         
@@ -140,6 +143,8 @@ class FunctionSet():
         tp.domains.FunctionSetCollection
             The collection of the two function sets.
         """
+        from .functionset_operations import FunctionSetCollection
+
         assert self.function_space.output_space == other.function_space.output_space, \
                 """Both FunctionSets need the same output space!"""
         if isinstance(other, FunctionSetCollection):
@@ -147,33 +152,182 @@ class FunctionSet():
         else:
             return FunctionSetCollection(self.function_space, [self, other])
 
-class DiscretizedFunctionSet(FunctionSet):
+    def __add__(self, other):
+        """ Performs the "pointwise" addition of two function sets.
+
+        Parameters
+        ----------
+            The other function set that should be added to this one.
+
+        Returns
+        -------
+        tp.domains.FunctionSetAdd
+            The function sets that computes the sum of the inputs.
+        """
+        from .functionset_operations import FunctionSetAdd
+
+        if isinstance(other, FunctionSetAdd):
+            return other + self
+        else:
+            return FunctionSetAdd(self.function_space, [self, other])
+
+    def __sub__(self, other):
+        """ Performs the "pointwise" substraction of two function sets.
+
+        Parameters
+        ----------
+            The other function set that should be substracted from this one.
+
+        Returns
+        -------
+        tp.domains.FunctionSetSubstract
+            The function sets that computes the difference of the inputs.
+        """
+        from .functionset_operations import FunctionSetSubstract
+        return FunctionSetSubstract(self.function_space, [self, other])
+
+    def _transform_locations(self, locations):
+        # TODO: Improve this for general location shapes
+        if len(locations.shape) == 1:
+            locations = locations.unsqueeze(0)
+            
+        if locations.as_tensor.shape[0] == 1:
+            location_copy = torch.repeat_interleave(
+                locations[self.function_space.input_space].as_tensor, 
+                len(self.current_idx), dim=0
+                )
+        else:
+            location_copy = locations[self.function_space.input_space].as_tensor[:len(self.current_idx)]
+        return location_copy
+
+
+class DiscreteFunctionSet(FunctionSet):
+    """ A function set that only returns already discretized functions, which
+    can not be evaluated at arbitrary locations.
+    """
+    def __init__(self, function_space, function_set_size, data_shape):
+        super().__init__(function_space, function_set_size)
+        self.data_shape = data_shape
+        self.pca = None
+        self.mean_tensor = None
+        self.std_tensor = None
+
+    @property
+    def is_discretized(self):
+        return True
+
+    def discretize(self, locations):
+        assert torch.is_tensor(locations)
+        assert locations.dtype in integer_dtypes, \
+            """A discrete FunctionSet can only be further discretized by passing in indices 
+                to subsample the current discretization."""
+        return DiscretizedFunctionSet(self, locations)
+
+    def compute_pca(self, 
+                    components : int, 
+                    normalize_data : bool = True, 
+                    ):
+        """ Carries out the principal component analysis for this function set.
+
+        Parameters
+        ----------
+        components : int
+            The number of components that should be keeped in the PCA.
+        normalize_data : bool, optional
+            If the data of the function set should be normalized before the
+            PCA is computed (recommented). Default is true.
+            Note, the normalization is only applied during this method and 
+            not saved afterwards, therefore the underlying data in this function
+            set is **not** modified!
+            
+        Notes
+        -----
+        The PCA is not returned but instead saved internally for later
+        usage. Use '.principal_components' to obtain the PCA.
+
+        Also the data of the function set is flattened over all dimensions expect 
+        of the batch dimension. For higher dimensional data (e.g. images) other
+        approaches (like localized PCAs on small patches) may be better suited. 
+        """
+        pass
+
+    @property
+    def principal_components(self):
+        """ Returns the principal components of this function set.
+        It is requiered to first call 'compute_pca' to compute them and set
+        a number n of the used components.
+
+        Returns
+        -------
+        list : 
+            A list of the principal components in the shape of (U, S, V).
+            - U is the matrix of the left singular vectors of shape 
+              (function_set_size, n)
+            - S is a vector containing the first n eigen values of the 
+              covariance matrix.
+            - V is the matrix of the principal directions of shape
+              (function_set_dimension, n)
+            See also: https://pytorch.org/docs/stable/generated/torch.pca_lowrank.html  
+        """
+        if self.pca is None:
+            raise AssertionError("PCA needs to be computed! Use the method 'compute_pca'.")
+        return self.pca
+
+    @property
+    def mean(self):
+        if self.mean_tensor is None: self.compute_normalization()
+        return self.mean_tensor
+
+    @property
+    def std(self):
+        if self.std_tensor is None: self.compute_normalization()
+        tol = 0.0001 # (add small value to std in case it is zero,
+        # can happen if we have some constant data (Dirichlet condition on boundary))
+        return self.std_tensor + tol
+
+    def compute_normalization(self):
+        """ Computes the mean and standard deviation over the data contained in this
+        function set.
+        
+        Notes
+        -----
+        The values are not returned but stored internally.
+        Use '.mean' and '.std' to obtain them.
+        """
+        pass
+
+
+
+class DiscretizedFunctionSet(DiscreteFunctionSet):
     """ A discretized function set that is always evaluated at the provided locations.
 
     Parameters
     ----------
     function_set : tp.domains.FunctionSet
         The function set that should be discretized.
-    locations : tp.spaces.Points
+    locations : tp.spaces.Points or torch.tensor
         The points at which the functions should be evaluated.
-
-    Note
-    ----
-    This class is not fully functional yet!
     """
     def __init__(self, function_set : FunctionSet, locations):
-        super().__init__(function_set.function_space, function_set.function_set_size)
+        if torch.is_tensor(locations):
+            data_shape = locations.shape[:-1] # dimension of input points not needed
+        else:
+            data_shape = locations.shape
+
+        super().__init__(function_set.function_space, 
+                         function_set.function_set_size, 
+                         data_shape)
+        
         self.function_set = function_set
         self.locations = locations
-
-    @property
-    def is_discretized(self):
-        return True
+        if self.function_set.is_discretized:
+            assert self.locations.dtype in integer_dtypes
     
     def is_discretization_of(self, function_set):
         return (self.function_set is function_set) or (self.function_set.is_discretization_of(function_set))
     
     def create_functions(self, device="cpu"):
+        self.locations = self.locations.to(device)
         self.function_set.create_functions(device)
 
     def get_function(self, idx):
@@ -181,44 +335,37 @@ class DiscretizedFunctionSet(FunctionSet):
         if callable(samples):
             return samples(self.locations)
         else:
-            return samples[..., self.locations] # TODO: which dimensions are correct here?
-    
-    def discretize(self, locations):
-        assert torch.is_tensor(locations)
-        assert locations.dtype in [torch.int64, torch.long], \
-            """A discrtized FunctionSet can only be further discretized by passing in indices to 
-                to subsample the current discretization."""
-        # We need to now check how the functions should be subsampled, e.g.
-        # what kind of indices the used handed in and if the are comptabile with 
-        # the kind of functions we are creating/using.
-        if self.function_space.input_space.dimension == 1:
-            assert len(locations.shape) == 1, \
-                """Only needs a 1D tensor of indices for a 1D input space."""
-            return DiscretizedFunctionSet(self, locations)
-        else:
-            # In higher dimension the input space could also not only be flattened 
-            # into one tensor dimension but instead be distributed over multiple dimensions
-            # (e.g., for 2D a we save the functions as an "image").
-            # Therefore, load one example of the data a check the shape.
-            self.create_functions()
-            test_fn = self.get_function(0) # <- is already a discete tensor
-            if len(locations.shape) == 1:
-                if len(test_fn.shape) - 2 == 1: # <- remove batch and output space dim.
-                    return DiscretizedFunctionSet(self, locations)
-                else:
-                    Warning("""The shape of the discretized functions is not 1D, but the used indices are.
-                            We assume that the indices are meant for discretaizing all dimensions the
-                            same way and will build a meshgrid of the indices.
-                            """)
-                    raise NotImplementedError
-                    # TODO: Add code here that does this...
-            elif len(locations) == len(test_fn.shape) - 2:
-                return DiscretizedFunctionSet(self, locations)
-            else:
-                raise ValueError("""The indices provided do not match the shape of the functions""")
+            # we assume that self.locations is a grid, and its last dimension corresponds
+            # to the amount of grid axis. i.e.
+            assert (len(samples.shape) - 2) == self.locations.shape[-1]
+            out_shape = (samples.shape[0], *self.locations.shape[0:-1], samples.shape[-1])
+            locations_slice = torch.unbind(torch.reshape(self.locations,
+                                                         (-1, self.locations.shape[-1])),
+                                           dim=-1)
+            locations_slice = (slice(None), *locations_slice, slice(None))
+            return samples[locations_slice].reshape(*out_shape)
+
+    def compute_normalization(self):
+        all_fns = self.get_function(
+            torch.arange(0, self.function_set_size, device=self.locations.device)).as_tensor
+        self.mean_tensor = torch.mean(all_fns, dim=0, keepdim=True)
+        self.std_tensor = torch.std(all_fns, dim=0, keepdim=True)
+
+
+    def compute_pca(self, components, normalize_data = True):
+        data_copy = self.get_function(
+            torch.arange(0, self.function_set_size, device=self.locations.device)).as_tensor
+        
+        if normalize_data:
+            data_copy = (data_copy- self.mean) / self.std
+
+        self.pca = torch.pca_lowrank(torch.flatten(data_copy, 1), 
+                                     q=components)
 
 
     def __mul__(self, other):
+        from .functionset_operations import FunctionSetProduct
+        
         assert self.function_space.output_space != other.function_space.output_space, \
                 """Both FunctionSets have the same output space, maybe you want to use 'append' instead?"""
         assert self.function_set_size == other.function_set_size, \
@@ -235,169 +382,3 @@ class DiscretizedFunctionSet(FunctionSet):
                     The continuous FunctionSet will be discrtized to create the product.""")
             other_discrete = other.discretize(self.locations)
             return FunctionSetProduct(self.function_space*other.function_space, [self, other_discrete])
-
-
-class FunctionSetProduct(FunctionSet):
-    """The product of multiple function sets.
-
-    Parameters
-    ----------
-    function_space : tp.spaces.FunctionSpace    
-        The function space of the set.
-    function_sets : list
-        A list of FunctionSets that should be multiplied together.
-    """
-    def __init__(self, function_space, function_sets):
-        super().__init__(function_space, function_sets[0].function_set_size)
-        self.function_sets = function_sets
-
-    @property
-    def is_discretized(self):
-        return self.function_sets[0].is_discretized
-
-    def __mul__(self, other):
-        assert self.function_space.output_space != other.function_space.output_space, \
-                """Both FunctionSets have the same output space, maybe you want to use 'append' instead?"""
-        assert self.function_set_size == other.function_set_size, \
-                """Both FunctionSets need the same size!"""
-        
-        if isinstance(other, DiscretizedFunctionSet):
-            if not self.is_discretized:
-                raise ValueError("Other FunctionSet is discrete but this set is continuous.")
-            else:
-                assert torch.equal(self.function_sets[0].locations, other.locations), \
-                """Both DiscretizedFunctionSets need the same locations for creating the product!"""
-                return FunctionSetProduct(self.function_space*other.function_space, 
-                                            self.function_sets + [other])
-        elif isinstance(other, FunctionSetProduct):
-            return FunctionSetProduct(self.function_space*other.function_space, 
-                                    self.function_sets + other.function_sets)
-        else:
-            return FunctionSetProduct(self.function_space*other.function_space, 
-                                    self.function_sets + [other])
-
-    def is_discretization_of(self, function_set):
-        if isinstance(function_set, FunctionSetProduct):
-            for self_set in self.function_sets:
-                for other_set in function_set.function_sets:
-                    if self_set.is_discretization_of(other_set):
-                        break
-                else:
-                    return False
-            return True
-        # Can not be a discretization of a non-product function set
-        return False
-    
-    def create_functions(self, device="cpu"):
-        for fn_set in self.function_sets:
-            fn_set.create_functions(device)
-
-    def get_function(self, idx):
-        if self.is_discretized:
-            point_list = [fn_set.get_function(idx) for fn_set in self.function_sets]
-            return Points.joined(*point_list)
-        else:
-            self.fn_list = [fn_set.get_function(idx) for fn_set in self.function_sets]
-            return self._evaluate_product
-    
-    def discretize(self, locations):
-        return FunctionSetProduct(self.function_space, 
-                                  [f.discretize(locations) for f in self.function_sets])
-
-
-    def _evaluate_product(self, locations):
-        point_list = [fn(locations) for fn in self.fn_list]
-        return Points.joined(*point_list)
-
-
-class FunctionSetCollection(FunctionSet):
-    """Collection of multiple FunctionSets. Used for combining different kinds of 
-    functions into one single set.
-
-    Parameters
-    ----------
-    function_space : tp.spaces.FunctionSpace    
-        The function space of the set.
-    function_sets : list
-        A list of FunctionSets that should be combined.
-    """
-    def __init__(self, function_space, function_sets):
-        set_size = 0
-        for fn_set in function_sets:
-            set_size += fn_set.function_set_size
-
-        super().__init__(function_space, set_size)
-        
-        self.function_sets = function_sets
-        self.current_idx = []
-        self.device = "cpu"
-
-    @property
-    def is_discretized(self):
-        for fn_set in self.function_sets:
-            if fn_set.is_discretized:
-                return True
-        return False
-    
-    def is_discretization_of(self, function_set):
-        if isinstance(function_set, FunctionSetCollection):
-            for self_set in self.function_sets:
-                for other_set in function_set.function_sets:
-                    if self_set.is_discretization_of(other_set):
-                        break
-                else:
-                    return False
-            return True
-        return False
-    
-    def create_functions(self, device="cpu"):
-        for fn_set in self.function_sets:
-            fn_set.create_functions(device)
-        self.device = device
-
-    def get_function(self, idx):
-        if isinstance(idx, int): idx = [idx]
-        self.current_idx = torch.tensor(idx, dtype=torch.long, device=self.device)
-        return self._evaluate_collection
-
-    def _evaluate_collection(self, location : Points):
-        # We go over each function set of the collection and check
-        # if the given indices belong to this set to sample functions there.
-        final_output = []
-        # we may need to fix the order at the end such that the input index
-        # also fits the output values 
-        idx_permut = []
-        size_counter = 0
-        for fn_set in self.function_sets:
-            valid_idx = torch.where(
-                (self.current_idx >= size_counter) & (self.current_idx < size_counter + fn_set.function_set_size)
-                )[0]
-            if len(valid_idx) > 0:
-                fn_set_idx = self.current_idx[valid_idx]
-                fn_set_idx -= size_counter # shift index back to start at zero
-                fn_set_output = fn_set.get_function(fn_set_idx)(location).as_tensor
-                if len(final_output) == 0:
-                    final_output = fn_set_output
-                    idx_permut = valid_idx
-                else:
-                    final_output = torch.cat((final_output, fn_set_output), dim=0)
-                    idx_permut = torch.cat((idx_permut, valid_idx))
-            
-            size_counter += fn_set.function_set_size
-        
-        final_output = final_output[idx_permut]
-        return Points(final_output, self.function_space.output_space)
-
-    def discretize(self, locations):
-        return FunctionSetCollection(self.function_space, 
-                                  [f.discretize(locations) for f in self.function_sets])
-    
-    def append(self, other):
-        assert self.function_space.output_space == other.function_space.output_space, \
-                """Both FunctionSets need the same output space!"""
-        if isinstance(other, FunctionSetCollection):
-            return FunctionSetCollection(self.function_space, 
-                                    self.function_sets + other.function_sets)
-        else:
-            return FunctionSetCollection(self.function_space, 
-                                    self.function_sets + [other])
