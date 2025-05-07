@@ -16,8 +16,8 @@ as possible:
 - Physics-informed neural networks (PINN) [1]_
 - The Deep Ritz method [2]_
 - DeepONets [3]_ and physics-informed DeepONets [4]_
-- Fourier Neural Operators (FNO) [6] and physics-informed FNO 
-- Model order reduction networks (PCANN) [7]
+- Fourier Neural Operators (FNO) [6]_ and physics-informed FNO 
+- Model order reduction networks (PCANN) [7]_
 
 We aim to also include further implementations in the future.
 
