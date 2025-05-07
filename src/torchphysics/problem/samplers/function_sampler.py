@@ -15,6 +15,8 @@ class FunctionSampler:
         The function set from which functions should be sampled. Note that the size of the
         functions set needs to be larger or eqaul to n_functions.
     function_creation_interval : int, optional
+        functions set needs to be larger or equal to n_functions.
+    function_creation_interval : int
         The interval at which new functions should be created. If set to 0, new functions are
         created every time sample_functions is called.
         The creation of new functions is handled by the function set. 
