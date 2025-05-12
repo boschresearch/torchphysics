@@ -8,14 +8,16 @@ You can use TorchPhysics e.g. to
 - solve ordinary and partial differential equations 
 - train a neural network to approximate solutions for different parameters
 - solve inverse problems and interpolate external data
+- learn function operators mapping functional parameters to solutions
 
 The following approaches are implemented using high-level concepts to make their usage as easy 
 as possible:
 
-- physics-informed neural networks (PINN) [1]_
-- QRes [2]_
-- the Deep Ritz method [3]_
-- DeepONets [4]_ and Physics-Informed DeepONets [5]_
+- Physics-informed neural networks (PINN) [1]_
+- The Deep Ritz method [2]_
+- DeepONets [3]_ and physics-informed DeepONets [4]_
+- Fourier Neural Operators (FNO) [6]_ and physics-informed FNO 
+- Model order reduction networks (PCANN) [7]_
 
 We aim to also include further implementations in the future.
 
@@ -50,7 +52,7 @@ Some built-in features are:
 - pre implemented fully connected neural network and easy implementation
   of additional model structures 
 - sequentially or parallel evaluation/training of different neural networks
-- normalization layers and adaptive weights [6]_ to speed up the training process
+- normalization layers and adaptive weights [5]_ to speed up the training process
 - powerful and versatile training thanks to `PyTorch Lightning`_
   
   - many options for optimizers and learning rate control
@@ -154,8 +156,9 @@ TorchPhysics uses an Apache License, see the LICENSE_ file.
 Bibliography
 ============
 .. [1] Raissi, Perdikaris und Karniadakis, “Physics-informed neuralnetworks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations”, 2019.
-.. [2] Bu and Karpatne, “Quadratic Residual Networks: A New Class of Neural Networks for Solving Forward and Inverse Problems in Physics Involving PDEs”, 2021
-.. [3] E and Yu, "The Deep Ritz method: A deep learning-based numerical algorithm for solving variational problems", 2017
-.. [4] Lu, Jin and Karniadakis, “DeepONet: Learning nonlinear operators for identifying differential equations based on the universal approximation theorem of operators”, 2020
-.. [5] Wang, Wang and Perdikaris, “Learning the solution operator of parametric partial differential equations with physics-informed DeepOnets”, 2021
-.. [6] McClenny und Braga-Neto, “Self-Adaptive Physics-Informed NeuralNetworks using a Soft Attention Mechanism”, 2020
+.. [2] E and Yu, "The Deep Ritz method: A deep learning-based numerical algorithm for solving variational problems", 2017
+.. [3] Lu, Jin and Karniadakis, “DeepONet: Learning nonlinear operators for identifying differential equations based on the universal approximation theorem of operators”, 2020
+.. [4] Wang, Wang and Perdikaris, “Learning the solution operator of parametric partial differential equations with physics-informed DeepOnets”, 2021
+.. [5] McClenny und Braga-Neto, “Self-Adaptive Physics-Informed NeuralNetworks using a Soft Attention Mechanism”, 2020
+.. [6] Zong-Yi Li et al., "Fourier Neural Operator for Parametric Partial Differential Equations", 2020
+.. [7] Kaushik Bhattacharya et al., "Model Reduction And Neural Networks For Parametric PDEs", 2021

@@ -61,13 +61,14 @@ class DeepONet(Model):
             self.trunk.finalize(output_space, output_neurons)
         self.branch.finalize(output_space, output_neurons)
 
-    def forward(self, trunk_inputs, branch_inputs=None, device="cpu"):
+    def forward(self, trunk_inputs=None, branch_inputs=None, device="cpu"):
         """Apply the network to the given inputs.
 
         Parameters
         ----------
-        trunk_inputs : torchphysics.spaces.Points
+        trunk_inputs : torchphysics.spaces.Points, optional
             The inputs for the trunk net.
+            If no input is passed in, the default values from the trunk net are used.
         branch_inputs : callable, torchphysics.domains.FunctionSet, optional
             The function(s) for which the branch should be evaluaded. If no
             input is given, the branch net has to be fixed before hand!
@@ -83,20 +84,19 @@ class DeepONet(Model):
         if not branch_inputs is None:
             self.fix_branch_input(branch_inputs, device=device)
         trunk_out = self.trunk(trunk_inputs)
-        if len(trunk_out.shape) < 4:
-            trunk_out = trunk_out.unsqueeze(0)  # shape = [1, trunk_n, dim, neurons]
-        out = torch.sum(trunk_out * self.branch.current_out.unsqueeze(1), dim=-1)
+
+        view_shape = [1] * (len(trunk_out.shape[:-2]) - 1) # last two axis for output
+        branch_out = self.branch.current_out.view(
+            self.branch.current_out.shape[0], *view_shape, 
+            self.branch.output_space.dim, self.branch.output_neurons
+        )
+
+        out = torch.sum(trunk_out * branch_out, dim=-1)
         return Points(out, self.output_space)
 
     def _forward_branch(self, function_set, iteration_num=-1, device="cpu"):
         """Branch evaluation for training."""
-        if iteration_num != function_set.current_iteration_num:
-            function_set.current_iteration_num = iteration_num
-            function_set.sample_params(device=device)
-            discrete_fn_batch = self.branch._discretize_function_set(
-                function_set, device=device
-            )
-            self.branch(discrete_fn_batch)
+        self.branch.fix_input(function_set, device)
 
     def fix_branch_input(self, function, device="cpu"):
         """Fixes the branch net for a given function. this function will then be used

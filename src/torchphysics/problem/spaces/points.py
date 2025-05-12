@@ -29,8 +29,8 @@ class Points:
     """
 
     def __init__(self, data, space, **kwargs):
-        self._t = torch.as_tensor(data, **kwargs)
         self.space = space
+        self._t = space.cast_tensor_into_space(torch.as_tensor(data, **kwargs))
         assert len(self._t.shape) >= 2
         assert (
             self._t.shape[-1] == self.space.dim
@@ -218,6 +218,11 @@ class Points:
         Supports usual slice operations like points[1:3,('x','t')]. Returns a new,
         sliced, points object.
         """
+        if isinstance(val, Space):
+            if val.variables == self.space.variables:
+                return self
+            else:
+                return self[:, self.space.variables]
         val, space = self._compute_slice(val)
         out = self._t[val]
         if len(out.shape) == 1:

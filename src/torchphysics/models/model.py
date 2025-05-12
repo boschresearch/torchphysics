@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from ..problem.spaces import Points, Space
-
+from ..utils.user_fun import UserFunction
 
 class Model(nn.Module):
     """Neural networks that can be trained to fulfill user-defined conditions.
@@ -30,6 +30,29 @@ class Model(nn.Module):
             points = points[..., list(self.input_space.keys())]
         return points
 
+    def save(self, path):
+        """Save the model parameters/weights to a file.
+
+        Parameters
+        ----------
+        path : str
+            The path to the file where the model should be saved.
+
+        Notes
+        -----
+        This does not save the model architecture, only the weights.
+        """
+        torch.save(self.state_dict(), path)
+
+    def load(self, path):
+        """Load the model parameters/weights from a file.
+
+        Parameters
+        ----------
+        path : str
+            The path to the file where the model should be loaded from.
+        """
+        self.load_state_dict(torch.load(path))
 
 class NormalizationLayer(Model):
     """
@@ -159,3 +182,36 @@ class AdaptiveWeightLayer(nn.Module):
     def forward(self, points):
         weight = self.grad_reverse(self.weight)
         return weight * points
+
+
+class HardConstraint(Model):
+    """A model that applies a hard constraint to the output of another model.
+
+    Parameters
+    ----------
+    model : Model
+        The model that should be constrained.
+    constraint : callable
+        The constraint that should be applied to the output of the model.
+        The constraint function can take as an input the input and output 
+        of the model. It needs to return all outputs of the model after the
+        constraint has been applied.
+        Even if the model returns two values u, v but only u needs to have 
+        a hard constraint, the constraint function should return both u and v. 
+    """
+
+    def __init__(self, model, constraint):
+        super().__init__(model.input_space, model.output_space)
+        self.model = model
+        self.constraint = UserFunction(constraint)
+
+    def forward(self, points):
+        model_out = self.model(points)
+        combine_in_and_out = points.join(model_out)
+        constrained_out = self.constraint(combine_in_and_out.coordinates)
+        if isinstance(constrained_out, torch.Tensor):
+            return Points(constrained_out, self.output_space)
+        elif isinstance(constrained_out, (tuple, list)):
+            return Points(torch.column_stack(constrained_out), self.output_space)
+        else:
+            raise AssertionError("Constraint function should return a tensor or a tuple of tensors.")

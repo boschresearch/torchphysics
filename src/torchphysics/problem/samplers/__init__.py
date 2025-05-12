@@ -41,3 +41,9 @@ from .random_samplers import (
 from .grid_samplers import GridSampler, ExponentialIntervalSampler
 from .plot_samplers import PlotSampler, AnimationSampler
 from .data_samplers import DataSampler
+
+from .function_sampler import (
+    FunctionSampler, 
+    FunctionSamplerRandomUniform, 
+    FunctionSamplerOrdered,
+    FunctionSamplerCoupled)

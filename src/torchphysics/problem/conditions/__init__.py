@@ -26,8 +26,7 @@ from .condition import (
 from .deeponet_condition import (
     DeepONetSingleModuleCondition,
     PIDeepONetCondition,
-    DeepONetDataCondition,
+#    DeepONetDataCondition,
 )
 
-
-from .variational_condition import VariationalPINNCondition
+from .operator_condition import OperatorCondition, PIOperatorCondition

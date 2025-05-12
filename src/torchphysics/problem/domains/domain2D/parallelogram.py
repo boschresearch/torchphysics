@@ -5,7 +5,7 @@ from ...spaces import Points
 
 
 class Parallelogram(Domain):
-    """Class for arbitrary parallelograms, even if time dependet
+    """Class for arbitrary parallelograms, even if time dependent
     will always stay a parallelogram.
 
     Parameters
@@ -272,7 +272,7 @@ class ParallelogramBoundary(BoundaryDomain):
         self._add_local_normal_vector(
             normals, bary_x, bary_y, normal_dir_1, normal_dir_2, 1.0
         )
-        # scale normal vectors if there where in a corner:
+        # scale normal vectors if they are in a corner:
         return torch.divide(normals, torch.linalg.norm(normals, dim=1).reshape(-1, 1))
 
     def _add_local_normal_vector(
