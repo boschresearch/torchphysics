@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   build-docs:
-    if: github.repository_owner == 'TomF98'
+    if: github.repository_owner == TomF98
     runs-on: [ubuntu-latest]
     container: python:3.10-bookworm
     steps:
@@ -42,7 +42,7 @@ jobs:
 
   # Deployment job
   deploy-docs:
-    if: github.repository_owner == 'TomF98'
+    if: github.repository_owner == TomF98
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
