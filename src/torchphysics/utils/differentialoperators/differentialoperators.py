@@ -251,10 +251,10 @@ def jac(model_out, *derivative_variable):
         Du_i = []
         for vari in derivative_variable:
             Du_i.append(
-                torch.autograd.grad(model_out[:, i].sum(), vari, create_graph=True)[0]
+                torch.autograd.grad(model_out[..., i].sum(), vari, create_graph=True)[0]
             )
-        Du_rows.append(torch.cat(Du_i, dim=1))
-    Du = torch.stack(Du_rows, dim=1)
+        Du_rows.append(torch.cat(Du_i, dim=-1))
+    Du = torch.stack(Du_rows, dim=-2)
     return Du
 
 
@@ -284,10 +284,10 @@ def rot(model_out, *derivative_variable):
         ""
     """
     jacobian = jac(model_out, *derivative_variable)
-    rotation = torch.zeros((len(derivative_variable[0]), 3))
-    rotation[:, 0] = jacobian[:, 2, 1] - jacobian[:, 1, 2]
-    rotation[:, 1] = jacobian[:, 0, 2] - jacobian[:, 2, 0]
-    rotation[:, 2] = jacobian[:, 1, 0] - jacobian[:, 0, 1]
+    rotation = torch.zeros((*(jacobian.shape[:-2]), 3))
+    rotation[..., 0] = jacobian[..., 2, 1] - jacobian[..., 1, 2]
+    rotation[..., 1] = jacobian[..., 0, 2] - jacobian[..., 2, 0]
+    rotation[..., 2] = jacobian[..., 1, 0] - jacobian[..., 0, 1]
     return rotation
 
 
@@ -359,7 +359,7 @@ def sym_grad(model_out, *derivative_variable):
         symmetric gradient.
     """
     jac_matrix = jac(model_out, *derivative_variable)
-    return 0.5 * (jac_matrix + torch.transpose(jac_matrix, 1, 2))
+    return 0.5 * (jac_matrix + torch.transpose(jac_matrix, -2, -1))
 
 
 def matrix_div(model_out, *derivative_variable):
