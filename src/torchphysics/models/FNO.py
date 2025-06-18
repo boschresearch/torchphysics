@@ -35,7 +35,7 @@ class _FourierLayer(nn.Module):
         
         # Learnable parameters
         self.fourier_kernel = nn.Parameter(
-           torch.empty((*self.mode_num, self.channels), dtype=torch.cfloat))
+           torch.empty((*self.mode_num, self.channels, self.channels), dtype=torch.cfloat))
         nn.init.xavier_normal_(self.fourier_kernel, gain=xavier_gain)
 
         self.linear_connection : bool = linear_connection
@@ -69,8 +69,9 @@ class _FourierLayer(nn.Module):
         padding[3::2] = torch.flip((self.mode_num - original_fft_shape), dims=(0,))
 
         fft = nn.functional.pad(fft, padding.tolist())
-    
-        fft *= self.fourier_kernel
+
+        # fft is of shape (batch_dim, *mode_nums, channels)
+        fft = (self.fourier_kernel @ fft[..., None]).squeeze(-1)
 
         ifft = torch.fft.irfftn(fft, s=points.shape[1:-1], dim=self.fourier_dims)
 
