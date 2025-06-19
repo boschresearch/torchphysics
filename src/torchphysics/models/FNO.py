@@ -60,11 +60,14 @@ class _FourierLayer(nn.Module):
     
     def compute_mode_slice(self, mode_nums):
         mode_slice = []
-        for n in mode_nums[:-1]:
-            mode_ls = list(range(-(n//2), 0)) + list(range(0, n // 2 + n % 2))
-            mode_slice.append(mode_ls)
-        grids = torch.meshgrid(*[torch.tensor(idxs) for idxs in mode_slice], indexing='ij')
-        return (slice(None), *grids, slice(0, mode_nums[-1]), slice(None))
+        if len(mode_nums) > 1:
+            for n in mode_nums[:-1]:
+                mode_ls = list(range(-(n//2), 0)) + list(range(0, n // 2 + n % 2))
+                mode_slice.append(mode_ls)
+            grids = torch.meshgrid(*[torch.tensor(idxs) for idxs in mode_slice], indexing='ij')
+            return (slice(None), *grids, slice(0, mode_nums[-1]), slice(None))
+        else:
+            return (slice(None), slice(0, mode_nums[-1]), slice(None))
 
     def forward(self, points):
         fft = torch.fft.rfftn(points, dim=self.fourier_dims)
