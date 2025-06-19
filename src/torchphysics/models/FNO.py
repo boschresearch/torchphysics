@@ -78,9 +78,8 @@ class _FourierLayer(nn.Module):
         # from the last dimension (the channels in our case), there we dont need to 
         # change anything so only zeros in the padding.
         if torch.any(original_fft_shape < self.mode_num):
-            print('pad')
             min_mode_nums = torch.minimum(self.mode_num, original_fft_shape)
-            zeros = torch.zeros(points.shape[0], *self.mode_num, points.shape[-1], device=fft.device)
+            zeros = torch.zeros(points.shape[0], *self.mode_num, points.shape[-1], device=fft.device, dtype=fft.dtype)
             slc = self.compute_mode_slice(min_mode_nums)
             zeros[slc] = fft[slc]
             fft = zeros
