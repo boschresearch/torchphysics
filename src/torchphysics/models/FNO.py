@@ -83,13 +83,14 @@ class _FourierLayer(nn.Module):
             slc = self.compute_mode_slice(min_mode_nums)
             zeros[slc] = fft[slc]
             fft = zeros
+        fft_in_shape = tuple(fft.shape)
 
         fft = fft[self.mode_slice]
         
         # fft is of shape (batch_dim, *mode_nums, channels)
         fft = (self.fourier_kernel @ fft[..., None]).squeeze(-1)
 
-        out_zeros = torch.zeros(points.shape[0], *original_fft_shape, points.shape[-1], device=fft.device, dtype=fft.dtype)
+        out_zeros = torch.zeros(*fft_in_shape, device=fft.device, dtype=fft.dtype)
         out_zeros[self.mode_slice] = fft
 
         ifft = torch.fft.irfftn(out_zeros, s=points.shape[1:-1], dim=self.fourier_dims)
