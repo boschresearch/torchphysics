@@ -56,6 +56,15 @@ class _FourierLayer(nn.Module):
                     _Permute([0, *range(2, self.data_dim+2), 1])
                 )
         
+        self.mode_slice = self.compute_mode_slice(self.mode_num)
+    
+    def compute_mode_slice(self, mode_nums):
+        mode_slice = []
+        for n in mode_nums[:-1]:
+            mode_ls = list(range(-(n//2), 0)) + list(range(0, n // 2 + n % 2))
+            mode_slice.append(mode_ls)
+        grids = torch.meshgrid(*[torch.tensor(idxs) for idxs in mode_slice], indexing='ij')
+        return (slice(None), *grids, slice(0, mode_nums[-1]), slice(None))
 
     def forward(self, points):
         fft = torch.fft.rfftn(points, dim=self.fourier_dims)
@@ -65,15 +74,23 @@ class _FourierLayer(nn.Module):
         # padding needs to extra values, since the torch.nn.functional.pad starts
         # from the last dimension (the channels in our case), there we dont need to 
         # change anything so only zeros in the padding.
-        padding = torch.zeros(2*self.data_dim + 2, device=points.device, dtype=torch.int32)
-        padding[3::2] = torch.flip((self.mode_num - original_fft_shape), dims=(0,))
+        if torch.any(original_fft_shape < self.mode_num):
+            print('pad')
+            min_mode_nums = torch.minimum(self.mode_num, original_fft_shape)
+            zeros = torch.zeros(points.shape[0], *self.mode_num, points.shape[-1], device=fft.device)
+            slc = self.compute_mode_slice(min_mode_nums)
+            zeros[slc] = fft[slc]
+            fft = zeros
 
-        fft = nn.functional.pad(fft, padding.tolist())
-
+        fft = fft[self.mode_slice]
+        
         # fft is of shape (batch_dim, *mode_nums, channels)
         fft = (self.fourier_kernel @ fft[..., None]).squeeze(-1)
 
-        ifft = torch.fft.irfftn(fft, s=points.shape[1:-1], dim=self.fourier_dims)
+        out_zeros = torch.zeros(points.shape[0], *original_fft_shape, points.shape[-1], device=fft.device, dtype=fft.dtype)
+        out_zeros[self.mode_slice] = fft
+
+        ifft = torch.fft.irfftn(out_zeros, s=points.shape[1:-1], dim=self.fourier_dims)
 
         if self.linear_connection:
             ifft += self.linear_transform(points)
@@ -105,7 +122,7 @@ class FNO(Model):
         The number of hidden channels.
     fourier_modes : int or list, tuple
         The number of Fourier modes that will be used for the spectral convolution
-        in each layer. Modes over the given value will be truncated, and in case
+        in each layer. Modes above the given value will be truncated, and in case
         of not enough modes they are padded with 0.
         In case of a 1D space domain you can pass in one integer or a list of
         integers, such that in each layer a different amount of modes is used.
