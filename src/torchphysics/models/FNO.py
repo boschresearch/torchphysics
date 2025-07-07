@@ -30,6 +30,7 @@ class _FourierLayer(nn.Module):
         self.skip_connection : bool = skip_connection
         # Values for Fourier transformation
         self.mode_num = torch.tensor(mode_num)
+        self.mode_num[-1] = self.mode_num[-1] // 2 + 1
         self.data_dim = len(mode_num)
         self.fourier_dims = list(range(1, self.data_dim+1))
         
@@ -70,7 +71,7 @@ class _FourierLayer(nn.Module):
             return (slice(None), slice(0, mode_nums[-1]), slice(None))
 
     def forward(self, points):
-        fft = torch.fft.rfftn(points, dim=self.fourier_dims)
+        fft = torch.fft.rfftn(points, dim=self.fourier_dims, norm='forward')
 
         # Next add zeros or remove fourier modes to fit input for wanted freq.
         original_fft_shape = torch.tensor(fft.shape[1:-1])
@@ -93,7 +94,7 @@ class _FourierLayer(nn.Module):
         out_zeros = torch.zeros(*fft_in_shape, device=fft.device, dtype=fft.dtype)
         out_zeros[self.mode_slice] = fft
 
-        ifft = torch.fft.irfftn(out_zeros, s=points.shape[1:-1], dim=self.fourier_dims)
+        ifft = torch.fft.irfftn(out_zeros, s=points.shape[1:-1], dim=self.fourier_dims, norm='forward')
 
         if self.linear_connection:
             ifft += self.linear_transform(points)
@@ -177,7 +178,7 @@ class FNO(Model):
             Differential Equations", 2020
     """
     def __init__(self, input_space, output_space, fourier_layers : int, 
-                 hidden_channels : int = 16, fourier_modes = 16, activations=torch.nn.Tanh(), 
+                 hidden_channels : int = 16, fourier_modes = 16, activations=torch.nn.GELU(), 
                  skip_connections = False, linear_connections = True, bias = True,
                  channel_up_sample_network = None, channel_down_sample_network = None,
                  xavier_gains=5.0/3, space_resolution = None):

@@ -94,6 +94,8 @@ class DataCondition(Condition):
         The 'norm' which should be computed for evaluation. If 'inf', maximum norm will
         be used. Else, the result will be taken to the n-th potency (without computing the
         root!)
+    relative : bool
+        Whether to compute the relative error (i.e. error / target) or absolute error.
     root : float
         the n-th root to be computed to obtain the final loss. E.g., if norm=2, root=2, the
         loss is the 2-norm.
@@ -116,20 +118,22 @@ class DataCondition(Condition):
         self,
         module,
         dataloader,
-        norm,
-        root=1.0,
+        norm=2,
+        relative=True,
         use_full_dataset=False,
         name="datacondition",
         constrain_fn=None,
         weight=1.0,
+        epsilon=1e-8,
     ):
         super().__init__(name=name, weight=weight, track_gradients=False)
         self.module = module
         self.dataloader = dataloader
         self.norm = norm
-        self.root = root
+        self.relative = relative
         self.use_full_dataset = use_full_dataset
         self.constrain_fn = constrain_fn
+        self.epsilon = epsilon
         if self.constrain_fn:
             self.constrain_fn = UserFunction(self.constrain_fn)
 
@@ -141,7 +145,22 @@ class DataCondition(Condition):
             model_out = self.constrain_fn({**model_out.coordinates, **x.coordinates})
         else:
             model_out = model_out.as_tensor
-        return torch.abs(model_out - y.as_tensor)
+        if self.relative:
+            if self.norm == "inf":
+                out_norm = torch.max(torch.abs(model_out - y.as_tensor),
+                                dim=list(range(1, len(model_out.shape))))
+                y_norm =  torch.max(torch.abs(y.as_tensor), dim=list(range(1, len(model_out.shape)))) + self.epsilon
+                out = out_norm / y_norm
+            else:
+                out_norm = torch.norm(model_out - y.as_tensor, p=self.norm, dim=list(range(1, len(model_out.shape))))
+                y_norm = torch.norm(y.as_tensor, p=self.norm, dim=list(range(1, len(model_out.shape)))) + self.epsilon
+                out = out_norm / y_norm
+        else:
+            if self.norm == "inf":
+                out = torch.abs(model_out - y.as_tensor)
+            else:
+                out = torch.norm(model_out - y.as_tensor, p=self.norm, dim=list(range(1, len(model_out.shape))))
+        return out
 
     def forward(self, device="cpu", iteration=None):
         if self.use_full_dataset:
@@ -151,7 +170,7 @@ class DataCondition(Condition):
                 if self.norm == "inf":
                     loss = torch.maximum(loss, torch.max(a))
                 else:
-                    loss = loss + torch.mean(a**self.norm) / len(self.dataloader)
+                    loss = loss + torch.mean(a) / len(self.dataloader)
         else:
             try:
                 batch = next(self.iterator)
@@ -162,9 +181,7 @@ class DataCondition(Condition):
             if self.norm == "inf":
                 loss = torch.max(a)
             else:
-                loss = torch.mean(a**self.norm)
-        if self.root != 1.0:
-            loss = loss ** (1 / self.root)
+                loss = torch.mean(a)
         return loss
 
 
