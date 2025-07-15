@@ -71,8 +71,8 @@ def test_ordered_function_sampler_sample():
     fn_set = make_default_fn_set()
     fn_sampler = FunctionSamplerOrdered(20, fn_set, 100)
     fns = fn_sampler.sample_functions()
-    assert torch.all(fn_sampler.current_indices >= 20)
-    assert torch.all(fn_sampler.current_indices < 40)
+    assert torch.all(fn_sampler.new_indieces >= 20)
+    assert torch.all(fn_sampler.new_indieces < 40)
     assert callable(fns)
 
 
@@ -81,8 +81,8 @@ def test_ordered_function_sampler_sample_two_times():
     fn_sampler = FunctionSamplerOrdered(20, fn_set, 100)
     fns = fn_sampler.sample_functions()
     fns = fn_sampler.sample_functions()
-    assert torch.all(fn_sampler.current_indices >= 40)
-    assert torch.all(fn_sampler.current_indices < 60)
+    assert torch.all(fn_sampler.new_indieces >= 40)
+    assert torch.all(fn_sampler.new_indieces < 60)
     assert callable(fns)
 
 
@@ -91,8 +91,8 @@ def test_ordered_function_sampler_sample_multiple_times():
     fn_sampler = FunctionSamplerOrdered(20, fn_set, 100)
     for _ in range(5):
         _ = fn_sampler.sample_functions()
-    assert torch.all(fn_sampler.current_indices >= 0)
-    assert torch.all(fn_sampler.current_indices < 20)
+    assert torch.all(fn_sampler.new_indieces >= 0)
+    assert torch.all(fn_sampler.new_indieces < 20)
 
 
 def test_create_coupled_function_sampler():
@@ -110,5 +110,5 @@ def test_coupled_function_sampler_sample():
     fn_sampler2 = FunctionSamplerCoupled(fn_set, fn_sampler)
     _ = fn_sampler.sample_functions()
     _ = fn_sampler2.sample_functions()
-    assert torch.all(fn_sampler2.current_indices >= 20)
-    assert torch.all(fn_sampler2.current_indices < 40)
+    assert torch.all(fn_sampler2.current_indices >= 0)
+    assert torch.all(fn_sampler2.current_indices < 20)

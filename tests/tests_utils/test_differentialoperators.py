@@ -511,6 +511,23 @@ def test_jac_for_two_variables_at_the_same_time():
     assert torch.allclose(d[1], torch.tensor([[12.0, 9.0], [torch.exp(a[1]), 1.0]]))
 
 
+def test_jac_for_different_input_shape():
+    def f(x, y):
+        out = torch.zeros((*x.shape[:-1], 2))
+        out[..., :1] = x**2 * y
+        out[..., 1:] = y + torch.exp(x) 
+        return out
+    a = torch.tensor([[[0.0], [3.0]], [[0.0], [3.0]]], requires_grad=True)
+    b = torch.tensor([[[1.0], [2.0]], [[1.0], [2.0]]], requires_grad=True)
+    output = f(a, b)
+    d = jac(output, a, b)
+    exp_value = torch.exp(torch.tensor(3.0))
+    assert d.shape == (2, 2, 2, 2)
+    assert torch.allclose(d[:, 0], torch.tensor([[[0.0, 0.0], [1.0, 1.0]], [[0.0, 0.0], [1.0, 1.0]]]))
+    assert torch.allclose(d[:, 1], torch.tensor([[[12.0, 9.0], [exp_value, 1.0]], 
+                                                [[12.0, 9.0], [exp_value, 1.0]]]), atol=0.001)
+
+
 # Test rot
 def rot_function(x):
     out = torch.zeros((len(x), 3))

@@ -76,11 +76,14 @@ class FunctionSamplerOrdered(FunctionSampler):
     def __init__(self, n_functions, function_set : FunctionSet, function_creation_interval : int = 0):
         super().__init__(n_functions, function_set, function_creation_interval)
         self.current_indices = torch.arange(self.n_functions, dtype=torch.int64)
+        self.new_indieces = torch.zeros_like(self.current_indices, dtype=torch.int64)
+
 
     def sample_functions(self, device="cpu"):
         self._check_recreate_functions(device=device)
+        self.current_indices = self.new_indieces.clone()
         current_out = self.function_set.get_function(self.current_indices)
-        self.current_indices = (self.current_indices + self.n_functions) % self.function_set.function_set_size
+        self.new_indieces = (self.current_indices + self.n_functions) % self.function_set.function_set_size
         return current_out
 
 
