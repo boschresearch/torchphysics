@@ -155,6 +155,7 @@ class UnionBoundaryDomain(BoundaryDomain):
     def __init__(self, domain: UnionDomain):
         assert not isinstance(domain.domain_a, BoundaryDomain)
         assert not isinstance(domain.domain_b, BoundaryDomain)
+        self.overlap_tol = 0.5 
         super().__init__(domain)
 
     def _contains(self, points, params=Points.empty()):
@@ -162,10 +163,33 @@ class UnionBoundaryDomain(BoundaryDomain):
         in_b = self.domain.domain_b._contains(points, params)
         on_a_bound = self.domain.domain_a.boundary._contains(points, params)
         on_b_bound = self.domain.domain_b.boundary._contains(points, params)
-        on_both = torch.logical_and(on_b_bound, on_a_bound)
+        on_both = torch.logical_and(on_b_bound, on_a_bound)        
         on_a_part = torch.logical_and(on_a_bound, torch.logical_not(in_b))
         on_b_part = torch.logical_and(on_b_bound, torch.logical_not(in_a))
-        return torch.logical_or(on_a_part, torch.logical_or(on_b_part, on_both))
+
+        # if on the both lay on both boundaries it could still happen that 
+        # the boundary is in the inside of the union, this we can only check
+        # via a normal test
+        overlap_points = torch.ones_like(on_both, dtype=torch.bool)
+        if torch.any(on_both):
+            index_tensor = on_both.clone().flatten()
+            if not params.isempty:
+                sliced_params = params[index_tensor]
+            else:
+                sliced_params = params
+            
+            normals_a = self.domain.domain_a.boundary.normal(
+                    points[index_tensor], sliced_params, device=points.device
+                )
+            normals_b = self.domain.domain_b.boundary.normal(
+                    points[index_tensor], sliced_params, device=points.device
+                )      
+
+            inner_product_ok = torch.sum(normals_a*normals_b, dim=-1, keepdim=True) >= self.overlap_tol
+            overlap_points[index_tensor] = inner_product_ok
+
+        default_check = torch.logical_or(on_a_part, torch.logical_or(on_b_part, on_both))
+        return torch.logical_and(default_check, overlap_points)
 
     def _get_volume(self, params=Points.empty(), device="cpu"):
         if not self.domain.disjoint:
