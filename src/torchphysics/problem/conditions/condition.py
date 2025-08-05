@@ -24,7 +24,7 @@ class SquaredError(torch.nn.Module):
         x : torch.tensor
             The values for which the squared error should be computed.
         """
-        return torch.sum(torch.square(x), dim=1)
+        return torch.sum(torch.square(x), dim=list(range(1, len(x.shape))))
 
 
 class Condition(torch.nn.Module):

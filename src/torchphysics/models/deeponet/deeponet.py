@@ -4,7 +4,7 @@ from torchphysics.problem.spaces.points import Points
 from ..model import Model, Sequential
 from .branchnets import BranchNet
 from .trunknets import TrunkNet
-
+from ...utils.user_fun import UserFunction
 
 class DeepONet(Model):
     """Implementation of the architecture used in the DeepONet paper [#]_.
@@ -28,7 +28,10 @@ class DeepONet(Model):
         For higher dimensional outputs, will be multiplied my the dimension of
         the output space, so each dimension will have the same number of
         intermediate neurons.
-
+    constrain_fn : callable
+        A constrain function that can be used to constrain the network 
+        outputs. 
+        
     Notes
     -----
     The number of output neurons in the branch and trunk net have to be the same!
@@ -38,12 +41,16 @@ class DeepONet(Model):
         based on the universal approximation theorem of operators", 2021
     """
 
-    def __init__(self, trunk_net, branch_net, output_space, output_neurons):
+    def __init__(self, trunk_net, branch_net, output_space, output_neurons, 
+                 constrain_fn = None):
         self._check_trunk_and_branch_correct(trunk_net, branch_net)
         super().__init__(input_space=trunk_net.input_space, output_space=output_space)
         self.trunk = trunk_net
         self.branch = branch_net
         self._finalize_trunk_and_branch(output_space, output_neurons)
+        self.constrain_fn = constrain_fn
+        if self.constrain_fn:
+            self.constrain_fn = UserFunction(self.constrain_fn)
 
     def _check_trunk_and_branch_correct(self, trunk_net, branch_net):
         """Checks if the trunk and branch net are compatible
@@ -92,7 +99,15 @@ class DeepONet(Model):
         )
 
         out = torch.sum(trunk_out * branch_out, dim=-1)
-        return Points(out, self.output_space)
+        points_out = Points(out, self.output_space)
+        if not self.constrain_fn is None:
+            if trunk_inputs is None:
+                trunk_inputs = self.trunk.default_trunk_input.repeat(self.branch.current_out.shape[0])
+
+            return Points(self.constrain_fn(trunk_inputs.join(points_out).coordinates), 
+                          self.output_space)
+        else:
+            return points_out
 
     def _forward_branch(self, function_set, iteration_num=-1, device="cpu"):
         """Branch evaluation for training."""
