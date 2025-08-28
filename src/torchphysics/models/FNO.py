@@ -3,6 +3,7 @@ import torch.nn as nn
 from .model import Model
 
 from ..problem.spaces import Points
+from .embedding_layers import PositionalEmbedding
 
 class _Permute(nn.Module):
     def __init__(self, permute_dims):
@@ -152,6 +153,9 @@ class FNO(Model):
         The network that transforms the hidden channel dimension to the 
         output channel dimension. (The mapping Q in [1], Figure 2)
         Default is a linear mapping.
+    positional_embedding : torchphysics.models.PositionalEmbedding or bool
+        An additional embedding layer, which adds positional information to the input.
+        Default is True, adding an embedding given the shape of fourie modes.
     xavier_gains : int or list, tuple
         For the weight initialization a Xavier/Glorot algorithm will be used.
         The gain can be specified over this value.
@@ -181,6 +185,7 @@ class FNO(Model):
                  hidden_channels : int = 16, fourier_modes = 16, activations=torch.nn.GELU(), 
                  skip_connections = False, linear_connections = True, bias = True,
                  channel_up_sample_network = None, channel_down_sample_network = None,
+                 positional_embedding=True, 
                  xavier_gains=5.0/3, space_resolution = None):
         super().__init__(input_space, output_space)
 
@@ -205,17 +210,32 @@ class FNO(Model):
         in_channels = self.input_space.dim
         out_channels = self.output_space.dim
 
+        if positional_embedding is True:
+            dim = 1 if isinstance(fourier_modes[0], int) else len(fourier_modes[0])
+            positional_embedding = PositionalEmbedding(dim)
+        elif positional_embedding is False:
+            positional_embedding = None
+
         if not channel_up_sample_network:
+            if positional_embedding is not None:
+                in_channels += positional_embedding.dim
             self.channel_up_sampling = nn.Linear(in_channels, 
-                                                 hidden_channels, 
-                                                 bias=True)
+                                                 hidden_channels)
         else:
+            if positional_embedding is not None:
+                print("Note: Positional embedding is used, make sure that the network for " \
+                      f"lifiting (channel up sampling) expects inputs of size {in_channels+positional_embedding.dim}.")
             self.channel_up_sampling = channel_up_sample_network
+
+        # combine embedding with up_sampling layer:
+        if positional_embedding is not None:
+            self.channel_up_sampling = nn.Sequential(
+                positional_embedding, self.channel_up_sampling
+            )
 
         if not channel_down_sample_network:
             self.channel_down_sampling = nn.Linear(hidden_channels, 
-                                                   out_channels, 
-                                                   bias=True)
+                                                   out_channels)
         else:
             self.channel_down_sampling = channel_down_sample_network
 

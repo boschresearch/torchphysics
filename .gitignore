@@ -19,6 +19,7 @@ __pycache__/*
 **/bosch/**
 **/experiments/**
 **/fluid_logs/**
+**/logs/**
 # Project files
 .ropeproject
 .project

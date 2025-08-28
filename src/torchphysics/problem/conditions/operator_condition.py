@@ -96,7 +96,7 @@ class OperatorCondition(Condition):
         
         if self.relative:
             y_norm = self.error_fn(output_functions.as_tensor) + self.epsilon
-            out /= y_norm
+            out = out / y_norm
 
         return self.reduce_fn(out)
 
