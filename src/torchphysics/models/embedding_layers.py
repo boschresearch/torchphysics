@@ -35,13 +35,13 @@ class PositionalEmbedding(nn.Module):
             self.bounds = coordinate_boundaries
         else:
             self.bounds = [[0, 1]] * self.dim
-        self._positions = None
+        self.register_buffer("_positions", torch.empty(0))
 
 
     def forward(self, points):
         input_shape = points.as_tensor.shape
         # If we have a new shape of the data, we need to create a new positional embedding
-        if self._positions is None or not input_shape[1:-1] == self._positions.shape[1:-1]:
+        if not input_shape[1:-1] == self._positions.shape[1:-1]:
             self._build_positional_embedding(input_shape, points.device, points.as_tensor.dtype)
             
         repeated_embedding = self._positions.repeat(input_shape[0], *[1] * (self.dim+1))
@@ -50,7 +50,6 @@ class PositionalEmbedding(nn.Module):
 
     def _build_positional_embedding(self, data_shape, device="cpu", dtype=torch.float32):
         coordinate_grid = []
-        print(self.dim, data_shape)
         for i in range(self.dim):
             coordinate_grid.append(
                 torch.linspace(self.bounds[i][0], self.bounds[i][1], 
