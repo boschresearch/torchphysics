@@ -22,7 +22,6 @@ concurrency:
 
 jobs:
   build-docs:
-    if: github.repository == 'boschresearch/torchphysics'
     runs-on: [ubuntu-latest]
     container: python:3.10-bookworm
     steps:
@@ -42,7 +41,6 @@ jobs:
 
   # Deployment job
   deploy-docs:
-    if: github.repository == 'boschresearch/torchphysics'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

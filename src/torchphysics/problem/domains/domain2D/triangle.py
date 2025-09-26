@@ -103,14 +103,14 @@ class Triangle(Domain):
         origin, _, _, dir_1, _, dir_3 = self._construct_triangle(params, device)
         num_of_params = self.len_of_params(params)
         bary_coords = torch.rand((num_of_params, n, 2), device=device)
-        bary_coords = self._handle_sum_greater_1(d, bary_coords)
+        bary_coords = self._handle_sum_greater_1(d, bary_coords, device=device)
         points_in_dir_1 = bary_coords[:, :, :1] * dir_1[:, None]
         points_in_dir_2 = -bary_coords[:, :, 1:] * dir_3[:, None]
         points = points_in_dir_1 + points_in_dir_2
         points += origin[:, None, :]
         return Points(points.reshape(-1, self.space.dim), self.space)
 
-    def _handle_sum_greater_1(self, d, bary_coords):
+    def _handle_sum_greater_1(self, d, bary_coords, device="cpu"):
         sum_bigger_one = bary_coords.sum(axis=2) >= 1
         if d:  # for a given density just remove the points
             index = torch.where(torch.logical_not(sum_bigger_one))
@@ -120,7 +120,7 @@ class Triangle(Domain):
         # This stays uniform.
         index = torch.where(sum_bigger_one)
         bary_coords[index] = torch.subtract(
-            torch.tensor([[1.0, 1.0]]), bary_coords[index]
+            torch.tensor([[1.0, 1.0]], device=device), bary_coords[index]
         )
         return bary_coords
 

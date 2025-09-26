@@ -26,6 +26,6 @@ from .deeponet.layers import TrunkLinear
 
 # FNO:
 from .FNO import FNO, _FourierLayer
-
+from .embedding_layers import PositionalEmbedding
 # PCA:
 from .PCANN import PCANN, PCANN_FC

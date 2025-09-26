@@ -70,7 +70,8 @@ def test_create_fno_optional():
               bias=[False, False],
               channel_up_sample_network=in_network,
               channel_down_sample_network=out_network,
-              activations=torch.nn.Tanh())
+              activations=torch.nn.Tanh(), 
+              positional_embedding=False)
     assert fno.channel_up_sampling == in_network
     assert fno.channel_down_sampling == out_network
 
