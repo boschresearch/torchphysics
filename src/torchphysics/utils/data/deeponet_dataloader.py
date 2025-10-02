@@ -5,29 +5,30 @@ from ...problem.spaces import Points
 
 
 class DeepONetDataLoader(torch.utils.data.DataLoader):
-    """
-    A DataLoader that can be used in a condition to load minibatches of paired data
-    points as the input and output of a DeepONet-model.
+    r"""
+    A DataLoader that can be used in a condition to load minibatches of paired
+    data points as the input and output of a DeepONet-model.
 
     Parameters
     ----------
     branch_data : torch.tensor
-        A tensor containing the input data for the branch network. Has to be of the shape:
-        [number_of_functions, discrete_points_of_branch_net, function_space_dim]
-        For example, if we have a batch of 20 vector-functions (:math:`f:\R \to \R^2`) and
-        use 100 discrete points for the evaluation (where the branch nets evaluates f),
-        the shape would be: [20, 100, 2]
+        A tensor containing the input data for the branch network. Has to be of
+        the shape: [number_of_functions, discrete_points_of_branch_net,
+        function_space_dim]. For example, if we have a batch of 20
+        vector-functions (:math:`f:\R \to \R^2`) and use 100 discrete points
+        for the evaluation (where the branch nets evaluates f), the shape would
+        be: [20, 100, 2]
     trunk_data : torch.tensor
-        A tensor containing the input data for the trunk network. There are two different
-        possibilites for the shape of this data:
-            1) Every branch input function uses the same trunk values, then we can pass in
-               the shape: [number_of_trunk_points, input_dim_of_trunk_net]
-               This can speed up the trainings process.
-            2) Or every branch function has different values for the trunk net, then we
-               need the shape:
-               [number_of_functions, number_of_trunk_points, input_dim_of_trunk_net]
-               If this is the case, remember to set 'trunk_input_copied = false' inside
-               the trunk net, to get the right trainings process.
+        A tensor containing the input data for the trunk network. There are two
+        different possibilities for the shape of this data:
+            1) Every branch input function uses the same trunk values, then we
+               can pass in the shape: [number_of_trunk_points,
+               input_dim_of_trunk_net]. This can speed up the training process.
+            2) Or every branch function has different values for the trunk net,
+               then we need the shape: [number_of_functions,
+               number_of_trunk_points, input_dim_of_trunk_net]. If this is the
+               case, remember to set 'trunk_input_copied = false' inside the
+               trunk net, to get the right training process.
     output_data : torch.tensor
         A tensor containing the expected output of the network. Shape of the
         data should be:
@@ -45,9 +46,11 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
     shuffle_trunk : bool
         Whether to shuffle the order of the trunk points at initialization.
     num_workers : int
-        The amount of workers used during data loading, see also: the PyTorch documentation
+        The amount of workers used during data loading, see also: the PyTorch
+        documentation
     pin_memory : bool
-        Whether to use pinned memory during data loading, see also: the PyTorch documentation
+        Whether to use pinned memory during data loading, see also: the PyTorch
+        documentation
     """
 
     def __init__(
@@ -67,22 +70,16 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
     ):
         assert len(branch_data.shape) == 3, "Branch data has the wrong shape"
         assert branch_data.shape[-1] == branch_space.dim, (
-            "Branch data dimension is not correct, is "
-            + str(branch_data.shape[-1])
-            + " but expected "
-            + str(branch_space.dim)
+            f"Branch data dimension is not correct, is "
+            f"{branch_data.shape[-1]} but expected {branch_space.dim}"
         )
         assert trunk_data.shape[-1] == trunk_space.dim, (
-            "Trunk data dimension is not correct, is "
-            + str(trunk_data.shape[-1])
-            + " but expected "
-            + str(trunk_space.dim)
+            f"Trunk data dimension is not correct, is "
+            f"{trunk_data.shape[-1]} but expected {trunk_space.dim}"
         )
         assert output_data.shape[-1] == output_space.dim, (
-            "Solution data dimension is not correct, is "
-            + str(output_data.shape[-1])
-            + " but expected "
-            + str(output_space.dim)
+            f"Solution data dimension is not correct, is "
+            f"{output_data.shape[-1]} but expected {output_space.dim}"
         )
         if len(trunk_data.shape) == 3:
             super().__init__(
@@ -126,7 +123,8 @@ class DeepONetDataLoader(torch.utils.data.DataLoader):
 
 class DeepONetDataset_Unique(torch.utils.data.Dataset):
     """
-    A PyTorch Dataset to load tuples of data points, used in the DeepONetDataLoader.
+    A PyTorch Dataset to load tuples of data points, used in the
+    DeepONetDataLoader.
     Is used when every branch input has unique trunk inputs
     -> Ordering of points is important.
     """
@@ -207,7 +205,7 @@ class DeepONetDataset_Unique(torch.utils.data.Dataset):
         idx : int
             The index of the desired point.
         """
-        # frist slice in branch dimension (dim 0):
+        # first slice in branch dimension (dim 0):
         branch_idx = int(idx / self.branch_batch_len)
         a = (branch_idx * self.branch_batch_size) % len(self.branch_data_points)
         b = ((branch_idx + 1) * self.branch_batch_size) % len(self.branch_data_points)
@@ -246,8 +244,8 @@ class DeepONetDataset_Unique(torch.utils.data.Dataset):
 
 class DeepONetDataset(torch.utils.data.Dataset):
     """
-    A PyTorch Dataset to load tuples of data points, used via DeepONetDataLoader.
-    Used if all branch inputs have the same trunk points.
+    A PyTorch Dataset to load tuples of data points, used via
+    DeepONetDataLoader. Used if all branch inputs have the same trunk points.
     """
 
     def __init__(
@@ -297,8 +295,8 @@ class DeepONetDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         """Returns the number of points of this dataset."""
-        # the least common multiple of both possible length will lead to the correct distribution
-        # of data points and hopefully managable effort
+        # the least common multiple of both possible length will lead to the
+        # correct distribution of data points and hopefully manageable effort
         return int(
             np.lcm(
                 int(
