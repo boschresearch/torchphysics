@@ -1,8 +1,105 @@
 [build-system]
-# AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
 requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 # See configuration details in https://github.com/pypa/setuptools_scm
 version_scheme = "no-guess-dev"
+
+[project]
+name = "torchphysics"
+description = "PyTorch implementation of Deep Learning methods to solve differential equations"
+authors = [
+    {name = "Nick Heilenkötter", email = "nick7@uni-bremen.de"},
+    {name = "Tom Freudenberg", email = "tomfre@uni-bremen.de"}
+]
+license = {text = "Apache-2.0"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=2.0.0",
+    "pytorch-lightning>=2.0.0",
+    "numpy>=1.20.2, <2.0",
+    "matplotlib>=3.0.0",
+    "scipy>=1.6.3",
+    "importlib-metadata",
+    "jupyter",
+]
+dynamic = ["version"]
+
+[project.readme]
+file = "README.rst"
+content-type = "text/x-rst; charset=UTF-8"
+
+[project.urls]
+Homepage = "https://github.com/boschresearch/torchphysics"
+Documentation = "https://boschresearch.github.io/torchphysics/index.html"
+Source = "https://github.com/boschresearch/torchphysics"
+Changelog = "https://github.com/boschresearch/torchphysics/blob/main/CHANGELOG.rst"
+
+[project.optional-dependencies]
+all = [
+    "networkx>=2.5.1",
+    "trimesh>=3.9.19",
+    "shapely>=1.7.1",
+    "rtree>=0.9.7",
+]
+testing = [
+    "setuptools",
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+package-dir = {"" = "src"}
+platforms = ["any"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = [
+    "tests",
+    "examples",
+    "docs",
+    "experiments",
+]
+
+[tool.pytest.ini_options]
+# Specify command line options as you would do when invoking pytest directly.
+# e.g. --cov-report html (or xml) for html/xml output or --junitxml junit.xml
+# in order to write a coverage file that can be read by Jenkins.
+# CAUTION: --cov flags may prohibit setting breakpoints while debugging.
+# Comment those flags to avoid this py.test issue.
+addopts = [
+    "--cov=torchphysics",
+    "--cov-report=term-missing",
+    "--verbose",
+]
+norecursedirs = [
+    "dist",
+    "build",
+    ".tox",
+]
+testpaths = ["tests"]
+
+[tool.distutils.bdist_wheel]
+# Use this option if your package is pure-python
+universal = 1
+
+[tool.flake8]
+# Some sane defaults for the code style checker flake8
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+# ^  Black-compatible
+#    E203 and W503 have edge cases handled by black
+exclude = [
+    ".tox",
+    "build",
+    "dist",
+    ".eggs",
+    "docs/conf.py",
+]
